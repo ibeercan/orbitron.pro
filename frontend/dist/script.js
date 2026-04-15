@@ -147,6 +147,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('subscribe-form');
     const messageEl = document.getElementById('message');
     const emailInput = document.getElementById('email');
+    const toast = document.getElementById('toast');
+    
+    function showToast(message, type = 'success') {
+        toast.textContent = message;
+        toast.className = `toast ${type} show`;
+        setTimeout(() => {
+            toast.className = 'toast';
+        }, 4000);
+    }
     
     if (form) {
         form.addEventListener('submit', async (e) => {
@@ -170,8 +179,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = await response.json();
                 
                 if (response.ok) {
-                    messageEl.className = 'message success';
-                    messageEl.textContent = data.message || 'Спасибо! Вы подписаны.';
+                    showToast(data.message || 'Спасибо! Вы подписаны.');
                     emailInput.value = '';
                 } else {
                     messageEl.className = 'message error';
