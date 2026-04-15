@@ -245,188 +245,420 @@ body {
 
 /* Subscription Form */
 .subscription {
-    text-align: center;
     margin: var(--space-16) 0;
-    max-width: 500px;
-    margin-left: auto;
-    margin-right: auto;
+    width: 100%;
+    max-width: 520px;
+}
+
+.subscription-card {
+    background: linear-gradient(145deg, rgba(99, 102, 241, 0.08), rgba(6, 182, 212, 0.05));
+    border: 1px solid rgba(129, 140, 248, 0.15);
+    border-radius: 20px;
+    padding: var(--space-8);
+    backdrop-filter: blur(20px);
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.subscription-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--primary-400), var(--secondary-400), transparent);
+}
+
+.subscription-icon {
+    width: 48px;
+    height: 48px;
+    margin: 0 auto var(--space-4);
+    background: linear-gradient(135deg, var(--primary-500), var(--secondary-500));
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.subscription-icon svg {
+    width: 24px;
+    height: 24px;
+    color: white;
 }
 
 .subscription h2 {
-    font-size: var(--text-2xl);
+    font-size: var(--text-xl);
     font-weight: var(--font-semibold);
-    color: var(--primary-100);
-    margin-bottom: var(--space-4);
+    color: var(--text-primary);
+    margin-bottom: var(--space-3);
+    letter-spacing: -0.01em;
 }
 
 .subscription p {
     font-size: var(--text-base);
     color: var(--gray-300);
     margin-bottom: var(--space-6);
+    line-height: var(--leading-normal);
+}
+
+.subscription .highlight {
+    color: var(--secondary-400);
+    font-weight: var(--font-semibold);
 }
 
 .subscribe-form {
     display: flex;
     gap: var(--space-3);
-    margin-bottom: var(--space-4);
     flex-wrap: wrap;
     justify-content: center;
 }
 
-.subscribe-form input {
+.input-wrapper {
+    position: relative;
     flex: 1;
-    min-width: 250px;
-    padding: var(--space-3);
-    border: 1px solid var(--gray-400);
-    border-radius: var(--radius-md);
-    background: rgba(255, 255, 255, 0.05);
-    color: white;
+    min-width: 220px;
+}
+
+.subscribe-form input {
+    width: 100%;
+    padding: 14px 18px;
+    border: 1px solid rgba(129, 140, 248, 0.25);
+    border-radius: 12px;
+    background: rgba(15, 23, 42, 0.6);
+    color: var(--text-primary);
     font-size: var(--text-base);
+    transition: all 0.3s ease;
+}
+
+.subscribe-form input::placeholder {
+    color: var(--gray-400);
 }
 
 .subscribe-form input:focus {
     outline: none;
     border-color: var(--secondary-400);
-    box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.2);
+    box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.15), 0 0 20px rgba(34, 211, 238, 0.1);
+}
+
+.input-glow {
+    position: absolute;
+    inset: -1px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--primary-500), var(--secondary-500));
+    opacity: 0;
+    z-index: -1;
+    transition: opacity 0.3s ease;
+    filter: blur(8px);
+}
+
+.input-wrapper:focus-within .input-glow {
+    opacity: 0.3;
 }
 
 .subscribe-form button {
-    padding: var(--space-3) var(--space-6);
-    background: linear-gradient(135deg, var(--primary-500), var(--secondary-500));
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: 14px 24px;
+    background: linear-gradient(135deg, var(--primary-500), #7c3aed);
     color: white;
     border: none;
-    border-radius: var(--radius-md);
+    border-radius: 12px;
     font-weight: var(--font-semibold);
+    font-size: var(--text-base);
     cursor: pointer;
-    transition: transform 0.2s ease;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.subscribe-form button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s ease;
 }
 
 .subscribe-form button:hover {
     transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4);
+}
+
+.subscribe-form button:hover::before {
+    left: 100%;
+}
+
+.subscribe-form button svg {
+    width: 18px;
+    height: 18px;
+    transition: transform 0.3s ease;
+}
+
+.subscribe-form button:hover svg {
+    transform: translateX(4px);
 }
 
 .message {
     font-size: var(--text-sm);
-    min-height: 20px;
-    margin-top: var(--space-2);
+    min-height: 24px;
+    margin-top: var(--space-4);
+    font-weight: var(--font-normal);
 }
 
 .message.success {
-    color: #10b981;
+    color: #34d399;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
 }
 
 .message.error {
-    color: #ef4444;
+    color: #f87171;
 }
 
 .message.info {
     color: var(--secondary-400);
 }
 
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+.message.info::after {
+    content: '';
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: currentColor;
+    margin-left: var(--space-2);
+    animation: pulse 1.5s infinite;
+}
+
 /* Roadmap */
 .roadmap {
     margin: var(--space-16) 0;
-    max-width: 800px;
-    margin-left: auto;
-    margin-right: auto;
+    width: 100%;
+    max-width: 700px;
 }
 
 .roadmap h2 {
     text-align: center;
-    font-size: var(--text-2xl);
+    font-size: var(--text-xl);
     font-weight: var(--font-semibold);
-    color: var(--primary-100);
+    color: var(--text-primary);
     margin-bottom: var(--space-8);
+    letter-spacing: -0.01em;
 }
 
 .roadmap-timeline {
     position: relative;
+    padding-left: 40px;
 }
 
 .roadmap-timeline::before {
     content: '';
     position: absolute;
-    left: 50%;
-    top: 0;
-    bottom: 0;
+    left: 15px;
+    top: 24px;
+    bottom: 24px;
     width: 2px;
-    background: linear-gradient(to bottom, var(--primary-500), var(--secondary-500));
-    transform: translateX(-50%);
+    background: linear-gradient(to bottom, var(--primary-500), var(--secondary-500), var(--primary-500));
+    border-radius: 2px;
 }
 
 .roadmap-item {
-    display: flex;
-    align-items: center;
-    margin-bottom: var(--space-8);
     position: relative;
+    margin-bottom: var(--space-6);
 }
 
-.roadmap-item:nth-child(even) {
-    flex-direction: row-reverse;
-    text-align: right;
+.roadmap-item:last-child {
+    margin-bottom: 0;
 }
 
-.roadmap-item:nth-child(even) .roadmap-content {
-    margin-left: 0;
-    margin-right: var(--space-8);
+.roadmap-marker {
+    position: absolute;
+    left: -40px;
+    top: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
-.roadmap-date {
-    background: linear-gradient(135deg, var(--primary-500), var(--secondary-500));
-    color: white;
-    padding: var(--space-2) var(--space-4);
-    border-radius: var(--radius-md);
-    font-weight: var(--font-semibold);
-    font-size: var(--text-sm);
-    margin-bottom: var(--space-2);
-    display: inline-block;
+.marker-dot {
+    width: 14px;
+    height: 14px;
+    background: linear-gradient(135deg, var(--primary-400), var(--secondary-400));
+    border-radius: 50%;
+    border: 3px solid var(--bg-primary);
+    box-shadow: 0 0 12px rgba(129, 140, 248, 0.5);
+    z-index: 1;
+}
+
+.marker-line {
+    width: 2px;
+    flex: 1;
+    background: linear-gradient(to bottom, var(--primary-500), transparent);
+    min-height: 20px;
+}
+
+.roadmap-item:last-child .marker-line {
+    display: none;
 }
 
 .roadmap-content {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: var(--radius-md);
-    padding: var(--space-6);
-    margin-left: var(--space-8);
-    flex: 1;
-    backdrop-filter: blur(10px);
+    background: linear-gradient(145deg, rgba(15, 23, 42, 0.8), rgba(30, 41, 59, 0.4));
+    border: 1px solid rgba(129, 140, 248, 0.12);
+    border-radius: 16px;
+    padding: var(--space-5);
+    backdrop-filter: blur(12px);
+    transition: all 0.3s ease;
+}
+
+.roadmap-content:hover {
+    border-color: rgba(129, 140, 248, 0.25);
+    transform: translateX(4px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.roadmap-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-3);
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
+.roadmap-date {
+    background: linear-gradient(135deg, var(--primary-600), var(--primary-700));
+    color: white;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-weight: var(--font-semibold);
+    font-size: 13px;
+    letter-spacing: 0.02em;
+}
+
+.roadmap-status {
+    font-size: 12px;
+    font-weight: var(--font-semibold);
+    padding: 4px 10px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.status-active {
+    background: rgba(52, 211, 153, 0.15);
+    color: #34d399;
+    border: 1px solid rgba(52, 211, 153, 0.3);
+}
+
+.status-upcoming {
+    background: rgba(129, 140, 248, 0.1);
+    color: var(--primary-300);
+    border: 1px solid rgba(129, 140, 248, 0.2);
 }
 
 .roadmap-content h3 {
     font-size: var(--text-lg);
     font-weight: var(--font-semibold);
-    color: var(--primary-100);
+    color: var(--text-primary);
     margin-bottom: var(--space-2);
+    letter-spacing: -0.01em;
 }
 
 .roadmap-content p {
     color: var(--gray-300);
     font-size: var(--text-sm);
     line-height: var(--leading-normal);
+    margin-bottom: var(--space-3);
+}
+
+.roadmap-features {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
+.roadmap-features span {
+    background: rgba(99, 102, 241, 0.1);
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    color: var(--primary-300);
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-weight: var(--font-normal);
 }
 
 @media (max-width: 768px) {
+    .roadmap-timeline {
+        padding-left: 32px;
+    }
+    
     .roadmap-timeline::before {
-        left: 20px;
+        left: 11px;
     }
-
-    .roadmap-item {
-        flex-direction: column !important;
-        text-align: left !important;
+    
+    .roadmap-marker {
+        left: -32px;
+    }
+    
+    .marker-dot {
+        width: 12px;
+        height: 12px;
+    }
+    
+    .roadmap-content {
+        padding: var(--space-4);
+    }
+    
+    .roadmap-header {
+        flex-direction: column;
         align-items: flex-start;
+        gap: var(--space-2);
     }
-
-    .roadmap-item .roadmap-content {
-        margin-left: var(--space-8) !important;
-        margin-right: 0 !important;
+    
+    .roadmap-content h3 {
+        font-size: var(--text-base);
     }
-
+    
+    .roadmap-features {
+        gap: var(--space-1);
+    }
+    
+    .roadmap-features span {
+        font-size: 11px;
+        padding: 3px 8px;
+    }
+    
     .subscribe-form {
         flex-direction: column;
     }
-
-    .subscribe-form input {
+    
+    .input-wrapper {
         min-width: auto;
+    }
+    
+    .subscribe-form button {
         width: 100%;
+        justify-content: center;
+    }
+    
+    .subscription-card {
+        padding: var(--space-6);
+    }
+    
+    .subscription h2 {
+        font-size: var(--text-lg);
     }
 }
