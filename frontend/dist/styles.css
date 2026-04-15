@@ -447,10 +447,12 @@ body {
     .subscribe-form input {
         width: 100%;
         min-width: 100%;
+        height: 48px;
     }
     
     .subscribe-form button {
         width: 100%;
+        height: 48px;
     }
 }
 
