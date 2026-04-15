@@ -1,9 +1,9 @@
 services:
-  orbitron-backend:
+  backend:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: orbitron-backend
+    container_name: backend
     environment:
       - DATABASE_URL=${DATABASE_URL}
       - JWT_SECRET_KEY=${JWT_SECRET_KEY}
@@ -14,25 +14,25 @@ services:
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.orbitron-backend.rule=Host(`api.orbitron.pro`)"
-      - "traefik.http.services.orbitron-backend.loadbalancer.server.port=8000"
+      - "traefik.http.routers.backend.rule=Host(`api.orbitron.pro`)"
+      - "traefik.http.services.backend.loadbalancer.server.port=8000"
     depends_on:
       - postgres
       - redis
 
-  orbitron-frontend:
+  frontend:
     image: nginx:alpine
-    container_name: orbitron-frontend
+    container_name: frontend
     volumes:
       - ./frontend/dist:/usr/share/nginx/html:ro
       - ./frontend/nginx.conf:/etc/nginx/nginx.conf:ro
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.orbitron-frontend.rule=Host(`orbitron.pro`)"
-      - "traefik.http.routers.orbitron-frontend.entrypoints=websecure"
-      - "traefik.http.routers.orbitron-frontend.tls=true"
-      - "traefik.http.routers.orbitron-frontend.tls.certresolver=letsencrypt"
-      - "traefik.http.services.orbitron-frontend.loadbalancer.server.port=80"
+      - "traefik.http.routers.frontend.rule=Host(`orbitron.pro`)"
+      - "traefik.http.routers.frontend.entrypoints=websecure"
+      - "traefik.http.routers.frontend.tls=true"
+      - "traefik.http.routers.frontend.tls.certresolver=letsencrypt"
+      - "traefik.http.services.frontend.loadbalancer.server.port=80"
     networks:
       - proxy
     restart: unless-stopped
