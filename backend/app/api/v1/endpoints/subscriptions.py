@@ -98,36 +98,36 @@ async def subscribe_early_access(
     request: Request,
     db: AsyncSession = Depends(get_db),
     email: Optional[str] = Form(None),
-    subscribe_in: Optional[SubscribeRequest] = None,
 ) -> Any:
     """
     Subscribe for early access (landing page).
     Accepts both JSON and form-data.
     """
-    # Determine if request is form-data or JSON
     content_type = request.headers.get("content-type", "")
     
-    if "application/json" in content_type:
-        # JSON request
-        if not subscribe_in:
-            raise HTTPException(status_code=400, detail="Invalid JSON")
-        email = subscribe_in.email
-    elif "application/x-www-form-urlencoded" in content_type or email is not None:
-        # Form data request - redirect after processing
+    # Handle form-data (application/x-www-form-urlencoded)
+    if "application/x-www-form-urlencoded" in content_type or email is not None:
         if not email:
             raise HTTPException(status_code=400, detail="Email is required")
         
         success, message = await _process_subscription(db, email)
         
-        # Redirect back to landing page with query params
         params = {"subscribed": "success" if success else "error", "message": message}
         redirect_url = f"https://orbitron.pro/?{urlencode(params)}"
         return RedirectResponse(url=redirect_url, status_code=303)
     
-    # Fallback - try to get from JSON body
-    if subscribe_in:
-        email = subscribe_in.email
-    else:
+    # Handle JSON (application/json)
+    if "application/json" in content_type:
+        try:
+            body = await request.body()
+            import json
+            data = json.loads(body)
+            email = data.get("email")
+        except:
+            pass
+    
+    # Fallback - check if email was provided via form or in body
+    if not email:
         raise HTTPException(status_code=400, detail="Email is required")
     
     # JSON response path
