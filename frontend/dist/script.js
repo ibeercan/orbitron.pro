@@ -139,72 +139,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const starfield = new StarField(starfieldCanvas);
     starfield.draw();
-
+    
     const shooting = new ShootingStars(shootingCanvas);
     shooting.update();
-});
-
-// Subscription form handler
-document.addEventListener('DOMContentLoaded', function() {
-    const form = document.getElementById('subscribe-form');
-    const emailInput = document.getElementById('email');
-    const messageDiv = document.getElementById('message');
-
-    if (form) {
-        form.addEventListener('submit', async function(e) {
-            e.preventDefault();
-
-            const email = emailInput.value.trim();
-            if (!email) {
-                showMessage('Пожалуйста, введите email', 'error');
-                return;
-            }
-
-            if (!isValidEmail(email)) {
-                showMessage('Пожалуйста, введите корректный email', 'error');
-                return;
-            }
-
-            try {
-                showMessage('Отправка...', 'info');
-
-                const response = await fetch('/api/v1/subscriptions/early-access', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ email: email })
-                });
-
-                if (response.ok) {
-                    showMessage('Спасибо! Вы получите месяц премиум при запуске проекта.', 'success');
-                    emailInput.value = '';
-                } else {
-                    const error = await response.json();
-                    showMessage(error.detail || 'Произошла ошибка. Попробуйте позже.', 'error');
-                }
-            } catch (error) {
-                console.error('Subscription error:', error);
-                showMessage('Произошла ошибка. Проверьте подключение и попробуйте позже.', 'error');
-            }
-        });
-    }
-
-    function isValidEmail(email) {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        return emailRegex.test(email);
-    }
-
-    function showMessage(text, type) {
-        messageDiv.textContent = text;
-        messageDiv.className = `message ${type}`;
-
-        // Clear message after 5 seconds for success/error
-        if (type === 'success' || type === 'error') {
-            setTimeout(() => {
-                messageDiv.textContent = '';
-                messageDiv.className = 'message';
-            }, 5000);
-        }
-    }
 });

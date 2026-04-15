@@ -246,69 +246,73 @@ body {
 /* Subscription Form */
 .subscription {
     text-align: center;
-    margin: var(--space-16) 0;
-    max-width: 500px;
-    margin-left: auto;
-    margin-right: auto;
+    margin-top: var(--space-8);
+    max-width: 420px;
 }
 
 .subscription h2 {
-    font-size: var(--text-2xl);
+    font-size: var(--text-xl);
     font-weight: var(--font-semibold);
     color: var(--primary-100);
-    margin-bottom: var(--space-4);
+    margin-bottom: var(--space-3);
 }
 
 .subscription p {
     font-size: var(--text-base);
     color: var(--gray-300);
-    margin-bottom: var(--space-6);
+    margin-bottom: var(--space-5);
 }
 
 .subscribe-form {
     display: flex;
     gap: var(--space-3);
-    margin-bottom: var(--space-4);
     flex-wrap: wrap;
     justify-content: center;
 }
 
 .subscribe-form input {
     flex: 1;
-    min-width: 250px;
-    padding: var(--space-3);
-    border: 1px solid var(--gray-400);
+    min-width: 200px;
+    padding: 14px 18px;
+    border: 1px solid var(--primary-500);
     border-radius: var(--radius-md);
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(99, 102, 241, 0.1);
     color: white;
     font-size: var(--text-base);
+    transition: all 0.3s ease;
+}
+
+.subscribe-form input::placeholder {
+    color: var(--gray-400);
 }
 
 .subscribe-form input:focus {
     outline: none;
     border-color: var(--secondary-400);
-    box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.2);
+    box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.2);
+    background: rgba(99, 102, 241, 0.15);
 }
 
 .subscribe-form button {
-    padding: var(--space-3) var(--space-6);
+    padding: 14px 28px;
     background: linear-gradient(135deg, var(--primary-500), var(--secondary-500));
     color: white;
     border: none;
     border-radius: var(--radius-md);
     font-weight: var(--font-semibold);
     cursor: pointer;
-    transition: transform 0.2s ease;
+    transition: all 0.3s ease;
 }
 
 .subscribe-form button:hover {
     transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4);
 }
 
 .message {
     font-size: var(--text-sm);
     min-height: 20px;
-    margin-top: var(--space-2);
+    margin-top: var(--space-3);
 }
 
 .message.success {
@@ -323,110 +327,16 @@ body {
     color: var(--secondary-400);
 }
 
-/* Roadmap */
-.roadmap {
-    margin: var(--space-16) 0;
-    max-width: 800px;
-    margin-left: auto;
-    margin-right: auto;
-}
-
-.roadmap h2 {
-    text-align: center;
-    font-size: var(--text-2xl);
-    font-weight: var(--font-semibold);
-    color: var(--primary-100);
-    margin-bottom: var(--space-8);
-}
-
-.roadmap-timeline {
-    position: relative;
-}
-
-.roadmap-timeline::before {
-    content: '';
-    position: absolute;
-    left: 50%;
-    top: 0;
-    bottom: 0;
-    width: 2px;
-    background: linear-gradient(to bottom, var(--primary-500), var(--secondary-500));
-    transform: translateX(-50%);
-}
-
-.roadmap-item {
-    display: flex;
-    align-items: center;
-    margin-bottom: var(--space-8);
-    position: relative;
-}
-
-.roadmap-item:nth-child(even) {
-    flex-direction: row-reverse;
-    text-align: right;
-}
-
-.roadmap-item:nth-child(even) .roadmap-content {
-    margin-left: 0;
-    margin-right: var(--space-8);
-}
-
-.roadmap-date {
-    background: linear-gradient(135deg, var(--primary-500), var(--secondary-500));
-    color: white;
-    padding: var(--space-2) var(--space-4);
-    border-radius: var(--radius-md);
-    font-weight: var(--font-semibold);
-    font-size: var(--text-sm);
-    margin-bottom: var(--space-2);
-    display: inline-block;
-}
-
-.roadmap-content {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: var(--radius-md);
-    padding: var(--space-6);
-    margin-left: var(--space-8);
-    flex: 1;
-    backdrop-filter: blur(10px);
-}
-
-.roadmap-content h3 {
-    font-size: var(--text-lg);
-    font-weight: var(--font-semibold);
-    color: var(--primary-100);
-    margin-bottom: var(--space-2);
-}
-
-.roadmap-content p {
-    color: var(--gray-300);
-    font-size: var(--text-sm);
-    line-height: var(--leading-normal);
-}
-
-@media (max-width: 768px) {
-    .roadmap-timeline::before {
-        left: 20px;
-    }
-
-    .roadmap-item {
-        flex-direction: column !important;
-        text-align: left !important;
-        align-items: flex-start;
-    }
-
-    .roadmap-item .roadmap-content {
-        margin-left: var(--space-8) !important;
-        margin-right: 0 !important;
-    }
-
+@media (max-width: 480px) {
     .subscribe-form {
         flex-direction: column;
     }
-
+    
     .subscribe-form input {
         min-width: auto;
+    }
+    
+    .subscribe-form button {
         width: 100%;
     }
 }
