@@ -149,8 +149,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const emailInput = document.getElementById('email');
     const toast = document.getElementById('toast');
     
-    console.log('Form element:', form);
-    
     function showToast(message, type = 'success') {
         toast.textContent = message;
         toast.className = `toast ${type} show`;
@@ -160,9 +158,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     if (form) {
-        console.log('Form found, adding listener');
         form.addEventListener('submit', async (e) => {
-            console.log('Form submitted');
             e.preventDefault();
             const email = emailInput.value;
             const btn = form.querySelector('.submit-btn');
@@ -171,7 +167,6 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.textContent = 'Отправка...';
             
             try {
-                console.log('Fetching to:', 'https://api.orbitron.pro/api/v1/subscriptions/early-access');
                 const response = await fetch('https://api.orbitron.pro/api/v1/subscriptions/early-access', {
                     method: 'POST',
                     headers: {
@@ -180,7 +175,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     body: JSON.stringify({ email }),
                 });
                 
-                console.log('Response:', response.status);
                 const data = await response.json();
                 
                 if (response.ok) {
@@ -191,7 +185,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     messageEl.textContent = data.detail || 'Ошибка: ' + response.status;
                 }
             } catch (err) {
-                console.error('Error:', err);
                 messageEl.className = 'message error';
                 messageEl.textContent = 'Ошибка соединения: ' + err.message;
             }
@@ -199,7 +192,5 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.disabled = false;
             btn.textContent = 'Подписаться';
         });
-    } else {
-        console.error('Form not found');
     }
 });
