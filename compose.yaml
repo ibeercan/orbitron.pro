@@ -17,7 +17,10 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.backend.rule=Host(`api.orbitron.pro`)"
+      - "traefik.http.routers.backend.entrypoints=web"
       - "traefik.http.services.backend.loadbalancer.server.port=8000"
+    networks:
+      - proxy
     depends_on:
       - postgres
       - redis
@@ -48,10 +51,14 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - proxy
 
   redis:
     image: redis:7-alpine
     container_name: orbitron-redis
+    networks:
+      - proxy
 
 volumes:
   postgres_data:
