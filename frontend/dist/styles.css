@@ -259,8 +259,9 @@ body {
 .subscription {
     text-align: center;
     margin-top: var(--space-8);
-    max-width: 420px;
+    max-width: 100%;
     width: 100%;
+    padding: 0 var(--space-4);
 }
 
 .subscription h2 {
@@ -284,9 +285,11 @@ body {
 .subscribe-form {
     display: flex;
     gap: var(--space-3);
-    flex-wrap: wrap;
+    flex-direction: row;
     justify-content: center;
     width: 100%;
+    max-width: 420px;
+    margin: 0 auto;
 }
 
 /* Input - 40px height (standard) */
@@ -436,13 +439,14 @@ body {
         padding: var(--space-4);
     }
     
-    .subscribe-form {
+.subscribe-form {
         flex-direction: column;
+        width: 100%;
     }
     
     .subscribe-form input {
-        min-width: auto;
         width: 100%;
+        min-width: 100%;
     }
     
     .subscribe-form button {
