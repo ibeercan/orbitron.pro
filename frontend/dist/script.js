@@ -147,15 +147,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('subscribe-form');
     const messageEl = document.getElementById('message');
     const emailInput = document.getElementById('email');
-    const toast = document.getElementById('toast');
-    
-    function showToast(message, type = 'success') {
-        toast.textContent = message;
-        toast.className = `toast ${type} show`;
-        setTimeout(() => {
-            toast.className = 'toast';
-        }, 4000);
-    }
     
     if (form) {
         form.addEventListener('submit', async (e) => {
@@ -165,6 +156,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             btn.disabled = true;
             btn.textContent = 'Отправка...';
+            messageEl.textContent = '';
             
             try {
                 const response = await fetch('https://api.orbitron.pro/api/v1/subscriptions/early-access', {
@@ -178,7 +170,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = await response.json();
                 
                 if (response.ok) {
-                    showToast(data.message || 'Спасибо! Вы подписаны.');
+                    messageEl.className = 'message success';
+                    messageEl.textContent = data.message || 'Спасибо! Вы подписаны.';
                     emailInput.value = '';
                 } else {
                     messageEl.className = 'message error';
@@ -186,7 +179,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             } catch (err) {
                 messageEl.className = 'message error';
-                messageEl.textContent = 'Ошибка соединения: ' + err.message;
+                messageEl.textContent = 'Ошибка соединения';
             }
             
             btn.disabled = false;
