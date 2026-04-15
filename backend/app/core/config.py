@@ -27,6 +27,8 @@ logger = structlog.get_logger()
 
 class Settings(BaseSettings):
     # Database
+    POSTGRES_USER: str = "user"
+    POSTGRES_PASSWORD: str = ""
     DATABASE_URL: str = "postgresql://user:pass@localhost:5432/astrology"
 
     # JWT
