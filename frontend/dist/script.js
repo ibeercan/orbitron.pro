@@ -148,6 +148,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const messageEl = document.getElementById('message');
     const emailInput = document.getElementById('email');
     
+    // Check for subscription result from redirect
+    const urlParams = new URLSearchParams(window.location.search);
+    const subscribed = urlParams.get('subscribed');
+    const message = urlParams.get('message');
+    
+    if (subscribed === 'success') {
+        messageEl.className = 'message success';
+        messageEl.textContent = message || 'Спасибо! Вы подписаны.';
+        // Clear URL params
+        window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (subscribed === 'error') {
+        messageEl.className = 'message error';
+        messageEl.textContent = message || 'Ошибка при подписке.';
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+    
     if (form) {
         form.addEventListener('submit', async (e) => {
             e.preventDefault();

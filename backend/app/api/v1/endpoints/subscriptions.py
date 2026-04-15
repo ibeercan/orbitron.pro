@@ -1,6 +1,8 @@
-from typing import Any
+from typing import Any, Optional
+from urllib.parse import urlencode
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Form, Request
+from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
@@ -60,35 +62,81 @@ async def upgrade_subscription(
     return {"message": f"Subscription upgraded to {plan} plan"}
 
 
+async def _process_subscription(
+    db: AsyncSession,
+    email: str,
+) -> tuple[bool, str]:
+    """
+    Process subscription and return (success, message).
+    """
+    from pydantic import EmailStr, ValidationError
+    
+    try:
+        email = EmailStr(email)
+    except ValidationError:
+        return False, "Некорректный email"
+    
+    logger.info("Early access subscription", email=email)
+
+    # Check if already subscribed
+    existing = await early_subscriber_crud.get_by_email(db, email=email)
+    if existing:
+        logger.info("Email already subscribed", email=email)
+        return True, "Этот email уже подписан на ранний доступ."
+
+    try:
+        await early_subscriber_crud.create(db, obj_in={"email": email})
+        logger.info("Early access subscription created", email=email)
+        return True, "Спасибо! Вы подписаны."
+    except Exception as e:
+        logger.error("Failed to create early subscription", email=email, error=str(e))
+        return False, "Ошибка при подписке. Попробуйте позже."
+
+
 @router.post("/early-access", response_model=SubscribeResponse)
 async def subscribe_early_access(
-    *,
+    request: Request,
     db: AsyncSession = Depends(get_db),
-    subscribe_in: SubscribeRequest,
+    email: Optional[str] = Form(None),
+    subscribe_in: Optional[SubscribeRequest] = None,
 ) -> Any:
     """
     Subscribe for early access (landing page).
+    Accepts both JSON and form-data.
     """
-    logger.info("Early access subscription", email=subscribe_in.email)
-
-    # Check if already subscribed
-    existing = await early_subscriber_crud.get_by_email(db, email=subscribe_in.email)
-    if existing:
-        logger.info("Email already subscribed", email=subscribe_in.email)
+    # Determine if request is form-data or JSON
+    content_type = request.headers.get("content-type", "")
+    
+    if "application/json" in content_type:
+        # JSON request
+        if not subscribe_in:
+            raise HTTPException(status_code=400, detail="Invalid JSON")
+        email = subscribe_in.email
+    elif "application/x-www-form-urlencoded" in content_type or email is not None:
+        # Form data request - redirect after processing
+        if not email:
+            raise HTTPException(status_code=400, detail="Email is required")
+        
+        success, message = await _process_subscription(db, email)
+        
+        # Redirect back to landing page with query params
+        params = {"subscribed": "success" if success else "error", "message": message}
+        redirect_url = f"https://orbitron.pro/?{urlencode(params)}"
+        return RedirectResponse(url=redirect_url, status_code=303)
+    
+    # Fallback - try to get from JSON body
+    if subscribe_in:
+        email = subscribe_in.email
+    else:
+        raise HTTPException(status_code=400, detail="Email is required")
+    
+    # JSON response path
+    success, message = await _process_subscription(db, email)
+    
+    if success:
         return SubscribeResponse(
-            message="Этот email уже подписан на ранний доступ.",
+            message="Спасибо! Вы подписаны.",
             success=True
         )
-
-    try:
-        # Create subscription
-        await early_subscriber_crud.create(db, obj_in=subscribe_in)
-        logger.info("Early access subscription created", email=subscribe_in.email)
-
-        return SubscribeResponse(
-            message="Спасибо за подписку! Вы получите месяц премиум при запуске проекта.",
-            success=True
-        )
-    except Exception as e:
-        logger.error("Failed to create early subscription", email=subscribe_in.email, error=str(e))
-        raise HTTPException(status_code=500, detail="Не удалось обработать подписку. Попробуйте позже.")
+    else:
+        raise HTTPException(status_code=400, detail=message)
