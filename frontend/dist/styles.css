@@ -154,11 +154,6 @@ body {
     outline: none;
 }
 
-:focus-visible {
-    outline: 2px solid var(--secondary-400);
-    outline-offset: 2px;
-}
-
 /* Backgrounds */
 #starfield {
     position: fixed;
@@ -331,8 +326,8 @@ body {
 }
 
 .subscribe-form input:focus {
-    border-color: var(--secondary-400);
-    box-shadow: var(--shadow-input-focus);
+    border-color: rgba(34, 211, 238, 0.5);
+    box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.1);
     background: rgba(255, 255, 255, 0.05);
 }
 
