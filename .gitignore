@@ -105,8 +105,5 @@ dmypy.json
 .vscode/
 .idea/
 
-# Charts
-charts/
-
 # Alembic
 alembic/versions/*.py
