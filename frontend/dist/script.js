@@ -153,12 +153,9 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
             const email = emailInput.value;
             const btn = form.querySelector('.submit-btn');
-            const btnText = btn.querySelector('span');
-            const btnIcon = btn.querySelector('svg');
             
             btn.disabled = true;
-            btnText.textContent = 'Отправка...';
-            messageEl.classList.remove('visible', 'success', 'error');
+            btn.textContent = 'Отправка...';
             messageEl.textContent = '';
             
             try {
@@ -172,23 +169,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 const data = await response.json();
                 
-                messageEl.classList.add('visible');
-                
                 if (response.ok) {
-                    messageEl.classList.add('success');
-                    messageEl.textContent = data.message || 'Спасибо! Вы подписаны на запуск.';
+                    messageEl.className = 'message success';
+                    messageEl.textContent = data.message || 'Спасибо! Вы подписаны.';
                     emailInput.value = '';
                 } else {
-                    messageEl.classList.add('error');
-                    messageEl.textContent = data.detail || 'Ошибка при отправке';
+                    messageEl.className = 'message error';
+                    messageEl.textContent = data.detail || 'Ошибка';
                 }
             } catch (err) {
-                messageEl.classList.add('visible', 'error');
+                messageEl.className = 'message error';
                 messageEl.textContent = 'Ошибка соединения';
             }
             
             btn.disabled = false;
-            btnText.textContent = 'Подписаться';
+            btn.textContent = 'Подписаться';
         });
     }
 });
