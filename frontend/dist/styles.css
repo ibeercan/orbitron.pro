@@ -177,23 +177,6 @@ body {
     padding: var(--space-8);
     animation: fadeIn 1s ease-out;
     min-height: calc(100vh - 64px);
-    gap: var(--space-8);
-}
-
-.content > .main-content {
-    display: flex;
-    flex-direction: row;
-    align-items: flex-start;
-    justify-content: center;
-    gap: var(--space-12);
-    width: 100%;
-    max-width: 900px;
-}
-
-.main-column {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
 }
 
 @keyframes fadeIn {
@@ -409,98 +392,6 @@ body {
     color: var(--secondary-400);
 }
 
-/* Roadmap */
-.roadmap {
-    width: 100%;
-    max-width: 420px;
-    padding: 0 var(--space-3);
-    box-sizing: border-box;
-    text-align: left;
-}
-
-.roadmap h2 {
-    font-size: var(--text-lg);
-    font-weight: var(--font-semibold);
-    line-height: var(--leading-heading);
-    letter-spacing: var(--tracking-heading);
-    color: var(--text-primary);
-    margin-bottom: var(--space-5);
-    text-align: center;
-}
-
-.roadmap-timeline {
-    position: relative;
-    padding-left: var(--space-6);
-}
-
-.roadmap-timeline::before {
-    content: '';
-    position: absolute;
-    left: 7px;
-    top: 8px;
-    bottom: 8px;
-    width: 2px;
-    background: linear-gradient(to bottom, var(--primary-500), var(--secondary-500));
-    border-radius: 2px;
-}
-
-.roadmap-item {
-    position: relative;
-    margin-bottom: var(--space-5);
-}
-
-.roadmap-item:last-child {
-    margin-bottom: 0;
-}
-
-.roadmap-marker {
-    position: absolute;
-    left: calc(-1 * var(--space-6) + 2px);
-    top: 6px;
-    width: 12px;
-    height: 12px;
-    background: linear-gradient(135deg, var(--primary-400), var(--secondary-400));
-    border-radius: 50%;
-    border: 2px solid var(--bg-primary);
-    box-shadow: 0 0 8px rgba(129, 140, 248, 0.4);
-}
-
-.roadmap-content {
-    padding: var(--space-3) var(--space-4);
-    background: rgba(99, 102, 241, 0.05);
-    border: 1px solid rgba(129, 140, 248, 0.1);
-    border-radius: var(--radius-md);
-    transition: all 0.2s ease;
-}
-
-.roadmap-content:hover {
-    background: rgba(99, 102, 241, 0.1);
-    border-color: rgba(129, 140, 248, 0.2);
-}
-
-.roadmap-date {
-    display: inline-block;
-    font-size: var(--text-xs);
-    font-weight: var(--font-semibold);
-    color: var(--secondary-400);
-    margin-bottom: var(--space-1);
-    letter-spacing: 0.02em;
-}
-
-.roadmap-content h3 {
-    font-size: var(--text-base);
-    font-weight: var(--font-semibold);
-    color: var(--text-primary);
-    margin-bottom: var(--space-1);
-}
-
-.roadmap-content p {
-    font-size: var(--text-xs);
-    font-weight: var(--font-normal);
-    color: var(--gray-400);
-    line-height: var(--leading-body);
-}
-
 /* ============================================
    RESPONSIVE BREAKPOINTS
    ============================================ */
@@ -570,15 +461,6 @@ body {
     .subscribe-form button {
         width: 100%;
         height: 52px;
-    }
-    
-    .main-content {
-        flex-direction: column;
-        gap: var(--space-6);
-    }
-    
-    .roadmap {
-        margin-top: 0;
     }
 }
 
