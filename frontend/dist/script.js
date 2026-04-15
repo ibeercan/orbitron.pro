@@ -146,16 +146,19 @@ document.addEventListener('DOMContentLoaded', () => {
     // Subscription form
     const form = document.getElementById('subscribe-form');
     const messageEl = document.getElementById('message');
+    const emailInput = document.getElementById('email');
     
     if (form) {
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const email = document.getElementById('email').value;
-            const btn = form.querySelector('button');
+            const email = emailInput.value;
+            const btn = form.querySelector('.submit-btn');
+            const btnText = btn.querySelector('span');
+            const btnIcon = btn.querySelector('svg');
             
             btn.disabled = true;
-            btn.textContent = 'Отправка...';
-            messageEl.className = 'message';
+            btnText.textContent = 'Отправка...';
+            messageEl.classList.remove('visible', 'success', 'error');
             messageEl.textContent = '';
             
             try {
@@ -167,22 +170,25 @@ document.addEventListener('DOMContentLoaded', () => {
                     body: JSON.stringify({ email }),
                 });
                 
+                const data = await response.json();
+                
+                messageEl.classList.add('visible');
+                
                 if (response.ok) {
-                    messageEl.className = 'message success';
-                    messageEl.textContent = 'Спасибо! Вы подписаны на запуск.';
-                    form.reset();
+                    messageEl.classList.add('success');
+                    messageEl.textContent = data.message || 'Спасибо! Вы подписаны на запуск.';
+                    emailInput.value = '';
                 } else {
-                    const data = await response.json();
-                    messageEl.className = 'message error';
+                    messageEl.classList.add('error');
                     messageEl.textContent = data.detail || 'Ошибка при отправке';
                 }
             } catch (err) {
-                messageEl.className = 'message error';
+                messageEl.classList.add('visible', 'error');
                 messageEl.textContent = 'Ошибка соединения';
             }
             
             btn.disabled = false;
-            btn.textContent = 'Подписаться';
+            btnText.textContent = 'Подписаться';
         });
     }
 });
