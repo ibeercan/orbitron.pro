@@ -56,7 +56,7 @@ class Settings(BaseSettings):
     REDIS_URL: str = "redis://localhost:6379"
 
     # Security
-    ALLOWED_ORIGINS: List[str] = ["*"]
+    ALLOWED_ORIGINS: List[str] = ["https://orbitron.pro"]
 
     # Subscription limits
     FREE_AI_REQUESTS_PER_MONTH: int = 5

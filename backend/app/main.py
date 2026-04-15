@@ -67,7 +67,7 @@ app.add_middleware(SlowAPIMiddleware)
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.ALLOWED_ORIGINS,
+    allow_origins=["https://orbitron.pro", "http://orbitron.pro"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
