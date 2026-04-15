@@ -67,13 +67,26 @@
 
         <!-- Subscription Form -->
         <section class="subscription">
-            <h2>Подпишитесь на запуск</h2>
-            <p>Получите месяц премиум-подписки бесплатно при запуске проекта!</p>
-            <form id="subscribe-form" class="subscribe-form">
-                <input type="email" id="email" placeholder="Ваш email" required>
-                <button type="submit">Подписаться</button>
-            </form>
-            <div id="message" class="message"></div>
+            <div class="subscription-card">
+                <div class="subscription-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 2L11 13"/>
+                        <path d="M22 2L15 22L11 13L2 9L22 2Z"/>
+                    </svg>
+                </div>
+                <h2>Подпишитесь на запуск</h2>
+                <p>Получите <span class="highlight">1 месяц премиум</span> бесплатно при запуске</p>
+                <form id="subscribe-form" class="subscribe-form">
+                    <input type="email" id="email" placeholder="Ваш email" required>
+                    <button type="submit">
+                        <span>Подписаться</span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M5 12h14M12 5l7 7-7 7"/>
+                        </svg>
+                    </button>
+                </form>
+                <div id="message" class="message"></div>
+            </div>
         </section>
     </main>
     

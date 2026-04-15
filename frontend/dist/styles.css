@@ -257,12 +257,49 @@ body {
 
 /* Subscription Form */
 .subscription {
-    text-align: center;
-    margin-top: var(--space-8);
-    max-width: 100%;
     width: 100%;
+    max-width: 420px;
+    margin-top: var(--space-8);
     padding: 0 var(--space-3);
     box-sizing: border-box;
+}
+
+.subscription-card {
+    background: linear-gradient(145deg, rgba(99, 102, 241, 0.08), rgba(34, 211, 238, 0.04));
+    border: 1px solid rgba(129, 140, 248, 0.15);
+    border-radius: var(--radius-xl);
+    padding: var(--space-6);
+    backdrop-filter: blur(12px);
+    text-align: center;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+}
+
+.subscription-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 20%;
+    right: 20%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(129, 140, 248, 0.5), transparent);
+}
+
+.subscription-icon {
+    width: 48px;
+    height: 48px;
+    margin: 0 auto var(--space-4);
+    background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
+    border-radius: var(--radius-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+.subscription-icon svg {
+    width: 24px;
+    height: 24px;
+    color: white;
 }
 
 .subscription h2 {
@@ -270,8 +307,8 @@ body {
     font-weight: var(--font-semibold);
     line-height: var(--leading-heading);
     letter-spacing: var(--tracking-heading);
-    color: var(--primary-100);
-    margin-bottom: var(--space-3);
+    color: var(--text-primary);
+    margin-bottom: var(--space-2);
 }
 
 .subscription p {
@@ -282,6 +319,11 @@ body {
     margin-bottom: var(--space-5);
 }
 
+.subscription .highlight {
+    color: var(--secondary-400);
+    font-weight: var(--font-semibold);
+}
+
 /* Form Styles */
 .subscribe-form {
     display: flex;
@@ -289,19 +331,17 @@ body {
     flex-direction: row;
     justify-content: center;
     width: 100%;
-    max-width: 420px;
-    margin: 0 auto;
 }
 
-/* Input - 40px height (standard) */
+/* Input */
 .subscribe-form input {
     flex: 1;
-    min-width: 120px;
+    min-width: 0;
     height: 48px;
-    padding: 0 var(--space-5);
-    border: 1px solid var(--primary-500);
+    padding: 0 var(--space-4);
+    border: 1px solid rgba(129, 140, 248, 0.3);
     border-radius: var(--radius-md);
-    background: rgba(99, 102, 241, 0.1);
+    background: rgba(15, 23, 42, 0.6);
     color: var(--text-primary);
     font-size: var(--text-base);
     font-weight: var(--font-normal);
@@ -316,9 +356,9 @@ body {
 
 .subscribe-form input:focus {
     outline: none;
-    border-color: var(--border-focus);
-    box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.2);
-    background: rgba(99, 102, 241, 0.15);
+    border-color: var(--secondary-400);
+    box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.15);
+    background: rgba(15, 23, 42, 0.8);
 }
 
 .subscribe-form input:disabled {
@@ -326,16 +366,17 @@ body {
     cursor: not-allowed;
 }
 
-/* Button - 40px height, 48px width (standard) */
+/* Button */
 .subscribe-form button {
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    gap: var(--space-2);
     height: 48px;
     min-width: 140px;
-    padding: 0 var(--space-6);
-    background: linear-gradient(135deg, var(--primary-500), var(--secondary-500));
-    color: var(--text-primary);
+    padding: 0 var(--space-5);
+    background: linear-gradient(135deg, var(--primary-500), #7c3aed);
+    color: white;
     border: none;
     border-radius: var(--radius-md);
     font-size: var(--text-base);
@@ -343,11 +384,18 @@ body {
     line-height: var(--leading-ui);
     cursor: pointer;
     transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.subscribe-form button svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
 }
 
 .subscribe-form button:hover {
     transform: translateY(-2px);
-    box-shadow: var(--shadow-button);
+    box-shadow: 0 8px 24px rgba(99, 102, 241, 0.4);
 }
 
 .subscribe-form button:active {
@@ -441,20 +489,29 @@ body {
         padding: var(--space-4);
     }
     
-.subscribe-form {
+    .subscription-card {
+        padding: var(--space-5);
+    }
+    
+    .subscription-icon {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .subscription-icon svg {
+        width: 20px;
+        height: 20px;
+    }
+    
+    .subscribe-form {
         flex-direction: column;
-        width: 100%;
+        gap: var(--space-3);
     }
     
-    .subscribe-form input {
-        width: 100%;
-        min-width: 100%;
-        height: 48px;
-    }
-    
+    .subscribe-form input,
     .subscribe-form button {
         width: 100%;
-        height: 48px;
+        height: 52px;
     }
 }
 
