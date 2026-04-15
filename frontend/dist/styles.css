@@ -190,6 +190,12 @@ body {
     max-width: 900px;
 }
 
+.main-column {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(16px); }
     to { opacity: 1; transform: translateY(0); }
@@ -407,7 +413,6 @@ body {
 .roadmap {
     width: 100%;
     max-width: 420px;
-    margin-top: var(--space-8);
     padding: 0 var(--space-3);
     box-sizing: border-box;
     text-align: left;
