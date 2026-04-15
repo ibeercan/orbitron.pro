@@ -29,8 +29,8 @@ USER app
 # Expose port
 EXPOSE 8000
 
-# Set Python path
-ENV PYTHONPATH=/app
+# Set Python path to backend directory
+ENV PYTHONPATH=/app/backend
 
 # Run the application
 CMD ["uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", "8000"]
