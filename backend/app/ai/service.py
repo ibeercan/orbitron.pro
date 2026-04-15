@@ -2,6 +2,8 @@ from datetime import datetime, timedelta
 from typing import Optional
 
 from pydantic_ai import Agent
+from pydantic_ai.models import Model
+from pydantic_ai.models.openai import OpenAIModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 
@@ -10,14 +12,41 @@ from app.models.request import RequestLog
 from app.models.user import User, SubscriptionType
 
 
-class AIService:
-    def __init__(self):
-        self.agent = Agent(
-            settings.AI_MODEL,
+def create_ai_agent() -> Agent:
+    """Create AI agent with proper model initialization."""
+    if not settings.AI_API_KEY:
+        raise ValueError("AI_API_KEY is not configured")
+    
+    model_name = settings.AI_MODEL
+    
+    # Try to create with OpenAI model (works with custom base_url)
+    try:
+        model = OpenAIModel(
+            model_name=model_name,
             api_key=settings.AI_API_KEY,
             base_url=settings.AI_BASE_URL,
-            system_prompt="You are an expert astrologer. Interpret natal charts based on provided data."
         )
+    except Exception as e:
+        logger.warning("Failed to create OpenAI model, trying generic", error=str(e))
+        # Fallback - will use pydantic-ai's infer_model
+        model = model_name
+    
+    return Agent(
+        model,
+        system_prompt="You are an expert astrologer. Interpret natal charts based on provided data."
+    )
+
+
+class AIService:
+    def __init__(self):
+        self._agent: Optional[Agent] = None
+    
+    @property
+    def agent(self) -> Agent:
+        """Lazy initialization of AI agent."""
+        if self._agent is None:
+            self._agent = create_ai_agent()
+        return self._agent
 
     async def check_ai_limit(self, db: AsyncSession, user: User) -> bool:
         """Check if user has reached AI request limit."""
