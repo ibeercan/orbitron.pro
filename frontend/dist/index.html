@@ -67,26 +67,21 @@
 
         <!-- Subscription Form -->
         <section class="subscription">
-            <div class="subscription-card">
-                <div class="subscription-icon">
+            <h2>Подпишитесь на запуск</h2>
+            <p>Получите <span class="highlight">1 месяц премиум</span> бесплатно при запуске</p>
+            <form id="subscribe-form" class="subscribe-form">
+                <input type="email" id="email" placeholder="Ваш email" required>
+                <button type="submit">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M22 2L11 13"/>
-                        <path d="M22 2L15 22L11 13L2 9L22 2Z"/>
+                        <path d="M12 2L8 8H4L2 10L6 14L4 22H10L12 18L14 22H20L18 14L22 10L20 8H16L12 2Z"/>
+                        <path d="M12 22V14"/>
+                        <path d="M8 14L12 10L16 14"/>
                     </svg>
-                </div>
-                <h2>Подпишитесь на запуск</h2>
-                <p>Получите <span class="highlight">1 месяц премиум</span> бесплатно при запуске</p>
-                <form id="subscribe-form" class="subscribe-form">
-                    <input type="email" id="email" placeholder="Ваш email" required>
-                    <button type="submit">
-                        <span>Подписаться</span>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M5 12h14M12 5l7 7-7 7"/>
-                        </svg>
-                    </button>
-                </form>
-                <div id="message" class="message"></div>
-            </div>
+                    <span>Подписаться</span>
+                </button>
+            </form>
+            <div id="message" class="message"></div>
+        </section>
         </section>
     </main>
     
