@@ -149,20 +149,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const emailInput = document.getElementById('email');
     const toast = document.getElementById('toast');
     
-    function showToast(message, type = 'success') {
-        toast.textContent = message;
-        toast.className = `toast ${type} show`;
-        setTimeout(() => {
-            toast.className = 'toast';
-        }, 4000);
-    }
-    
-    // Subscription form
-    const form = document.getElementById('subscribe-form');
-    const messageEl = document.getElementById('message');
-    const emailInput = document.getElementById('email');
-    const toast = document.getElementById('toast');
-    
     console.log('Form element:', form);
     
     function showToast(message, type = 'success') {
