@@ -106,7 +106,7 @@ async def subscribe_early_access(
     content_type = request.headers.get("content-type", "")
     
     # Handle form-data (application/x-www-form-urlencoded)
-    if "application/x-www-form-urlencoded" in content_type or email is not None:
+    if "application/x-www-form-urlencoded" in content_type:
         if not email:
             raise HTTPException(status_code=400, detail="Email is required")
         
@@ -117,14 +117,15 @@ async def subscribe_early_access(
         return RedirectResponse(url=redirect_url, status_code=303)
     
     # Handle JSON (application/json)
-    if "application/json" in content_type:
-        try:
-            body = await request.body()
+    # Try to read JSON body
+    try:
+        body = await request.body()
+        if body:
             import json
             data = json.loads(body)
             email = data.get("email")
-        except:
-            pass
+    except:
+        pass
     
     # Fallback - check if email was provided via form or in body
     if not email:
