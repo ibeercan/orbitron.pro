@@ -21,6 +21,7 @@ services:
       - "traefik.http.services.backend.loadbalancer.server.port=8000"
     networks:
       - proxy
+      - internal
     depends_on:
       - postgres
       - redis
@@ -51,10 +52,14 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - internal
 
   redis:
     image: redis:7-alpine
     container_name: orbitron-redis
+    networks:
+      - internal
 
 volumes:
   postgres_data:
@@ -62,3 +67,5 @@ volumes:
 networks:
   proxy:
     external: true
+  internal:
+    driver: bridge
