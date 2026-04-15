@@ -27,9 +27,19 @@ logger = structlog.get_logger()
 
 class Settings(BaseSettings):
     # Database
+    POSTGRES_DB: str = "astrology"
     POSTGRES_USER: str = "user"
     POSTGRES_PASSWORD: str = ""
-    DATABASE_URL: str = "postgresql://user:pass@localhost:5432/astrology"
+    DATABASE_URL: Optional[str] = None
+    
+    @property
+    def computed_database_url(self) -> str:
+        """Build DATABASE_URL from individual credentials if not set."""
+        if self.DATABASE_URL:
+            return self.DATABASE_URL
+        if self.POSTGRES_PASSWORD:
+            return f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@postgres:5432/{self.POSTGRES_DB}"
+        return f"postgresql://{self.POSTGRES_USER}@postgres:5432/{self.POSTGRES_DB}"
 
     # JWT
     SECRET_KEY: str = "your-secret-key-change-in-production"

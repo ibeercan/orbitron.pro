@@ -5,7 +5,7 @@ from sqlalchemy.pool import StaticPool
 from app.core.config import settings
 
 # Convert to async URL
-async_database_url = settings.DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://")
+async_database_url = settings.computed_database_url.replace("postgresql://", "postgresql+asyncpg://")
 
 engine = create_async_engine(
     async_database_url,
