@@ -142,4 +142,47 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const shooting = new ShootingStars(shootingCanvas);
     shooting.update();
+    
+    // Subscription form
+    const form = document.getElementById('subscribe-form');
+    const messageEl = document.getElementById('message');
+    
+    if (form) {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const btn = form.querySelector('button');
+            
+            btn.disabled = true;
+            btn.textContent = 'Отправка...';
+            messageEl.className = 'message';
+            messageEl.textContent = '';
+            
+            try {
+                const response = await fetch('https://api.orbitron.pro/api/v1/subscriptions/early-access', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email }),
+                });
+                
+                if (response.ok) {
+                    messageEl.className = 'message success';
+                    messageEl.textContent = 'Спасибо! Вы подписаны на запуск.';
+                    form.reset();
+                } else {
+                    const data = await response.json();
+                    messageEl.className = 'message error';
+                    messageEl.textContent = data.detail || 'Ошибка при отправке';
+                }
+            } catch (err) {
+                messageEl.className = 'message error';
+                messageEl.textContent = 'Ошибка соединения';
+            }
+            
+            btn.disabled = false;
+            btn.textContent = 'Подписаться';
+        });
+    }
 });
