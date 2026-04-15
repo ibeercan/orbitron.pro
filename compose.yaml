@@ -51,14 +51,10 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    networks:
-      - proxy
 
   redis:
     image: redis:7-alpine
     container_name: orbitron-redis
-    networks:
-      - proxy
 
 volumes:
   postgres_data:
