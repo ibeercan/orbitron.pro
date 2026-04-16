@@ -53,6 +53,10 @@ export const subscriptionApi = {
     return api.post('/subscriptions/early-access', { email, invite_code: inviteCode })
   },
 
+  checkEmail: async (email: string) => {
+    return api.post('/subscriptions/check-email', { email })
+  },
+
   checkInvite: async (email: string, inviteCode?: string) => {
     return api.post('/subscriptions/check-invite', { email, invite_code: inviteCode })
   },

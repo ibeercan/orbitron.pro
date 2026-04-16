@@ -9,28 +9,26 @@ interface SubscribeFormData {
   invite_code?: string
 }
 
-interface RegisterFormData {
+interface PasswordFormData {
   password: string
-  confirm_password: string
 }
 
-type Step = 'subscribe' | 'check' | 'register' | 'success'
+type Step = 'email' | 'login' | 'check' | 'register' | 'success'
 
 export default function Landing() {
   const navigate = useNavigate()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const animationRef = useRef<number>(0)
   
-  const [step, setStep] = useState<Step>('subscribe')
+  const [step, setStep] = useState<Step>('email')
   const [email, setEmail] = useState('')
   const [inviteCode, setInviteCode] = useState('')
   const [isPremium, setIsPremium] = useState(false)
   const [message, setMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
-  const { register: registerSubscribe, handleSubmit: handleSubscribeSubmit, formState: { errors: subscribeErrors }, reset: resetSubscribe } = useForm<SubscribeFormData>()
-  const { register: registerForm, handleSubmit: handleRegisterSubmit, formState: { errors: registerErrors }, watch, reset: resetRegister } = useForm<RegisterFormData>()
-  const password = watch('password')
+  const { register: registerEmail, handleSubmit: handleEmailSubmit, formState: { errors: emailErrors }, reset: resetEmail } = useForm<SubscribeFormData>()
+  const { register: registerPassword, handleSubmit: handlePasswordSubmit, formState: { errors: passwordErrors }, reset: resetPassword } = useForm<PasswordFormData>()
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -128,22 +126,35 @@ export default function Landing() {
     }
   }, [])
 
-  const checkInvite = useCallback(async (data: SubscribeFormData) => {
+  const checkEmail = useCallback(async (data: SubscribeFormData) => {
     setIsLoading(true)
     setEmail(data.email)
     setInviteCode(data.invite_code || '')
 
     try {
-      const res = await subscriptionApi.checkInvite(data.email, data.invite_code)
-      const { can_register, is_premium, message: msg } = res.data
+      const res = await subscriptionApi.checkEmail(data.email)
+      const { exists } = res.data
       
-      setMessage(msg)
-      setIsPremium(is_premium)
-      
-      if (can_register) {
-        setStep('register')
+      if (exists) {
+        setStep('login')
+        setMessage('')
       } else {
-        setStep('check')
+        if (data.invite_code) {
+          const inviteRes = await subscriptionApi.checkInvite(data.email, data.invite_code)
+          const { can_register, is_premium, message: inviteMsg } = inviteRes.data
+          
+          setMessage(inviteMsg)
+          setIsPremium(is_premium)
+          
+          if (can_register) {
+            setStep('register')
+          } else {
+            setStep('check')
+          }
+        } else {
+          setStep('check')
+          setMessage('Подпишитесь на рассылку')
+        }
       }
     } catch (error: unknown) {
       const err = error as { response?: { data?: { detail?: string } } }
@@ -154,7 +165,22 @@ export default function Landing() {
     }
   }, [])
 
-  const onRegister = useCallback(async (data: RegisterFormData) => {
+  const onLogin = useCallback(async (data: PasswordFormData) => {
+    setIsLoading(true)
+    setMessage('')
+
+    try {
+      await authApi.login(email, data.password)
+      navigate('/dashboard')
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { detail?: string } } }
+      setMessage(err.response?.data?.detail || 'Неверный пароль')
+    } finally {
+      setIsLoading(false)
+    }
+  }, [email, navigate])
+
+  const onRegister = useCallback(async (data: PasswordFormData) => {
     setIsLoading(true)
     setMessage('')
 
@@ -171,10 +197,10 @@ export default function Landing() {
   }, [email, inviteCode, navigate])
 
   const goBack = () => {
-    setStep('subscribe')
+    setStep('email')
     setMessage('')
-    resetSubscribe()
-    resetRegister()
+    resetEmail()
+    resetPassword()
   }
 
   return (
@@ -224,24 +250,28 @@ export default function Landing() {
           </div>
         ) : (
           <div className="w-full max-w-xs animate-fade-in">
-            {step === 'subscribe' && (
+            {(step === 'email' || step === 'check') && (
               <>
                 <div className="mb-6 text-center">
                   <h2 className="text-xl font-semibold text-white mb-1">Узнайте первыми</h2>
                   <p className="text-sm text-gray-400">
-                    {isPremium ? (
-                      <span className="text-secondary-400 font-semibold">Premium аккаунт при регистрации</span>
+                    {step === 'email' ? (
+                      isPremium ? (
+                        <span className="text-secondary-400 font-semibold">Premium аккаунт при регистрации</span>
+                      ) : (
+                        <>Получите <span className="text-secondary-400 font-semibold">Premium</span> по приглашению</>
+                      )
                     ) : (
-                      <>Получите <span className="text-secondary-400 font-semibold">Premium</span> по приглашению</>
+                      message
                     )}
                   </p>
                 </div>
 
-                <form onSubmit={handleSubscribeSubmit(checkInvite)} className="flex flex-col gap-3">
+                <form onSubmit={handleEmailSubmit(checkEmail)} className="flex flex-col gap-3">
                   <input
                     type="email"
                     placeholder="Ваш email"
-                    {...registerSubscribe('email', {
+                    {...registerEmail('email', {
                       required: 'Email обязателен',
                       pattern: {
                         value: /^[\w.-]+@[\w.-]+\.\w+$/,
@@ -254,17 +284,17 @@ export default function Landing() {
                       'hover:border-white/40',
                       'focus:border-secondary-500 focus:ring-2 focus:ring-secondary-500/20',
                       'disabled:opacity-50',
-                      subscribeErrors.email ? 'border-red-500' : 'border-white/20'
+                      emailErrors.email ? 'border-red-500' : 'border-white/20'
                     )}
                   />
-                  {subscribeErrors.email && (
-                    <p className="text-sm text-red-500">{subscribeErrors.email.message}</p>
+                  {emailErrors.email && (
+                    <p className="text-sm text-red-500">{emailErrors.email.message}</p>
                   )}
 
                   <input
                     type="text"
                     placeholder="Код приглашения (если есть)"
-                    {...registerSubscribe('invite_code')}
+                    {...registerEmail('invite_code')}
                     className="h-12 w-full rounded-md border border-white/20 bg-white/5 px-4 text-white placeholder-gray-500 transition-all duration-200 hover:border-white/40 focus:border-secondary-500 focus:ring-2 focus:ring-secondary-500/20"
                   />
 
@@ -282,22 +312,74 @@ export default function Landing() {
                       'Продолжить'
                     )}
                   </button>
+
+                  {step === 'check' && (
+                    <button
+                      type="button"
+                      onClick={goBack}
+                      className="text-secondary-400 hover:underline text-sm"
+                    >
+                      Назад
+                    </button>
+                  )}
                 </form>
               </>
             )}
 
-            {step === 'check' && (
-              <div className="text-center">
-                <div className="mb-4 rounded-md border border-yellow-500/30 bg-yellow-500/10 px-4 py-3 text-yellow-400">
-                  {message || 'Проверьте введенные данные'}
+            {step === 'login' && (
+              <>
+                <div className="mb-6 text-center">
+                  <h2 className="text-xl font-semibold text-white mb-1">Вход</h2>
+                  <p className="text-sm text-gray-400">Введите пароль</p>
                 </div>
-                <button
-                  onClick={goBack}
-                  className="text-secondary-400 hover:underline"
-                >
-                  Назад
-                </button>
-              </div>
+
+                <div className="mb-4 rounded-md border border-secondary-500/30 bg-secondary-500/10 px-3 py-2 text-sm text-secondary-400">
+                  {email}
+                </div>
+
+                <form onSubmit={handlePasswordSubmit(onLogin)} className="flex flex-col gap-3">
+                  <input
+                    type="password"
+                    placeholder="Пароль"
+                    {...registerPassword('password', {
+                      required: 'Пароль обязателен',
+                    })}
+                    className={cn(
+                      'h-12 w-full rounded-md border bg-white/5 px-4 text-white placeholder-gray-500',
+                      'transition-all duration-200',
+                      'hover:border-white/40',
+                      'focus:border-secondary-500 focus:ring-2 focus:ring-secondary-500/20',
+                      passwordErrors.password ? 'border-red-500' : 'border-white/20'
+                    )}
+                  />
+                  {passwordErrors.password && (
+                    <p className="text-sm text-red-500">{passwordErrors.password.message}</p>
+                  )}
+
+                  {message && (
+                    <div className="rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-500">
+                      {message}
+                    </div>
+                  )}
+
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={goBack}
+                      className="h-12 flex-1 rounded-md border border-white/20 px-4 text-gray-400 transition-all hover:border-white/40 hover:text-white"
+                    >
+                      Назад
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isLoading}
+                      className="h-12 flex-1 rounded-md bg-secondary-400 px-6 font-semibold text-gray-900 transition-all duration-200 hover:bg-secondary-300 disabled:opacity-50"
+                    >
+                      {isLoading ? 'Вход...' : 'Войти'}
+                    </button>
+                  </div>
+                </form>
+              </>
             )}
 
             {step === 'register' && (
@@ -317,11 +399,11 @@ export default function Landing() {
                   {email}
                 </div>
 
-                <form onSubmit={handleRegisterSubmit(onRegister)} className="flex flex-col gap-3">
+                <form onSubmit={handlePasswordSubmit(onRegister)} className="flex flex-col gap-3">
                   <input
                     type="password"
                     placeholder="Пароль"
-                    {...registerForm('password', {
+                    {...registerPassword('password', {
                       required: 'Пароль обязателен',
                       minLength: {
                         value: 6,
@@ -333,31 +415,11 @@ export default function Landing() {
                       'transition-all duration-200',
                       'hover:border-white/40',
                       'focus:border-secondary-500 focus:ring-2 focus:ring-secondary-500/20',
-                      registerErrors.password ? 'border-red-500' : 'border-white/20'
+                      passwordErrors.password ? 'border-red-500' : 'border-white/20'
                     )}
                   />
-                  {registerErrors.password && (
-                    <p className="text-sm text-red-500">{registerErrors.password.message}</p>
-                  )}
-
-                  <input
-                    type="password"
-                    placeholder="Подтвердите пароль"
-                    {...registerForm('confirm_password', {
-                      required: 'Подтвердите пароль',
-                      validate: (value) =>
-                        value === password || 'Пароли не совпадают',
-                    })}
-                    className={cn(
-                      'h-12 w-full rounded-md border bg-white/5 px-4 text-white placeholder-gray-500',
-                      'transition-all duration-200',
-                      'hover:border-white/40',
-                      'focus:border-secondary-500 focus:ring-2 focus:ring-secondary-500/20',
-                      registerErrors.confirm_password ? 'border-red-500' : 'border-white/20'
-                    )}
-                  />
-                  {registerErrors.confirm_password && (
-                    <p className="text-sm text-red-500">{registerErrors.confirm_password.message}</p>
+                  {passwordErrors.password && (
+                    <p className="text-sm text-red-500">{passwordErrors.password.message}</p>
                   )}
 
                   {message && (

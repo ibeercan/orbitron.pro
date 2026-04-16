@@ -22,6 +22,11 @@ class CheckInviteResponse(BaseModel):
     message: str
 
 
+class CheckEmailResponse(BaseModel):
+    exists: bool
+    message: str
+
+
 @router.get("/me")
 async def get_subscription(
     *,
@@ -35,6 +40,32 @@ async def get_subscription(
         "subscription_type": current_user.subscription_type,
         "subscription_end": current_user.subscription_end.isoformat() if current_user.subscription_end else None,
     }
+
+
+@router.post("/check-email", response_model=CheckEmailResponse)
+async def check_email(
+    *,
+    db: AsyncSession = Depends(get_db),
+    email: str,
+) -> Any:
+    """
+    Check if email already exists as a user.
+    """
+    from app.auth.crud import user as user_crud
+    
+    email = email.strip().lower()
+    
+    existing_user = await user_crud.get_by_email(db, email=email)
+    if existing_user:
+        return CheckEmailResponse(
+            exists=True,
+            message="Введите пароль"
+        )
+    
+    return CheckEmailResponse(
+        exists=False,
+        message="Продолжите"
+    )
 
 
 @router.post("/check-invite", response_model=CheckInviteResponse)
