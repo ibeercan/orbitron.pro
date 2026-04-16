@@ -14,7 +14,12 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      window.location.href = '/login'
+      const isAuthEndpoint = error.config?.url?.includes('/auth/me')
+      const isAuthPage = window.location.pathname === '/login' || window.location.pathname === '/register'
+      
+      if (!isAuthEndpoint && !isAuthPage) {
+        window.location.href = '/login'
+      }
     }
     return Promise.reject(error)
   }
