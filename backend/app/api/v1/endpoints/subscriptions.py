@@ -69,11 +69,10 @@ async def _process_subscription(
     """
     Process subscription and return (success, message).
     """
-    from pydantic import EmailStr, ValidationError
+    import re
     
-    try:
-        email = EmailStr(email)
-    except ValidationError:
+    email = email.strip()
+    if not email or not re.match(r'^[\w\.-]+@[\w\.-]+\.\w+$', email):
         return False, "Некорректный email"
     
     logger.info("Early access subscription", email=email)
