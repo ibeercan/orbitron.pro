@@ -65,16 +65,54 @@ async def upgrade_subscription(
 async def _process_subscription(
     db: AsyncSession,
     email: str,
-) -> tuple[bool, str]:
+    invite_code: Optional[str] = None,
+) -> tuple[str, str]:
     """
-    Process subscription and return (success, message).
+    Process subscription and return (status, message).
+    Status can be: "success", "already", "error", "activated"
     """
     import re
+    from app.invites import crud as invite_crud
     
-    email = email.strip()
+    email = email.strip().lower()
     if not email or not re.match(r'^[\w\.-]+@[\w\.-]+\.\w+$', email):
-        return False, "Некорректный email"
+        return "error", "Некорректный email"
     
+    # Check if invite code is provided
+    if invite_code:
+        code_record = await invite_crud.invite_code.get_by_code(db, code=invite_code)
+        
+        if not code_record:
+            logger.info("Invalid invite code", code=invite_code)
+            return "error", "Неверный код приглашения"
+        
+        if code_record.used:
+            logger.info("Invite code already used", code=invite_code)
+            return "error", "Код уже использован"
+        
+        if code_record.email != email:
+            logger.info("Invite code email mismatch", code=invite_code, provided_email=email, code_email=code_record.email)
+            return "error", "Код приглашения не соответствует email"
+        
+        # Mark code as used
+        await invite_crud.invite_code.mark_used(db, code_record)
+        logger.info("Invite code activated", code=invite_code, email=email)
+        
+        # Check if already subscribed
+        existing = await early_subscriber_crud.get_by_email(db, email=email)
+        if existing:
+            return "already", "Аккаунт активирован по приглашению!"
+        
+        # Create subscription
+        try:
+            await early_subscriber_crud.create(db, obj_in={"email": email})
+            logger.info("Early access created with invite", email=email)
+            return "success", "Добро пожаловать! Ваш аккаунт активирован."
+        except Exception as e:
+            logger.error("Failed to create early subscription with invite", email=email, error=str(e))
+            return "error", "Ошибка при активации. Попробуйте позже."
+    
+    # No invite code - regular subscription
     logger.info("Early access subscription", email=email)
 
     # Check if already subscribed
@@ -97,6 +135,7 @@ async def subscribe_early_access(
     request: Request,
     db: AsyncSession = Depends(get_db),
     email: Optional[str] = Form(None),
+    invite_code: Optional[str] = Form(None),
 ) -> Any:
     """
     Subscribe for early access (landing page).
@@ -109,7 +148,7 @@ async def subscribe_early_access(
         if not email:
             raise HTTPException(status_code=400, detail="Email is required")
         
-        status, message = await _process_subscription(db, email)
+        status, message = await _process_subscription(db, email, invite_code)
         
         params = {"subscribed": status, "message": message}
         redirect_url = f"https://orbitron.pro/?{urlencode(params)}"
@@ -123,6 +162,7 @@ async def subscribe_early_access(
             import json
             data = json.loads(body)
             email = data.get("email")
+            invite_code = invite_code or data.get("invite_code")
     except:
         pass
     
@@ -131,7 +171,7 @@ async def subscribe_early_access(
         raise HTTPException(status_code=400, detail="Email is required")
     
     # JSON response path
-    status, message = await _process_subscription(db, email)
+    status, message = await _process_subscription(db, email, invite_code)
     
     if status == "success":
         return SubscribeResponse(
