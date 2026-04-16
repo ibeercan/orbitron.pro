@@ -178,10 +178,5 @@ async def subscribe_early_access(
             message="Спасибо! Вы подписаны.",
             success=True
         )
-    elif status == "already":
-        return SubscribeResponse(
-            message="Этот email уже подписан на ранний доступ.",
-            success=True
-        )
     else:
         raise HTTPException(status_code=400, detail=message)
