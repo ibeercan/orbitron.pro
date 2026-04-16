@@ -21,8 +21,14 @@ async def generate_invite_code(
     invite_in: InviteCodeCreate,
 ) -> Any:
     """
-    Generate a new invite code (requires authentication).
+    Generate a new invite code (admin only).
     """
+    if not current_user.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only admins can generate invite codes"
+        )
+    
     logger.info("Generating invite code", email=invite_in.email, user_id=current_user.id)
     
     existing = await invite_crud.invite_code.get_by_email(db, email=invite_in.email)
@@ -43,8 +49,14 @@ async def list_invite_codes(
     current_user: User = Depends(get_current_active_user),
 ) -> Any:
     """
-    List all invite codes (requires authentication).
+    List all invite codes (admin only).
     """
+    if not current_user.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only admins can view invite codes"
+        )
+    
     logger.info("Listing invite codes", user_id=current_user.id)
     
     codes = await invite_crud.invite_code.get_all(db)

@@ -21,6 +21,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy backend source code
 COPY backend/ ./backend/
 
+# Create entrypoint script
+RUN echo '#!/bin/bash\nalembic upgrade head\nexec "$@"' > /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
 # Create non-root user
 RUN useradd --create-home --shell /bin/bash app \
     && chown -R app:app /app
@@ -33,5 +37,6 @@ EXPOSE 8000
 WORKDIR /app/backend
 ENV PYTHONPATH=/app/backend
 
-# Run the application
+# Run migrations and then the application
+ENTRYPOINT ["/entrypoint.sh"]
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

@@ -14,6 +14,7 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)
+    is_admin = Column(Boolean, default=False)
     subscription_type = Column(Enum(SubscriptionType), default=SubscriptionType.FREE)
     subscription_end = Column(DateTime, nullable=True)
     is_active = Column(Boolean, default=True)
