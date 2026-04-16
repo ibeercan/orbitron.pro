@@ -3,13 +3,12 @@ from datetime import datetime
 
 
 class InviteCodeCreate(BaseModel):
-    email: str
+    pass
 
 
 class InviteCodeResponse(BaseModel):
     id: int
     code: str
-    email: str
     used: bool
     used_email: str | None = None
     created_at: datetime

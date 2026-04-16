@@ -18,7 +18,6 @@ async def generate_invite_code(
     *,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
-    invite_in: InviteCodeCreate,
 ) -> Any:
     """
     Generate a new invite code (admin only).
@@ -29,15 +28,10 @@ async def generate_invite_code(
             detail="Only admins can generate invite codes"
         )
     
-    logger.info("Generating invite code", email=invite_in.email, user_id=current_user.id)
+    logger.info("Generating invite code", user_id=current_user.id)
     
-    existing = await invite_crud.invite_code.get_by_email(db, email=invite_in.email)
-    if existing and not existing.used:
-        logger.info("Invite code already exists for email", email=invite_in.email)
-        return existing
-    
-    code = await invite_crud.invite_code.create(db, obj_in=invite_in)
-    logger.info("Invite code created", code=code.code, email=code.email)
+    code = await invite_crud.invite_code.create(db)
+    logger.info("Invite code created", code=code.code)
     
     return code
 

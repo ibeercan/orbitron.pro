@@ -17,22 +17,13 @@ class CRUDInviteCode:
         )
         return result.scalars().first()
     
-    async def get_by_email(self, db: AsyncSession, *, email: str) -> Optional[InviteCode]:
-        result = await db.execute(
-            select(InviteCode).where(InviteCode.email == email.lower())
-        )
-        return result.scalars().first()
-    
     async def get_all(self, db: AsyncSession) -> list[InviteCode]:
         result = await db.execute(select(InviteCode).order_by(InviteCode.created_at.desc()))
         return list(result.scalars().all())
     
-    async def create(self, db: AsyncSession, *, obj_in: InviteCodeCreate) -> InviteCode:
+    async def create(self, db: AsyncSession) -> InviteCode:
         code = self.generate_code()
-        db_obj = InviteCode(
-            code=code,
-            email=obj_in.email.lower()
-        )
+        db_obj = InviteCode(code=code)
         db.add(db_obj)
         await db.commit()
         await db.refresh(db_obj)
