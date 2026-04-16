@@ -1,7 +1,7 @@
 from datetime import timedelta
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Response
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -14,12 +14,29 @@ from app.auth.deps import get_current_active_user
 
 router = APIRouter()
 
+COOKIE_NAME = "access_token"
+COOKIE_MAX_AGE = 60 * settings.ACCESS_TOKEN_EXPIRE_MINUTES
+
+
+def create_cookie_response(token: str, response: Response) -> Response:
+    response.set_cookie(
+        key=COOKIE_NAME,
+        value=token,
+        max_age=COOKIE_MAX_AGE,
+        httponly=True,
+        samesite="lax",
+        secure=settings.COOKIE_SECURE,
+        domain=settings.COOKIE_DOMAIN,
+    )
+    return response
+
 
 @router.post("/register", response_model=User)
 async def register(
     *,
     db: AsyncSession = Depends(get_db),
     user_in: UserCreate,
+    response: Response,
 ) -> Any:
     """
     Register a new user.
@@ -31,12 +48,21 @@ async def register(
             detail="The user with this email already exists in the system.",
         )
     user = await user_crud.create(db, obj_in=user_in)
+    
+    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        user.email, expires_delta=access_token_expires
+    )
+    create_cookie_response(access_token, response)
+    
     return user
 
 
 @router.post("/login", response_model=Token)
 async def login(
-    db: AsyncSession = Depends(get_db), form_data: OAuth2PasswordRequestForm = Depends()
+    db: AsyncSession = Depends(get_db),
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    response: Response = None,
 ) -> Any:
     """
     OAuth2 compatible token login, get an access token for future requests.
@@ -54,10 +80,12 @@ async def login(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive user"
         )
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        user.email, expires_delta=access_token_expires
+    )
+    create_cookie_response(access_token, response)
     return {
-        "access_token": create_access_token(
-            user.email, expires_delta=access_token_expires
-        ),
+        "access_token": access_token,
         "token_type": "bearer",
     }
 
@@ -81,3 +109,15 @@ async def read_users_me(current_user: User = Depends(get_current_active_user)) -
     Get current user.
     """
     return current_user
+
+
+@router.post("/logout")
+async def logout(response: Response) -> dict:
+    """
+    Logout user by clearing the cookie.
+    """
+    response.delete_cookie(
+        key=COOKIE_NAME,
+        domain=settings.COOKIE_DOMAIN,
+    )
+    return {"message": "Logged out successfully"}

@@ -57,6 +57,10 @@ class Settings(BaseSettings):
 
     # Security
     ALLOWED_ORIGINS: List[str] = ["https://orbitron.pro"]
+    
+    # Cookies
+    COOKIE_DOMAIN: Optional[str] = None
+    COOKIE_SECURE: bool = True
 
     # Subscription limits
     FREE_AI_REQUESTS_PER_MONTH: int = 5

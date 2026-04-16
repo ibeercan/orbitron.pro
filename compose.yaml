@@ -14,6 +14,8 @@ services:
       - AI_MODEL=${AI_MODEL}
       - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - COOKIE_DOMAIN=${COOKIE_DOMAIN:-orbitron.pro}
+      - COOKIE_SECURE=${COOKIE_SECURE:-true}
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.backend.rule=Host(`api.orbitron.pro`)"
@@ -29,11 +31,10 @@ services:
     restart: unless-stopped
 
   frontend:
-    image: nginx:alpine
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
     container_name: frontend
-    volumes:
-      - ./frontend/dist:/usr/share/nginx/html:ro
-      - ./frontend/nginx.conf:/etc/nginx/nginx.conf:ro
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.frontend.rule=Host(`orbitron.pro`)"
