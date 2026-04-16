@@ -13,6 +13,7 @@ class TokenData(BaseModel):
 class UserCreate(BaseModel):
     email: EmailStr
     password: str
+    invite_code: str | None = None
 
 
 class UserLogin(BaseModel):

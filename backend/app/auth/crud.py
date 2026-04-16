@@ -18,10 +18,13 @@ class CRUDUser:
         result = await db.execute(select(User).where(User.id == id))
         return result.scalars().first()
 
-    async def create(self, db: AsyncSession, *, obj_in: UserCreate) -> User:
+    async def create(self, db: AsyncSession, *, obj_in: UserCreate, is_premium: bool = False) -> User:
+        from app.models.user import SubscriptionType
+        
         db_obj = User(
             email=obj_in.email,
             hashed_password=get_password_hash(obj_in.password),
+            subscription_type=SubscriptionType.PREMIUM if is_premium else SubscriptionType.FREE,
         )
         db.add(db_obj)
         try:

@@ -11,4 +11,5 @@ class InviteCode(Base):
     code = Column(String(10), unique=True, nullable=False, index=True)
     email = Column(String(255), nullable=False)
     used = Column(Boolean, default=False)
+    used_email = Column(String(255), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

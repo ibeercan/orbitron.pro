@@ -11,6 +11,7 @@ class InviteCodeResponse(BaseModel):
     code: str
     email: str
     used: bool
+    used_email: str | None = None
     created_at: datetime
     
     class Config:

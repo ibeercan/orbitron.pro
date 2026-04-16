@@ -40,6 +40,7 @@ async def register(
 ) -> Any:
     """
     Register a new user.
+    Optional invite_code gives Premium subscription.
     """
     user = await user_crud.get_by_email(db, email=user_in.email)
     if user:
@@ -47,7 +48,27 @@ async def register(
             status_code=400,
             detail="The user with this email already exists in the system.",
         )
-    user = await user_crud.create(db, obj_in=user_in)
+    
+    is_premium = False
+    if user_in.invite_code:
+        from app.invites import crud as invite_crud
+        invite = await invite_crud.invite_code.get_by_code(db, code=user_in.invite_code)
+        if not invite:
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid invite code.",
+            )
+        if invite.used:
+            raise HTTPException(
+                status_code=400,
+                detail="Invite code already used.",
+            )
+        is_premium = True
+    
+    user = await user_crud.create(db, obj_in=user_in, is_premium=is_premium)
+    
+    if is_premium and invite:
+        await invite_crud.invite_code.mark_used_with_email(db, invite, user.email)
     
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(

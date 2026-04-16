@@ -3,6 +3,7 @@ from urllib.parse import urlencode
 
 from fastapi import APIRouter, Depends, HTTPException, Form, Request
 from fastapi.responses import RedirectResponse
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
@@ -13,6 +14,12 @@ from app.subscriptions.crud import early_subscriber as early_subscriber_crud
 from app.core.config import logger
 
 router = APIRouter()
+
+
+class CheckInviteResponse(BaseModel):
+    can_register: bool
+    is_premium: bool
+    message: str
 
 
 @router.get("/me")
@@ -28,6 +35,76 @@ async def get_subscription(
         "subscription_type": current_user.subscription_type,
         "subscription_end": current_user.subscription_end.isoformat() if current_user.subscription_end else None,
     }
+
+
+@router.post("/check-invite", response_model=CheckInviteResponse)
+async def check_invite(
+    *,
+    db: AsyncSession = Depends(get_db),
+    email: str,
+    invite_code: Optional[str] = None,
+) -> Any:
+    """
+    Check if invite code is valid for the given email.
+    Returns whether user can register and if they'll get Premium.
+    """
+    from app.auth.crud import user as user_crud
+    
+    email = email.strip().lower()
+    
+    existing_user = await user_crud.get_by_email(db, email=email)
+    if existing_user:
+        return CheckInviteResponse(
+            can_register=False,
+            is_premium=False,
+            message="Аккаунт уже существует"
+        )
+    
+    if not invite_code:
+        existing_subscriber = await early_subscriber_crud.get_by_email(db, email=email)
+        if existing_subscriber:
+            return CheckInviteResponse(
+                can_register=False,
+                is_premium=False,
+                message="Вы уже подписаны на рассылку"
+            )
+        return CheckInviteResponse(
+            can_register=False,
+            is_premium=False,
+            message="Подпишитесь на рассылку"
+        )
+    
+    from app.invites import crud as invite_crud
+    
+    code_record = await invite_crud.invite_code.get_by_code(db, code=invite_code)
+    
+    if not code_record:
+        return CheckInviteResponse(
+            can_register=False,
+            is_premium=False,
+            message="Инвайт недействителен"
+        )
+    
+    if code_record.used:
+        return CheckInviteResponse(
+            can_register=False,
+            is_premium=False,
+            message="Код уже использован"
+        )
+    
+    existing_subscriber = await early_subscriber_crud.get_by_email(db, email=email)
+    if existing_subscriber:
+        return CheckInviteResponse(
+            can_register=True,
+            is_premium=True,
+            message="У вас уже есть подписка. Создать Premium аккаунт?"
+        )
+    
+    return CheckInviteResponse(
+        can_register=True,
+        is_premium=True,
+        message="Валидный инвайт"
+    )
 
 
 @router.post("/upgrade")

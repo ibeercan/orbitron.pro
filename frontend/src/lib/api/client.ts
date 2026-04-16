@@ -35,8 +35,8 @@ export const authApi = {
     })
   },
 
-  register: async (email: string, password: string) => {
-    return api.post('/auth/register', { email, password })
+  register: async (email: string, password: string, inviteCode?: string) => {
+    return api.post('/auth/register', { email, password, invite_code: inviteCode })
   },
 
   logout: async () => {
@@ -51,6 +51,10 @@ export const authApi = {
 export const subscriptionApi = {
   earlyAccess: async (email: string, inviteCode?: string) => {
     return api.post('/subscriptions/early-access', { email, invite_code: inviteCode })
+  },
+
+  checkInvite: async (email: string, inviteCode?: string) => {
+    return api.post('/subscriptions/check-invite', { email, invite_code: inviteCode })
   },
 
   getSubscription: async () => {

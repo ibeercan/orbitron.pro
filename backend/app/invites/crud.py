@@ -44,6 +44,14 @@ class CRUDInviteCode:
         await db.commit()
         await db.refresh(code)
         return code
+    
+    async def mark_used_with_email(self, db: AsyncSession, code: InviteCode, email: str) -> InviteCode:
+        code.used = True
+        code.used_email = email.lower()
+        db.add(code)
+        await db.commit()
+        await db.refresh(code)
+        return code
 
 
 invite_code = CRUDInviteCode()
