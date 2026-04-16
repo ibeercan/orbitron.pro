@@ -81,15 +81,15 @@ async def _process_subscription(
     existing = await early_subscriber_crud.get_by_email(db, email=email)
     if existing:
         logger.info("Email already subscribed", email=email)
-        return True, "Этот email уже подписан на ранний доступ."
+        return "already", "Этот email уже подписан на ранний доступ."
 
     try:
         await early_subscriber_crud.create(db, obj_in={"email": email})
         logger.info("Early access subscription created", email=email)
-        return True, "Спасибо! Вы подписаны."
+        return "success", "Спасибо! Вы подписаны."
     except Exception as e:
         logger.error("Failed to create early subscription", email=email, error=str(e))
-        return False, "Ошибка при подписке. Попробуйте позже."
+        return "error", "Ошибка при подписке. Попробуйте позже."
 
 
 @router.post("/early-access", response_model=SubscribeResponse)
@@ -109,9 +109,9 @@ async def subscribe_early_access(
         if not email:
             raise HTTPException(status_code=400, detail="Email is required")
         
-        success, message = await _process_subscription(db, email)
+        status, message = await _process_subscription(db, email)
         
-        params = {"subscribed": "success" if success else "error", "message": message}
+        params = {"subscribed": status, "message": message}
         redirect_url = f"https://orbitron.pro/?{urlencode(params)}"
         return RedirectResponse(url=redirect_url, status_code=303)
     
@@ -131,11 +131,16 @@ async def subscribe_early_access(
         raise HTTPException(status_code=400, detail="Email is required")
     
     # JSON response path
-    success, message = await _process_subscription(db, email)
+    status, message = await _process_subscription(db, email)
     
-    if success:
+    if status == "success":
         return SubscribeResponse(
             message="Спасибо! Вы подписаны.",
+            success=True
+        )
+    elif status == "already":
+        return SubscribeResponse(
+            message="Этот email уже подписан на ранний доступ.",
             success=True
         )
     else:

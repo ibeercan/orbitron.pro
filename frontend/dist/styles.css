@@ -403,6 +403,12 @@ body {
     border: 1px solid rgba(239, 68, 68, 0.2);
 }
 
+.message.info {
+    color: var(--secondary-400);
+    background: rgba(34, 211, 238, 0.1);
+    border: 1px solid rgba(34, 211, 238, 0.2);
+}
+
 /* ============================================
    RESPONSIVE BREAKPOINTS
    ============================================ */

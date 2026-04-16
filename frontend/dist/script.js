@@ -158,6 +158,10 @@ document.addEventListener('DOMContentLoaded', () => {
         messageEl.textContent = message || 'Спасибо! Вы подписаны.';
         // Clear URL params
         window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (subscribed === 'already') {
+        messageEl.className = 'message info';
+        messageEl.textContent = message || 'Этот email уже подписан.';
+        window.history.replaceState({}, document.title, window.location.pathname);
     } else if (subscribed === 'error') {
         messageEl.className = 'message error';
         messageEl.textContent = message || 'Ошибка при подписке.';
