@@ -109,3 +109,18 @@ export const inviteApi = {
     return api.get('/invites')
   },
 }
+
+export const chatApi = {
+  listSessions: async () => {
+    return api.get('/chat')
+  },
+  getSession: async (sessionId: number) => {
+    return api.get(`/chat/${sessionId}`)
+  },
+  startChat: async (chartId: string) => {
+    return api.post(`/chat/chart/${chartId}/start`)
+  },
+  sendMessage: async (sessionId: number, content: string) => {
+    return api.post(`/chat/${sessionId}/messages`, { content })
+  },
+}

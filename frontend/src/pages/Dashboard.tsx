@@ -1,7 +1,10 @@
-import { useState, useRef, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { useAuth } from '@/contexts/auth-context'
-import { chartsApi, aiApi, inviteApi } from '@/lib/api/client'
+import { useState, useEffect } from 'react'
+import { chartsApi } from '@/lib/api/client'
+import { AppLayout } from '@/components/layout/AppLayout'
+import { Sidebar } from '@/components/layout/Sidebar'
+import { ProfileSlideOver } from '@/components/layout/ProfileSlideOver'
+import { AIChat } from '@/components/chat/AIChat'
+import { Plus, MapPin, Calendar, Loader2, Sparkles } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface Chart {
@@ -13,33 +16,17 @@ interface Chart {
   created_at: string
 }
 
-interface ChatMessage {
-  id: string
-  role: 'user' | 'assistant'
-  content: string
-}
-
 export default function Dashboard() {
-  const navigate = useNavigate()
-  const { user, logout } = useAuth()
   const [charts, setCharts] = useState<Chart[]>([])
   const [selectedChart, setSelectedChart] = useState<Chart | null>(null)
   const [svgContent, setSvgContent] = useState<string>('')
-  const [messages, setMessages] = useState<ChatMessage[]>([])
-  const [input, setInput] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
   const [isCreatingChart, setIsCreatingChart] = useState(false)
-  const [inviteCodes, setInviteCodes] = useState<{ code: string; used: boolean }[]>([])
-  const [showInviteModal, setShowInviteModal] = useState(false)
-  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const [showProfile, setShowProfile] = useState(false)
+  const [chatSessionId, setChatSessionId] = useState<number | null>(null)
 
   useEffect(() => {
     loadCharts()
   }, [])
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
 
   const loadCharts = async () => {
     try {
@@ -64,38 +51,9 @@ export default function Dashboard() {
     loadChartSvg(chart.id)
   }
 
-  const sendMessage = async () => {
-    if (!input.trim() || !selectedChart || isLoading) return
-
-    const userMessage: ChatMessage = {
-      id: Date.now().toString(),
-      role: 'user',
-      content: input,
-    }
-
-    setMessages((prev) => [...prev, userMessage])
-    setInput('')
-    setIsLoading(true)
-
-    try {
-      const res = await aiApi.interpret(selectedChart.id, input, 'chat')
-      const assistantMessage: ChatMessage = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: res.data.interpretation,
-      }
-      setMessages((prev) => [...prev, assistantMessage])
-    } catch (err) {
-      console.error('AI interpret failed:', err)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
   const createChart = async () => {
     setIsCreatingChart(true)
     try {
-      // Demo: create chart with sample data
       await chartsApi.create({
         datetime: '2000-01-01T12:00:00',
         location: 'Moscow, Russia',
@@ -112,223 +70,145 @@ export default function Dashboard() {
     }
   }
 
-  const handleLogout = async () => {
-    await logout()
-    navigate('/')
-  }
-
   return (
-    <div className="flex min-h-screen bg-background">
-      {/* Sidebar */}
-      <aside className="w-64 border-r border-white/10 bg-white/5 p-4">
-        <div className="mb-6 flex items-center gap-3">
-          <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary-400 to-secondary-400" />
-          <div>
-            <p className="font-medium text-white">{user?.email}</p>
-            <p className="text-xs text-gray-500">
-              {user?.is_admin ? 'Admin' : user?.subscription_type === 'premium' ? 'Premium' : 'Free'}
-            </p>
-          </div>
-        </div>
+    <AppLayout>
+      <div className="flex h-screen">
+        {/* Sidebar - desktop only */}
+        <Sidebar 
+          onProfileClick={() => setShowProfile(true)} 
+        />
 
-        <nav className="space-y-2">
-          <button className="w-full rounded-md bg-white/10 px-4 py-2 text-left text-white">
-            Мои карты
-          </button>
-          {user?.is_admin && (
-            <button
-              onClick={async () => {
-                try {
-                  const res = await inviteApi.list()
-                  setInviteCodes(res.data.codes)
-                  setShowInviteModal(true)
-                } catch (err) {
-                  console.error('Failed to load invites:', err)
-                }
-              }}
-              className="w-full rounded-md px-4 py-2 text-left text-gray-400 hover:bg-white/5 hover:text-white"
-            >
-              Инвайты
-            </button>
-          )}
-          <button
-            onClick={() => navigate('/profile')}
-            className="w-full rounded-md px-4 py-2 text-left text-gray-400 hover:bg-white/5 hover:text-white"
-          >
-            Профиль
-          </button>
-        </nav>
-
-        <button
-          onClick={handleLogout}
-          className="mt-6 w-full rounded-md border border-white/20 px-4 py-2 text-gray-400 hover:border-red-500/50 hover:text-red-500"
-        >
-          Выйти
-        </button>
-      </aside>
-
-      {/* Main */}
-      <main className="flex-1 flex">
-        {/* Charts List */}
-        <div className="w-80 border-r border-white/10 p-4">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-white">Натальные карты</h2>
+        {/* Main Content */}
+        <main className="flex-1 flex flex-col md:pl-4 p-4 pb-24 md:pb-4 overflow-hidden">
+          {/* Header - mobile only */}
+          <div className="md:hidden flex items-center justify-between mb-4">
+            <h1 className="text-xl font-semibold text-white">Мои карты</h1>
             <button
               onClick={createChart}
               disabled={isCreatingChart}
-              className="rounded-md bg-secondary-400 px-3 py-1 text-sm font-medium text-gray-900 hover:bg-secondary-300 disabled:opacity-50"
+              className="p-2 rounded-xl bg-secondary-400 text-gray-900"
             >
-              {isCreatingChart ? 'Создание...' : 'Создать'}
+              {isCreatingChart ? <Loader2 className="h-5 w-5 animate-spin" /> : <Plus className="h-5 w-5" />}
             </button>
           </div>
 
-          <div className="space-y-2">
-            {charts.map((chart) => (
-              <button
-                key={chart.id}
-                onClick={() => selectChart(chart)}
-                className={cn(
-                  'w-full rounded-md border p-3 text-left transition-all',
-                  selectedChart?.id === chart.id
-                    ? 'border-secondary-500 bg-secondary-500/10'
-                    : 'border-white/10 hover:border-white/20'
-                )}
-              >
-                <p className="font-medium text-white">
-                  {new Date(chart.native_data.datetime).toLocaleDateString('ru-RU')}
-                </p>
-                <p className="text-sm text-gray-500">{chart.native_data.location}</p>
-              </button>
-            ))}
-
-            {charts.length === 0 && (
-              <p className="text-center text-gray-500">Нет карт. Создайте первую.</p>
-            )}
-          </div>
-        </div>
-
-        {/* Chart Viewer + AI Chat */}
-        <div className="flex-1 flex">
-          {/* SVG Viewer */}
-          <div className="flex-1 p-4">
-            {selectedChart ? (
-              <div className="flex h-full items-center justify-center rounded-lg border border-white/10 bg-white/5">
-                {svgContent ? (
-                  <div className="max-h-full max-w-full overflow-auto p-4" dangerouslySetInnerHTML={{ __html: svgContent }} />
-                ) : (
-                  <div className="h-8 w-8 animate-spin rounded-full border-2 border-secondary border-t-transparent" />
-                )}
-              </div>
-            ) : (
-              <div className="flex h-full items-center justify-center text-gray-500">
-                Выберите карту для просмотра
-              </div>
-            )}
-          </div>
-
-          {/* AI Chat */}
-          <div className="w-96 border-l border-white/10 flex flex-col">
-            <div className="border-b border-white/10 p-4">
-              <h3 className="font-semibold text-white">AI Астролог</h3>
-              <p className="text-xs text-gray-500">
-                {user?.subscription_type === 'premium' ? 'Безлимит' : '5 запросов/месяц'}
-              </p>
-            </div>
-
-            <div className="flex-1 overflow-auto p-4 space-y-4">
-              {messages.map((msg) => (
-                <div
-                  key={msg.id}
-                  className={cn(
-                    'max-w-[85%] rounded-lg px-4 py-2',
-                    msg.role === 'user'
-                      ? 'ml-auto bg-primary-500/20 text-white'
-                      : 'bg-white/5 text-gray-300'
-                  )}
-                >
-                  {msg.content}
-                </div>
-              ))}
-              {isLoading && (
-                <div className="flex items-center gap-2 text-gray-500">
-                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-secondary border-t-transparent" />
-                  Думаю...
-                </div>
-              )}
-              <div ref={messagesEndRef} />
-            </div>
-
-            <div className="border-t border-white/10 p-4">
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
-                  placeholder="Задайте вопрос..."
-                  disabled={!selectedChart || isLoading}
-                  className="flex-1 rounded-md border border-white/20 bg-white/5 px-3 py-2 text-white placeholder-gray-500 focus:border-secondary-500 focus:outline-none disabled:opacity-50"
-                />
+          <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-4 min-h-0">
+            {/* Charts List */}
+            <div className="floating-card flex flex-col min-h-0">
+              <div className="flex items-center justify-between p-4 border-b border-white/10">
+                <h2 className="font-semibold text-white">Натальные карты</h2>
                 <button
-                  onClick={sendMessage}
-                  disabled={!selectedChart || isLoading || !input.trim()}
-                  className="rounded-md bg-secondary-400 px-4 py-2 font-medium text-gray-900 hover:bg-secondary-300 disabled:opacity-50"
+                  onClick={createChart}
+                  disabled={isCreatingChart}
+                  className="hidden md:flex items-center gap-2 px-4 py-2 rounded-xl bg-secondary-400 text-gray-900 font-medium hover:bg-secondary-300 transition-colors disabled:opacity-50"
                 >
-                  →
+                  {isCreatingChart ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                  Создать
                 </button>
               </div>
+
+              <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                {charts.length === 0 ? (
+                  <div className="text-center py-8">
+                    <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-white/5 flex items-center justify-center">
+                      <Sparkles className="h-8 w-8 text-gray-500" />
+                    </div>
+                    <p className="text-gray-400 mb-4">Нет карт</p>
+                    <button
+                      onClick={createChart}
+                      className="px-6 py-3 rounded-xl bg-secondary-400 font-medium text-gray-900 hover:bg-secondary-300"
+                    >
+                      Создать первую карту
+                    </button>
+                  </div>
+                ) : (
+                  charts.map((chart) => (
+                    <button
+                      key={chart.id}
+                      onClick={() => selectChart(chart)}
+                      className={cn(
+                        "w-full p-4 rounded-xl text-left transition-all",
+                        selectedChart?.id === chart.id
+                          ? "bg-secondary-400/10 border border-secondary-400/30"
+                          : "bg-white/5 border border-white/5 hover:border-white/10"
+                      )}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-400 to-secondary-400 flex items-center justify-center">
+                          <Sparkles className="h-5 w-5 text-white" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-white truncate">
+                            {new Date(chart.native_data.datetime).toLocaleDateString('ru-RU', {
+                              day: 'numeric',
+                              month: 'long',
+                              year: 'numeric'
+                            })}
+                          </p>
+                          <div className="flex items-center gap-2 text-xs text-gray-500">
+                            <MapPin className="h-3 w-3" />
+                            <span className="truncate">{chart.native_data.location}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Chart Viewer */}
+            <div className="floating-card flex flex-col min-h-0">
+              <div className="flex items-center justify-between p-4 border-b border-white/10">
+                <h2 className="font-semibold text-white">Карта</h2>
+                {selectedChart && (
+                  <div className="flex items-center gap-2 text-sm text-gray-400">
+                    <Calendar className="h-4 w-4" />
+                    {new Date(selectedChart.native_data.datetime).toLocaleDateString('ru-RU')}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex-1 p-4 overflow-auto">
+                {selectedChart ? (
+                  svgContent ? (
+                    <div 
+                      className="w-full h-full flex items-center justify-center"
+                      dangerouslySetInnerHTML={{ __html: svgContent }} 
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center h-full">
+                      <Loader2 className="h-8 w-8 animate-spin text-secondary-400" />
+                    </div>
+                  )
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full text-center">
+                    <div className="w-16 h-16 mb-4 rounded-2xl bg-white/5 flex items-center justify-center">
+                      <Sparkles className="h-8 w-8 text-gray-500" />
+                    </div>
+                    <p className="text-gray-400">Выберите карту для просмотра</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* AI Chat - full width on mobile, half on large screens */}
+            <div className="lg:col-span-2 min-h-[400px]">
+              <AIChat 
+                chartId={selectedChart?.id || ''}
+                sessionId={chatSessionId}
+                onSessionCreated={(sessionId) => setChatSessionId(sessionId)}
+              />
             </div>
           </div>
-        </div>
-      </main>
+        </main>
 
-      {/* Admin Invite Modal */}
-      {showInviteModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="w-full max-w-md rounded-lg border border-white/20 bg-background p-6">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-white">Управление инвайтами</h2>
-              <button
-                onClick={() => setShowInviteModal(false)}
-                className="text-gray-400 hover:text-white"
-              >
-                ✕
-              </button>
-            </div>
-
-            <button
-              onClick={async () => {
-                try {
-                  const res = await inviteApi.generate()
-                  setInviteCodes([{ code: res.data.code, used: false }, ...inviteCodes])
-                } catch (err) {
-                  console.error('Failed to generate invite:', err)
-                }
-              }}
-              className="mb-4 w-full rounded-md bg-secondary-400 px-4 py-2 font-medium text-gray-900 hover:bg-secondary-300"
-            >
-              Создать новый инвайт
-            </button>
-
-            <div className="max-h-60 space-y-2 overflow-auto">
-              {inviteCodes.map((invite) => (
-                <div
-                  key={invite.code}
-                  className="flex items-center justify-between rounded-md border border-white/10 bg-white/5 px-3 py-2"
-                >
-                  <code className="font-mono text-white">{invite.code}</code>
-                  <span className={invite.used ? 'text-red-400' : 'text-green-400'}>
-                    {invite.used ? 'Использован' : 'Доступен'}
-                  </span>
-                </div>
-              ))}
-              {inviteCodes.length === 0 && (
-                <p className="text-center text-gray-500">Нет инвайтов</p>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+        {/* Profile Slide-over */}
+        <ProfileSlideOver 
+          isOpen={showProfile} 
+          onClose={() => setShowProfile(false)} 
+        />
+      </div>
+    </AppLayout>
   )
 }

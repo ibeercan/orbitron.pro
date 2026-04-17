@@ -2,7 +2,6 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/auth-context'
 import Landing from '@/pages/Landing'
 import Dashboard from '@/pages/Dashboard'
-import Profile from '@/pages/Profile'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth()
@@ -49,14 +48,6 @@ export default function App() {
         element={
           <ProtectedRoute>
             <Dashboard />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/profile"
-        element={
-          <ProtectedRoute>
-            <Profile />
           </ProtectedRoute>
         }
       />
