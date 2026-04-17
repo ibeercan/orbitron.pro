@@ -348,7 +348,7 @@ export default function Landing() {
   }[step]
 
   return (
-    <div className="relative h-screen lg:h-screen overflow-hidden">
+    <div className="relative min-h-screen overflow-hidden">
       {/* Canvas background */}
       <canvas ref={canvasRef} className="fixed inset-0 z-0" />
 
@@ -358,10 +358,10 @@ export default function Landing() {
       </div>
 
       {/* Main layout */}
-      <main className="relative z-10 flex flex-col lg:flex-row items-center justify-center lg:gap-0">
+      <main className="relative z-10 min-h-screen flex flex-col lg:flex-row items-center justify-center lg:justify-between lg:gap-0">
 
-        {/* ── LEFT: Hero section (desktop only) ── */}
-        <div className="hidden lg:flex flex-1 flex-col justify-center px-8 py-10 lg:py-16 lg:px-16 xl:px-24 max-w-2xl w-full mx-auto lg:mx-0 lg:max-w-none">
+        {/* ── LEFT: Hero section ── */}
+        <div className="flex-1 flex flex-col justify-center px-8 py-10 lg:py-16 lg:px-16 xl:px-24 max-w-2xl w-full mx-auto lg:mx-0 lg:max-w-none">
           {/* Logo */}
           <div className="mb-10 lg:mb-14 animate-in">
             <div className="flex items-center gap-4">
@@ -369,6 +369,9 @@ export default function Landing() {
                 <OrbitronLogo size={56} />
               </div>
               <div>
+                <span className="text-xs font-semibold tracking-[0.22em] uppercase text-[#8B7FA8] block mb-0.5">
+                  ИИ Астролог
+                </span>
                 <span className="font-serif text-2xl font-semibold gold-gradient-text leading-none tracking-wide">
                   Orbitron
                 </span>
@@ -430,7 +433,7 @@ export default function Landing() {
         </div>
 
         {/* ── RIGHT: Auth form ── */}
-        <div className="flex items-center justify-center px-6 py-10 lg:py-16 w-full">
+        <div className="flex items-center justify-center px-6 pb-10 lg:py-16 lg:px-12 xl:px-16 w-full lg:w-[480px] xl:w-[520px] shrink-0">
           <div className="w-full max-w-sm animate-in animate-in-delay-2">
 
             {/* Form card */}
@@ -639,10 +642,14 @@ export default function Landing() {
       </main>
 
       {/* Footer */}
-      <footer className="relative z-10 fixed bottom-3 left-0 right-0 flex justify-center items-center pointer-events-none">
+      <footer className="relative z-10 fixed bottom-0 left-0 right-0 flex justify-between items-center px-8 py-4 pointer-events-none">
         <span className="text-xs text-[#2E2548] tracking-widest uppercase font-medium">
           © 2026 Orbitron
         </span>
+        <div className="flex items-center gap-2">
+          <div className="gold-dot w-1 h-1" />
+          <span className="text-xs text-[#2E2548]">ИИ-астрология нового поколения</span>
+        </div>
       </footer>
     </div>
   )
