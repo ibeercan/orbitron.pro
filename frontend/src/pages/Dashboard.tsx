@@ -389,6 +389,25 @@ const loadChartSvg = async (chart: Chart) => {
               ═══════════════════════════ */}
           <div className="md:hidden flex flex-col flex-1 overflow-hidden pb-[72px]">
 
+            {/* Astrologer mode overlay — mobile fullscreen chat */}
+            {astrologerMode && selectedChart && (
+              <div className="absolute inset-0 z-50 flex flex-col bg-[#0A0612]" style={{
+                backgroundImage: `radial-gradient(ellipse at 20% 30%, rgba(123,47,190,0.15) 0%, transparent 50%), radial-gradient(ellipse at 80% 70%, rgba(212,175,55,0.08) 0%, transparent 50%)`,
+              }}>
+                <div className="flex flex-col h-full px-3 py-3 pb-0">
+                  <div className="luxury-card flex flex-col flex-1 overflow-hidden">
+                    <AssistantChat
+                      chartId={String(selectedChart.id)}
+                      sessionId={chatSessionId}
+                      onSessionCreated={(id) => setChatSessionId(id)}
+                      fullscreen
+                      onExitFullscreen={() => setAstrologerMode(false)}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Tab bar */}
             <div className="flex items-center gap-1 px-4 pt-4 pb-2 shrink-0">
               <button
@@ -417,8 +436,8 @@ const loadChartSvg = async (chart: Chart) => {
               </button>
             </div>
 
-            {/* Charts horizontal scroll */}
-            {charts.length > 0 && (
+            {/* Charts horizontal scroll — only on chart tab */}
+            {charts.length > 0 && mobilePanelTab === 'chart' && (
               <div className="px-4 pb-2 shrink-0">
                 <div className="flex gap-2 overflow-x-auto pb-1">
                   {charts.map((chart) => {
@@ -470,7 +489,17 @@ const loadChartSvg = async (chart: Chart) => {
                   )}
                 </div>
               ) : (
-                <div className="luxury-card h-full flex flex-col overflow-hidden">
+                /* Chat tab — show Maximize button to enter astrologer mode */
+                <div className="luxury-card h-full flex flex-col overflow-hidden relative">
+                  {selectedChart && (
+                    <button
+                      onClick={() => setAstrologerMode(true)}
+                      title="Режим астролога"
+                      className="absolute top-3.5 right-3.5 z-10 w-7 h-7 rounded-lg flex items-center justify-center text-[#4A3F6A] hover:text-[#D4AF37] hover:bg-[rgba(212,175,55,0.08)] transition-all"
+                    >
+                      <Maximize2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                   <AssistantChat
                     chartId={selectedChart ? String(selectedChart.id) : ''}
                     sessionId={chatSessionId}

@@ -62,6 +62,8 @@
   html {
     scroll-behavior: smooth;
     -webkit-text-size-adjust: 100%;
+    /* Use dynamic viewport height so browser UI (address bar, etc.) is excluded */
+    height: 100%;
   }
 
   body {
@@ -73,12 +75,23 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     overflow: hidden;
+    /* Prevent elastic/rubber-band bounce on iOS from breaking inner scrolls */
+    overscroll-behavior: none;
+    height: 100%;
   }
 
   /* Landing page needs scroll on mobile */
   body.landing-page {
     overflow-y: auto;
     overflow-x: hidden;
+    height: auto;
+  }
+
+  /* All overflow-y-auto/scroll containers get smooth momentum on iOS */
+  .overflow-y-auto,
+  .overflow-y-scroll {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
   }
 
   /* Scrollbar styling */

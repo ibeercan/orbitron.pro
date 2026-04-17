@@ -412,11 +412,12 @@ export function Sidebar({
 
           <button
             onClick={onCreateChart}
-            className="flex flex-col items-center gap-1 px-4 py-1"
+            className="flex flex-col items-center gap-1 px-4 py-1.5"
           >
             <div className="w-10 h-10 rounded-2xl btn-gold flex items-center justify-center shadow-[0_4px_16px_rgba(212,175,55,0.35)]">
               <Plus className="w-5 h-5" />
             </div>
+            <span className="text-[10px] font-medium text-[#D4AF37] uppercase tracking-wide">Новая</span>
           </button>
 
           <button

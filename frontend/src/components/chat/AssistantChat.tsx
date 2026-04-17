@@ -188,9 +188,34 @@ function ChatContent({ fullscreen }: { fullscreen?: boolean }) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const lastMsgContentRef = useRef('');
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const messages = threadState.messages ?? [];
   const isRunning = threadState.isRunning ?? false;
+
+  /* iOS keyboard fix via visualViewport:
+     When soft keyboard opens, visualViewport shrinks but window.innerHeight doesn't.
+     We watch the height diff and apply a CSS variable to push the input up. */
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+
+    const handleResize = () => {
+      if (!containerRef.current) return;
+      const keyboardHeight = window.innerHeight - vv.height - vv.offsetTop;
+      containerRef.current.style.setProperty(
+        '--keyboard-offset',
+        `${Math.max(0, keyboardHeight)}px`
+      );
+    };
+
+    vv.addEventListener('resize', handleResize);
+    vv.addEventListener('scroll', handleResize);
+    return () => {
+      vv.removeEventListener('resize', handleResize);
+      vv.removeEventListener('scroll', handleResize);
+    };
+  }, []);
 
   /* Scroll on new messages AND during streaming (content changes) */
   useEffect(() => {
@@ -231,7 +256,15 @@ function ChatContent({ fullscreen }: { fullscreen?: boolean }) {
   }, [threadState]);
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
+    <div
+      ref={containerRef}
+      className="flex flex-col overflow-hidden"
+      style={{
+        /* On iOS: shrink to viewport - keyboard height */
+        height: 'calc(100% - var(--keyboard-offset, 0px))',
+        transition: 'height 0.15s ease',
+      }}
+    >
 
       {/* Messages */}
       <div className={cn(
