@@ -165,6 +165,25 @@ export default function Landing() {
     }
   }, [])
 
+  const onSubscribe = useCallback(async () => {
+    setIsLoading(true)
+    setMessage('')
+
+    try {
+      await subscriptionApi.earlyAccess(email)
+      setStep('success')
+      setMessage('Спасибо за подписку!')
+      setTimeout(() => {
+        goBack()
+      }, 2000)
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { detail?: string } } }
+      setMessage(err.response?.data?.detail || 'Ошибка подписки')
+    } finally {
+      setIsLoading(false)
+    }
+  }, [email])
+
   const onLogin = useCallback(async (data: PasswordFormData) => {
     setIsLoading(true)
     setMessage('')
@@ -250,19 +269,15 @@ export default function Landing() {
           </div>
         ) : (
           <div className="w-full max-w-xs animate-fade-in">
-            {(step === 'email' || step === 'check') && (
+            {step === 'email' && (
               <>
                 <div className="mb-6 text-center">
                   <h2 className="text-xl font-semibold text-white mb-1">Узнайте первыми</h2>
                   <p className="text-sm text-gray-400">
-                    {step === 'email' ? (
-                      isPremium ? (
-                        <span className="text-secondary-400 font-semibold">Premium аккаунт при регистрации</span>
-                      ) : (
-                        <>Получите <span className="text-secondary-400 font-semibold">Premium</span> по приглашению</>
-                      )
+                    {isPremium ? (
+                      <span className="text-secondary-400 font-semibold">Premium аккаунт при регистрации</span>
                     ) : (
-                      message
+                      <>Получите <span className="text-secondary-400 font-semibold">Premium</span> по приглашению</>
                     )}
                   </p>
                 </div>
@@ -312,18 +327,42 @@ export default function Landing() {
                       'Продолжить'
                     )}
                   </button>
-
-                  {step === 'check' && (
-                    <button
-                      type="button"
-                      onClick={goBack}
-                      className="text-secondary-400 hover:underline text-sm"
-                    >
-                      Назад
-                    </button>
-                  )}
                 </form>
               </>
+            )}
+
+            {step === 'check' && (
+              <div className="flex flex-col items-center gap-4">
+                <div className="text-center">
+                  <h2 className="text-xl font-semibold text-white mb-1">Узнайте первыми</h2>
+                  <p className="text-sm text-gray-400">{message}</p>
+                </div>
+                <div className="w-full rounded-md border border-secondary-500/30 bg-secondary-500/10 px-3 py-2 text-sm text-secondary-400 text-center">
+                  {email}
+                </div>
+                <button
+                  type="button"
+                  disabled={isLoading}
+                  onClick={onSubscribe}
+                  className="h-12 w-full rounded-md bg-secondary-400 px-6 font-semibold text-gray-900 transition-all duration-200 hover:bg-secondary-300 hover:-translate-y-0.5 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isLoading ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-gray-900 border-t-transparent" />
+                      Подписка...
+                    </span>
+                  ) : (
+                    'Подписаться'
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={goBack}
+                  className="text-secondary-400 hover:underline text-sm"
+                >
+                  Назад
+                </button>
+              </div>
             )}
 
             {step === 'login' && (

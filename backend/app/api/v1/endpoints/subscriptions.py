@@ -16,6 +16,15 @@ from app.core.config import logger
 router = APIRouter()
 
 
+class CheckEmailRequest(BaseModel):
+    email: str
+
+
+class CheckInviteRequest(BaseModel):
+    email: str
+    invite_code: Optional[str] = None
+
+
 class CheckInviteResponse(BaseModel):
     can_register: bool
     is_premium: bool
@@ -44,16 +53,15 @@ async def get_subscription(
 
 @router.post("/check-email", response_model=CheckEmailResponse)
 async def check_email(
-    *,
+    request: CheckEmailRequest,
     db: AsyncSession = Depends(get_db),
-    email: str,
 ) -> Any:
     """
     Check if email already exists as a user.
     """
     from app.auth.crud import user as user_crud
     
-    email = email.strip().lower()
+    email = request.email.strip().lower()
     
     existing_user = await user_crud.get_by_email(db, email=email)
     if existing_user:
@@ -70,10 +78,8 @@ async def check_email(
 
 @router.post("/check-invite", response_model=CheckInviteResponse)
 async def check_invite(
-    *,
+    request: CheckInviteRequest,
     db: AsyncSession = Depends(get_db),
-    email: str,
-    invite_code: Optional[str] = None,
 ) -> Any:
     """
     Check if invite code is valid for the given email.
@@ -81,7 +87,8 @@ async def check_invite(
     """
     from app.auth.crud import user as user_crud
     
-    email = email.strip().lower()
+    email = request.email.strip().lower()
+    invite_code = request.invite_code
     
     existing_user = await user_crud.get_by_email(db, email=email)
     if existing_user:
