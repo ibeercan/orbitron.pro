@@ -36,26 +36,43 @@ def _make_svg_transparent(svg_bytes: bytes) -> bytes:
     """
     Post-process Stellium SVG to make the background transparent.
 
-    Stellium renders a solid rect as the outermost background element.
-    We find it and set fill="none" so it becomes transparent — this lets
-    the dark card background show through seamlessly.
+    Strategy:
+    1. Find the first <rect ...> tag after the <svg ...> opening tag
+    2. Replace any fill="..." or fill='...' attribute inside it with fill="none"
+    3. If no fill attribute found, add fill="none" to that rect
+
+    This removes Stellium's solid background rect so the dark card background
+    shows through.
     """
     svg = svg_bytes.decode("utf-8")
 
-    # Remove the first <rect> which is always the background fill
-    # Pattern: <rect ... fill="#xxxxxx" .../> or fill="white"
-    # We only target the FIRST rect (background), not inner ones
-    svg = re.sub(
-        r'(<svg[^>]*>)\s*<rect\b([^/]*/?>)',
-        lambda m: m.group(1) + '\n<rect' + re.sub(
-            r'fill=["\'][^"\']*["\']', 'fill="none"',
-            m.group(2)
-        ),
-        svg,
-        count=1,
-        flags=re.DOTALL,
-    )
+    # Find position of first <rect after the <svg opening tag
+    svg_open_end = svg.find(">")
+    if svg_open_end == -1:
+        return svg_bytes  # malformed SVG, return as-is
 
+    first_rect_start = svg.find("<rect", svg_open_end)
+    if first_rect_start == -1:
+        return svg_bytes  # no rect found
+
+    first_rect_end = svg.find(">", first_rect_start)
+    if first_rect_end == -1:
+        return svg_bytes  # malformed rect
+
+    # Extract the rect tag (include the closing >)
+    rect_tag = svg[first_rect_start:first_rect_end + 1]
+
+    # Replace fill attribute in that tag
+    if 'fill=' in rect_tag:
+        new_rect = re.sub(r'fill=["\'][^"\']*["\']', 'fill="none"', rect_tag, count=1)
+    else:
+        # No fill attribute — inject one before the closing />/> 
+        if rect_tag.endswith("/>"):
+            new_rect = rect_tag[:-2] + ' fill="none"/>'
+        else:
+            new_rect = rect_tag[:-1] + ' fill="none">'
+
+    svg = svg[:first_rect_start] + new_rect + svg[first_rect_end + 1:]
     return svg.encode("utf-8")
 
 
