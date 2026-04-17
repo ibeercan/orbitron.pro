@@ -15,10 +15,10 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       const isAuthEndpoint = error.config?.url?.includes('/auth/me')
-      const isAuthPage = window.location.pathname === '/login' || window.location.pathname === '/register'
+      const isLandingPage = window.location.pathname === '/'
       
-      if (!isAuthEndpoint && !isAuthPage) {
-        window.location.href = '/login'
+      if (!isAuthEndpoint && !isLandingPage) {
+        window.location.href = '/'
       }
     }
     return Promise.reject(error)

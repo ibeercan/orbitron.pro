@@ -2,6 +2,7 @@ import { useRef, useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { subscriptionApi, authApi } from '@/lib/api/client'
+import { useAuth } from '@/contexts/auth-context'
 import { cn } from '@/lib/utils'
 
 interface SubscribeFormData {
@@ -26,6 +27,9 @@ export default function Landing() {
   const [isPremium, setIsPremium] = useState(false)
   const [message, setMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [isSubscriber, setIsSubscriber] = useState(false)
+
+  const { login } = useAuth()
 
   const { register: registerEmail, handleSubmit: handleEmailSubmit, formState: { errors: emailErrors }, reset: resetEmail } = useForm<SubscribeFormData>()
   const { register: registerPassword, handleSubmit: handlePasswordSubmit, formState: { errors: passwordErrors }, reset: resetPassword } = useForm<PasswordFormData>()
@@ -130,14 +134,28 @@ export default function Landing() {
     setIsLoading(true)
     setEmail(data.email)
     setInviteCode(data.invite_code || '')
+    setMessage('')
 
     try {
       const res = await subscriptionApi.checkEmail(data.email)
-      const { exists } = res.data
+      const { exists, is_subscriber, message: emailMsg } = res.data
       
       if (exists) {
         setStep('login')
-        setMessage('')
+      } else if (is_subscriber) {
+        setIsSubscriber(true)
+        setMessage(emailMsg)
+        if (data.invite_code) {
+          const inviteRes = await subscriptionApi.checkInvite(data.email, data.invite_code)
+          const { can_register, is_premium, message: inviteMsg } = inviteRes.data
+          setMessage(inviteMsg)
+          setIsPremium(is_premium)
+          if (can_register) {
+            setStep('register')
+          }
+        } else {
+          setStep('email')
+        }
       } else {
         if (data.invite_code) {
           const inviteRes = await subscriptionApi.checkInvite(data.email, data.invite_code)
@@ -189,7 +207,7 @@ export default function Landing() {
     setMessage('')
 
     try {
-      await authApi.login(email, data.password)
+      await login(email, data.password)
       navigate('/dashboard')
     } catch (error: unknown) {
       const err = error as { response?: { data?: { detail?: string } } }
@@ -197,7 +215,7 @@ export default function Landing() {
     } finally {
       setIsLoading(false)
     }
-  }, [email, navigate])
+  }, [email, navigate, login])
 
   const onRegister = useCallback(async (data: PasswordFormData) => {
     setIsLoading(true)
@@ -313,6 +331,10 @@ export default function Landing() {
                     className="h-12 w-full rounded-md border border-white/20 bg-white/5 px-4 text-white placeholder-gray-500 transition-all duration-200 hover:border-white/40 focus:border-secondary-500 focus:ring-2 focus:ring-secondary-500/20"
                   />
 
+                  {message && (
+                    <p className="text-sm text-secondary-400">{message}</p>
+                  )}
+
                   <button
                     type="submit"
                     disabled={isLoading}
@@ -354,13 +376,6 @@ export default function Landing() {
                   ) : (
                     'Подписаться'
                   )}
-                </button>
-                <button
-                  type="button"
-                  onClick={goBack}
-                  className="text-secondary-400 hover:underline text-sm"
-                >
-                  Назад
                 </button>
               </div>
             )}

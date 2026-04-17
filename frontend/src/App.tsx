@@ -1,8 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/auth-context'
 import Landing from '@/pages/Landing'
-import Login from '@/pages/Login'
-import Register from '@/pages/Register'
 import Dashboard from '@/pages/Dashboard'
 import Profile from '@/pages/Profile'
 
@@ -18,7 +16,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />
+    return <Navigate to="/" replace />
   }
 
   return <>{children}</>
@@ -46,8 +44,6 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<AuthRedirect />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
       <Route
         path="/dashboard"
         element={

@@ -33,6 +33,7 @@ class CheckInviteResponse(BaseModel):
 
 class CheckEmailResponse(BaseModel):
     exists: bool
+    is_subscriber: bool
     message: str
 
 
@@ -57,7 +58,7 @@ async def check_email(
     db: AsyncSession = Depends(get_db),
 ) -> Any:
     """
-    Check if email already exists as a user.
+    Check if email already exists as a user or subscriber.
     """
     from app.auth.crud import user as user_crud
     
@@ -67,11 +68,21 @@ async def check_email(
     if existing_user:
         return CheckEmailResponse(
             exists=True,
+            is_subscriber=False,
             message="Введите пароль"
+        )
+    
+    existing_subscriber = await early_subscriber_crud.get_by_email(db, email=email)
+    if existing_subscriber:
+        return CheckEmailResponse(
+            exists=False,
+            is_subscriber=True,
+            message="Вы уже подписаны на рассылку"
         )
     
     return CheckEmailResponse(
         exists=False,
+        is_subscriber=False,
         message="Продолжите"
     )
 
