@@ -231,7 +231,7 @@ async def _process_subscription(
         
         # Create subscription
         try:
-            await early_subscriber_crud.create(db, obj_in={"email": email})
+            await early_subscriber_crud.create(db, obj_in=SubscribeRequest(email=email))
             logger.info("Early access created with invite", email=email)
             return "success", "Добро пожаловать! Ваш аккаунт активирован."
         except Exception as e:
@@ -248,7 +248,7 @@ async def _process_subscription(
         return "already", "Этот email уже подписан на ранний доступ."
 
     try:
-        await early_subscriber_crud.create(db, obj_in={"email": email})
+        await early_subscriber_crud.create(db, obj_in=SubscribeRequest(email=email))
         logger.info("Early access subscription created", email=email)
         return "success", "Спасибо! Вы подписаны."
     except Exception as e:
