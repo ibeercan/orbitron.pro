@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
 from app.auth.deps import get_current_active_user
-from app.models.user import User
+from app.models.user import User, SubscriptionType
 from app.chat.schemas import (
     ChatSessionResponse,
     ChatSessionListResponse,
@@ -28,10 +28,9 @@ async def list_chat_sessions(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ) -> Any:
-    """
-    Get all chat sessions for the current user.
-    """
-    sessions = await chat_crud.chat_session.get_all_by_user(db, user_id=current_user.id)
+    """Get all chat sessions for the current user."""
+    user_id = current_user.id
+    sessions = await chat_crud.chat_session.get_all_by_user(db, user_id=user_id)
     return ChatSessionListResponse(sessions=sessions)
 
 
@@ -41,10 +40,9 @@ async def get_chat_session(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ) -> Any:
-    """
-    Get a specific chat session with messages.
-    """
-    session = await chat_crud.chat_session.get_by_id(db, session_id=session_id, user_id=current_user.id)
+    """Get a specific chat session with messages."""
+    user_id = current_user.id
+    session = await chat_crud.chat_session.get_by_id(db, session_id=session_id, user_id=user_id)
     if not session:
         raise HTTPException(status_code=404, detail="Chat session not found")
     return session
@@ -57,28 +55,21 @@ async def start_chat_for_chart(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ) -> Any:
-    """
-    Start a new chat session for a specific chart.
-    """
-    # Cache user_id before any DB operations
+    """Start or resume a chat session for a specific chart."""
     user_id = current_user.id
 
-    # Get chart
     chart = await chart_crud.get_by_id_and_user(db, id=chart_id, user_id=user_id)
     if not chart:
         raise HTTPException(status_code=404, detail="Chart not found")
 
-    # Read native_data while chart is still loaded
     chart_datetime = (chart.native_data or {}).get("datetime", "Chart")
 
-    # Check if session already exists for this chart
     existing_session = await chat_crud.chat_session.get_by_chart(
         db, chart_id=chart_id, user_id=user_id
     )
     if existing_session:
         return existing_session
 
-    # Create new session (CRUD reloads with selectinload to avoid MissingGreenlet)
     session = await chat_crud.chat_session.create(
         db,
         user_id=user_id,
@@ -86,7 +77,6 @@ async def start_chat_for_chart(
         title=request.title or f"Chat - {chart_datetime}"
     )
     logger.info("Chat session created", session_id=session.id, chart_id=chart_id)
-
     return session
 
 
@@ -94,32 +84,28 @@ async def generate_sse(
     session_id: int,
     user_message_content: str,
     db: AsyncSession,
-    current_user: User,
+    user_id: int,
+    subscription_type: SubscriptionType,
     chart_prompt_text: str,
 ) -> AsyncGenerator[str, None]:
     """
     Generate SSE stream for AI response.
+    Accepts only primitive types to avoid SQLAlchemy lazy-loading
+    in async generator context (MissingGreenlet).
     """
     full_response = ""
-    message_id = None
 
     try:
         # Save user message
         user_message = await chat_crud.chat_message.create(
             db, session_id=session_id, role="user", content=user_message_content
         )
-        message_id = user_message.id
-        logger.info("User message saved", session_id=session_id, message_id=message_id)
+        logger.info("User message saved", session_id=session_id, message_id=user_message.id)
 
-        # Yield user message confirmation
         yield f"data: {json.dumps({'type': 'user_message', 'content': user_message_content})}\n\n"
-        await asyncio.sleep(0.05)
+        await asyncio.sleep(0.01)
 
-        # Pre-cache user data to avoid MissingGreenlet in async generator
-        user_id = current_user.id
-        subscription_type = current_user.subscription_type
-
-        # Stream AI response
+        # Stream AI response — passes primitives only, no ORM objects
         async for chunk in ai_service.stream_interpret_chart(
             db, user_id, subscription_type, chart_prompt_text, user_message_content
         ):
@@ -132,11 +118,10 @@ async def generate_sse(
         )
         logger.info("Assistant message saved", session_id=session_id, message_id=assistant_message.id)
 
-        # Yield completion
         yield f"data: {json.dumps({'type': 'done', 'message_id': assistant_message.id})}\n\n"
 
     except ValueError as e:
-        logger.warning("AI limit reached in stream", user_id=user_id)
+        logger.warning("AI limit reached in stream", user_id=user_id, error=str(e))
         yield f"data: {json.dumps({'type': 'error', 'error': str(e)})}\n\n"
     except Exception as e:
         logger.error("AI streaming failed", error=str(e), user_id=user_id)
@@ -150,34 +135,33 @@ async def stream_chat_message(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
-    """
-    Stream AI response for a chat message using SSE.
-    """
-    # Cache user_id before any DB operations to avoid MissingGreenlet
-    user_id = current_user.id
+    """Stream AI response for a chat message using SSE."""
+    # Extract all primitive values from ORM objects BEFORE creating StreamingResponse.
+    # This is critical: once StreamingResponse is returned, the DB session context
+    # is no longer guaranteed, and accessing lazy-loaded ORM attributes causes
+    # sqlalchemy.exc.MissingGreenlet.
+    user_id: int = current_user.id
+    subscription_type: SubscriptionType = current_user.subscription_type
 
-    # Get session
     session = await chat_crud.chat_session.get_by_id(db, session_id=session_id, user_id=user_id)
     if not session:
         raise HTTPException(status_code=404, detail="Chat session not found")
 
-    # Read chart_id while session is loaded
-    chart_id = session.chart_id
+    chart_id: int = session.chart_id
 
-    # Get chart
     chart = await chart_crud.get_by_id_and_user(db, id=chart_id, user_id=user_id)
     if not chart:
         raise HTTPException(status_code=404, detail="Chart not found")
 
-    # Read prompt_text while chart is loaded
-    prompt_text = chart.prompt_text or ""
+    prompt_text: str = chart.prompt_text or ""
 
     return StreamingResponse(
         generate_sse(
             session_id=session_id,
             user_message_content=request.content,
             db=db,
-            current_user=current_user,
+            user_id=user_id,
+            subscription_type=subscription_type,
             chart_prompt_text=prompt_text,
         ),
         media_type="text/event-stream",

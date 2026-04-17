@@ -316,7 +316,7 @@ const loadChartSvg = async (chart: Chart) => {
                       <p className="text-sm text-[#8B7FA8]">Строим карту…</p>
                     </div>
                   ) : svgContent ? (
-                    <div className="chart-glow-container w-full h-full overflow-auto">
+                    <div className="chart-glow-container">
                       <div
                         className="chart-svg-wrapper"
                         dangerouslySetInnerHTML={{ __html: svgContent }}
@@ -416,7 +416,7 @@ const loadChartSvg = async (chart: Chart) => {
                       <p className="text-xs text-[#8B7FA8]">Строим карту…</p>
                     </div>
                   ) : svgContent ? (
-                    <div className="chart-glow-container flex-1 overflow-auto">
+                    <div className="chart-glow-container flex-1">
                       <div
                         className="chart-svg-wrapper"
                         dangerouslySetInnerHTML={{ __html: svgContent }}

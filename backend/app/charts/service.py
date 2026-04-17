@@ -1,5 +1,6 @@
 import base64
 import os
+import re
 import tempfile
 from typing import Dict, Any
 
@@ -16,20 +17,46 @@ HOUSE_ENGINES = {
 }
 
 # Supported themes with their matching zodiac palettes
-# We default to "midnight" — deep dark bg that perfectly matches our Gold/Purple UI
 THEME_PALETTE_MAP = {
     "midnight": "rainbow_midnight",
-    "dark": "rainbow_dark",
+    "dark":     "rainbow_dark",
     "celestial": "rainbow_celestial",
-    "neon": "rainbow_neon",
-    "sepia": "rainbow_sepia",
-    "classic": "rainbow",
-    "pastel": "rainbow",
-    "viridis": "rainbow",
-    "plasma": "rainbow",
-    "inferno": "rainbow",
-    "magma": "rainbow",
+    "neon":     "rainbow_neon",
+    "sepia":    "rainbow_sepia",
+    "classic":  "rainbow",
+    "pastel":   "rainbow",
+    "viridis":  "rainbow",
+    "plasma":   "rainbow",
+    "inferno":  "rainbow",
+    "magma":    "rainbow",
 }
+
+
+def _make_svg_transparent(svg_bytes: bytes) -> bytes:
+    """
+    Post-process Stellium SVG to make the background transparent.
+
+    Stellium renders a solid rect as the outermost background element.
+    We find it and set fill="none" so it becomes transparent — this lets
+    the dark card background show through seamlessly.
+    """
+    svg = svg_bytes.decode("utf-8")
+
+    # Remove the first <rect> which is always the background fill
+    # Pattern: <rect ... fill="#xxxxxx" .../> or fill="white"
+    # We only target the FIRST rect (background), not inner ones
+    svg = re.sub(
+        r'(<svg[^>]*>)\s*<rect\b([^/]*/?>)',
+        lambda m: m.group(1) + '\n<rect' + re.sub(
+            r'fill=["\'][^"\']*["\']', 'fill="none"',
+            m.group(2)
+        ),
+        svg,
+        count=1,
+        flags=re.DOTALL,
+    )
+
+    return svg.encode("utf-8")
 
 
 class ChartService:
@@ -45,11 +72,9 @@ class ChartService:
         """
         Create a natal chart using Stellium.
 
-        SVG is rendered to a temporary file, read into memory as base64,
-        and the temp file is immediately deleted — nothing is persisted on disk.
-
-        Default theme is "midnight" — a deep dark theme matching the Orbitron
-        Gold/Purple luxury design system perfectly.
+        SVG is rendered to a temp file, read into memory, background made
+        transparent via post-processing, then encoded as base64 for DB storage.
+        Nothing is persisted on disk.
         """
         logger.info(
             "Creating natal chart",
@@ -74,14 +99,12 @@ class ChartService:
 
         logger.info("Using palette", zodiac_palette=zodiac_palette)
 
-        # Use a named temp file so Stellium can write to it by path,
-        # then we read and delete it immediately.
         tmp = tempfile.NamedTemporaryFile(suffix=".svg", delete=False)
         tmp_path = tmp.name
         tmp.close()
 
         try:
-            # Build and calculate chart (with_aspects needed for aspect lines)
+            # Build and calculate chart
             chart = (
                 ChartBuilder.from_details(datetime_str, location)
                 .with_house_systems([house_engine])
@@ -90,38 +113,31 @@ class ChartService:
             )
             logger.info("Chart calculated", planets=len(chart.get_planets()))
 
-            # Compose the drawer with Orbitron luxury style:
-            # - Use minimal preset for transparent background (no white corners)
-            # - Theme with matching zodiac palette
+            # Draw: minimal preset = only the wheel, no text corners.
+            # This avoids all English labels (chart_info, moon_phase, etc.)
+            # that Stellium doesn't localise, and avoids mojibake from
+            # Cyrillic location names being embedded in SVG text nodes.
             drawer = (
                 chart.draw(tmp_path)
                 .with_size(900)
                 .with_theme(theme)
                 .with_zodiac_palette(zodiac_palette)
+                .preset_minimal()
             )
-
-            # Minimal preset = just the wheel, no text info corners
-            # This gives us transparent background and no English text
-            if preset == "minimal":
-                drawer.preset_minimal()
-            elif preset == "standard":
-                drawer.preset_standard()
-            else:
-                # detailed preset includes tables, but we use minimal for now
-                # to avoid English text in corners and have transparent background
-                drawer.preset_detailed()
-
             drawer.save()
-            logger.info("SVG rendered to temp file", path=tmp_path)
+            logger.info("SVG rendered", path=tmp_path)
 
-            # Read SVG bytes and encode as base64
+            # Read raw SVG bytes
             with open(tmp_path, "rb") as f:
                 svg_bytes = f.read()
 
-            svg_b64 = base64.b64encode(svg_bytes).decode("utf-8")
-            logger.info("SVG encoded to base64", size_bytes=len(svg_bytes))
+            # Post-process: make background transparent so the dark card
+            # background shows through without a white/coloured rect
+            svg_bytes = _make_svg_transparent(svg_bytes)
+            logger.info("SVG background made transparent", size_bytes=len(svg_bytes))
 
-            # Build AI prompt text and chart dict
+            svg_b64 = base64.b64encode(svg_bytes).decode("utf-8")
+
             prompt_text = chart.to_prompt_text()
             chart_data = chart.to_dict()
 
@@ -141,7 +157,6 @@ class ChartService:
             )
             raise
         finally:
-            # Always clean up the temp file
             try:
                 os.unlink(tmp_path)
             except OSError:
