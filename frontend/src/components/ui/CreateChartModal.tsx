@@ -357,7 +357,7 @@ interface CreateChartModalProps {
   open: boolean
   onClose: () => void
   onCreated: (chart: {
-    id: string
+    id: number
     native_data: { datetime: string; location: string }
     result_data: Record<string, unknown>
     svg_path: string

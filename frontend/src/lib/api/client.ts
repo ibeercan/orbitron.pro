@@ -75,11 +75,11 @@ export const chartsApi = {
     return api.get('/charts/')
   },
 
-  get: async (id: string) => {
+  get: async (id: number) => {
     return api.get(`/charts/${id}`)
   },
 
-  getSvg: async (id: string) => {
+  getSvg: async (id: number) => {
     return api.get(`/charts/${id}/svg`)
   },
 

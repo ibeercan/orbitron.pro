@@ -9,7 +9,7 @@ import { Plus, MapPin, Calendar, Loader2, Sparkles } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface Chart {
-  id: string
+  id: number
   native_data: { datetime: string; location: string }
   result_data: Record<string, unknown>
   svg_path: string
@@ -39,7 +39,7 @@ export default function Dashboard() {
     }
   }
 
-  const loadChartSvg = async (chartId: string) => {
+  const loadChartSvg = async (chartId: number) => {
     setSvgLoading(true)
     setSvgContent('')
     try {
@@ -59,7 +59,8 @@ export default function Dashboard() {
     loadChartSvg(chart.id)
   }
 
-  const handleChartCreated = (chart: Chart) => {
+  const handleChartCreated = (newChart: { id: number; native_data: { datetime: string; location: string }; result_data: Record<string, unknown>; svg_path: string; prompt_text: string; created_at: string }) => {
+    const chart: Chart = { ...newChart }
     setCharts((prev) => [chart, ...prev])
     selectChart(chart)
   }
@@ -210,7 +211,7 @@ export default function Dashboard() {
             {/* AI Chat */}
             <div className="lg:col-span-2 min-h-[400px]">
               <AssistantChat
-                chartId={selectedChart?.id || ''}
+                chartId={selectedChart ? String(selectedChart.id) : ''}
                 sessionId={chatSessionId}
                 onSessionCreated={(id) => setChatSessionId(id)}
               />
