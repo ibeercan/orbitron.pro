@@ -329,10 +329,6 @@ export default function Landing() {
                     className="h-12 w-full rounded-md border border-white/20 bg-white/5 px-4 text-white placeholder-gray-500 transition-all duration-200 hover:border-white/40 focus:border-secondary-500 focus:ring-2 focus:ring-secondary-500/20"
                   />
 
-                  {message && (
-                    <p className="text-sm text-secondary-400">{message}</p>
-                  )}
-
                   <button
                     type="submit"
                     disabled={isLoading}
@@ -347,6 +343,12 @@ export default function Landing() {
                       'Продолжить'
                     )}
                   </button>
+
+                  {message && (
+                    <div className="rounded-md border border-secondary-500/30 bg-secondary-500/10 px-3 py-2 text-sm text-secondary-400 text-center">
+                      {message}
+                    </div>
+                  )}
                 </form>
               </>
             )}
