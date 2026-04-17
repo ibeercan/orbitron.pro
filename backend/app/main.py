@@ -41,14 +41,40 @@ logger = structlog.get_logger()
 # Rate limiter
 limiter = Limiter(key_func=get_remote_address, default_limits=["100/minute"])
 
+def _run_alembic_upgrade() -> None:
+    """Run alembic migrations synchronously (called once at startup)."""
+    from alembic.config import Config as AlembicConfig
+    from alembic import command as alembic_command
+    import os
+
+    alembic_cfg = AlembicConfig(os.path.join(os.path.dirname(__file__), "../../alembic.ini"))
+    # Override sqlalchemy.url from environment if available
+    from app.core.config import settings
+    db_url = (settings.DATABASE_URL or settings.computed_database_url).replace("+asyncpg", "")
+    alembic_cfg.set_main_option("sqlalchemy.url", db_url)
+    alembic_command.upgrade(alembic_cfg, "head")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan manager."""
     logger.info("Starting Orbitron Backend")
-    # Create database tables
+
+    # 1. Ensure all tables exist (create_all is idempotent / safe)
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-    logger.info("Database tables created")
+    logger.info("Database tables ensured")
+
+    # 2. Apply pending Alembic migrations (adds svg_data column, etc.)
+    try:
+        import asyncio
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(None, _run_alembic_upgrade)
+        logger.info("Alembic migrations applied")
+    except Exception as e:
+        # Non-fatal: log and continue (migrations may already be applied)
+        logger.warning("Alembic migration warning", error=str(e))
+
     yield
     logger.info("Shutting down Orbitron Backend")
 

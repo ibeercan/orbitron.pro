@@ -93,6 +93,10 @@ export const chartsApi = {
   }) => {
     return api.post('/charts/natal', data)
   },
+
+  delete: async (id: number) => {
+    return api.delete(`/charts/${id}`)
+  },
 }
 
 export const geocodingApi = {

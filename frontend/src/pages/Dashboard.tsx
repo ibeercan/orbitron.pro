@@ -5,23 +5,96 @@ import { Sidebar } from '@/components/layout/Sidebar'
 import { ProfileSlideOver } from '@/components/layout/ProfileSlideOver'
 import { AssistantChat } from '@/components/chat/AssistantChat'
 import { CreateChartModal } from '@/components/ui/CreateChartModal'
-import { Loader2, Calendar, MapPin, Sparkles, Star } from 'lucide-react'
+import { Loader2, Calendar, MapPin, Sparkles, Star, Trash2, AlertTriangle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface Chart {
   id: number
   native_data: { datetime: string; location: string }
   result_data: Record<string, unknown>
-  svg_path: string
+  svg_path?: string | null
+  svg_data?: string | null
   prompt_text: string
   created_at: string
 }
 
-/* ── Empty state illustration ── */
+/* ── Confirm delete dialog ── */
+function DeleteConfirmDialog({
+  chart,
+  onConfirm,
+  onCancel,
+  isDeleting,
+}: {
+  chart: Chart
+  onConfirm: () => void
+  onCancel: () => void
+  isDeleting: boolean
+}) {
+  const date = new Date(chart.native_data.datetime).toLocaleDateString('ru-RU', {
+    day: 'numeric', month: 'long', year: 'numeric',
+  })
+  const location = chart.native_data.location.split(',')[0].trim()
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div className="fixed inset-0 z-[60] bg-black/70 backdrop-blur-sm" onClick={onCancel} />
+
+      {/* Dialog */}
+      <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[70] w-full max-w-sm px-4">
+        <div className="luxury-card p-6 animate-scale-in">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center shrink-0">
+              <AlertTriangle className="w-5 h-5 text-red-400" />
+            </div>
+            <div>
+              <h3 className="font-serif text-lg font-semibold text-[#F0EAD6]">Удалить карту?</h3>
+              <p className="text-xs text-[#8B7FA8] mt-0.5">Действие необратимо</p>
+            </div>
+          </div>
+
+          <div className="px-3.5 py-2.5 rounded-lg bg-[rgba(239,68,68,0.04)] border border-[rgba(239,68,68,0.12)] mb-5">
+            <p className="text-sm font-medium text-[#F0EAD6]">{date}</p>
+            <p className="text-xs text-[#8B7FA8] mt-0.5">{location}</p>
+          </div>
+
+          <p className="text-sm text-[#8B7FA8] mb-5 leading-relaxed">
+            Карта и вся история чата с ИИ-астрологом будут удалены безвозвратно.
+          </p>
+
+          <div className="flex gap-3">
+            <button
+              onClick={onCancel}
+              disabled={isDeleting}
+              className="btn-ghost flex-1 h-10 text-sm font-medium"
+            >
+              Отмена
+            </button>
+            <button
+              onClick={onConfirm}
+              disabled={isDeleting}
+              className="flex-1 h-10 rounded-xl bg-red-500/15 border border-red-500/25 text-red-400 text-sm font-semibold hover:bg-red-500/25 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {isDeleting ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <>
+                  <Trash2 className="w-4 h-4" />
+                  Удалить
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
+  )
+}
+
+/* ── Empty state ── */
 function EmptyChartState({ onCreate }: { onCreate: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center h-full text-center px-8 py-12">
-      {/* Animated constellation */}
       <div className="relative w-28 h-28 mb-6 animate-float">
         <svg viewBox="0 0 112 112" fill="none" className="w-full h-full">
           <defs>
@@ -38,38 +111,23 @@ function EmptyChartState({ onCreate }: { onCreate: () => void }) {
           <circle cx="56" cy="56" r="52" stroke="rgba(212,175,55,0.12)" strokeWidth="1" />
           <circle cx="56" cy="56" r="36" stroke="rgba(212,175,55,0.08)" strokeWidth="1" strokeDasharray="3 4" />
           <circle cx="56" cy="56" r="20" stroke="rgba(212,175,55,0.1)" strokeWidth="1" />
-
-          {/* Stars */}
-          {[
-            [56, 8], [96, 30], [96, 82], [56, 104], [16, 82], [16, 30],
-          ].map(([cx, cy], i) => (
+          {[[56,8],[96,30],[96,82],[56,104],[16,82],[16,30]].map(([cx,cy],i) => (
             <g key={i}>
               <circle cx={cx} cy={cy} r="3" fill="#D4AF37" filter="url(#ecGlow)" opacity="0.7" />
-              <line
-                x1={56} y1={56} x2={cx} y2={cy}
-                stroke="rgba(212,175,55,0.15)" strokeWidth="0.8"
-              />
+              <line x1={56} y1={56} x2={cx} y2={cy} stroke="rgba(212,175,55,0.15)" strokeWidth="0.8" />
             </g>
           ))}
-
-          {/* Center */}
           <circle cx="56" cy="56" r="7" fill="#D4AF37" filter="url(#ecGlow)" opacity="0.9">
             <animate attributeName="opacity" values="0.7;1;0.7" dur="2s" repeatCount="indefinite" />
           </circle>
           <circle cx="56" cy="56" r="3.5" fill="#FFF8DC" opacity="0.6" />
         </svg>
       </div>
-
-      <h3 className="font-serif text-2xl font-semibold text-[#F0EAD6] mb-2">
-        Нет выбранной карты
-      </h3>
+      <h3 className="font-serif text-2xl font-semibold text-[#F0EAD6] mb-2">Нет выбранной карты</h3>
       <p className="text-sm text-[#8B7FA8] leading-relaxed max-w-xs mb-6">
         Выберите натальную карту в боковой панели, чтобы её просмотреть и поговорить с ИИ-астрологом
       </p>
-      <button
-        onClick={onCreate}
-        className="btn-gold px-6 py-2.5 text-sm flex items-center gap-2"
-      >
+      <button onClick={onCreate} className="btn-gold px-6 py-2.5 text-sm flex items-center gap-2">
         <Star className="w-4 h-4" />
         Создать первую карту
       </button>
@@ -80,15 +138,8 @@ function EmptyChartState({ onCreate }: { onCreate: () => void }) {
 /* ── Chart header info ── */
 function ChartHeader({ chart }: { chart: Chart }) {
   const date = new Date(chart.native_data.datetime)
-  const birthDate = date.toLocaleDateString('ru-RU', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  })
-  const birthTime = date.toLocaleTimeString('ru-RU', {
-    hour: '2-digit',
-    minute: '2-digit',
-  })
+  const birthDate = date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })
+  const birthTime = date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
   const location = chart.native_data.location.split(',').slice(0, 2).join(', ').trim()
 
   return (
@@ -115,7 +166,14 @@ export default function Dashboard() {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [chatSessionId, setChatSessionId] = useState<number | null>(null)
 
-  /* Mobile tabs */
+  /* Sidebar collapsed state */
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+
+  /* Delete flow */
+  const [chartToDelete, setChartToDelete] = useState<Chart | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+
+  /* Mobile */
   const [mobilePanelTab, setMobilePanelTab] = useState<'chart' | 'chat'>('chart')
   const [activeMobileNav, setActiveMobileNav] = useState<'charts' | 'profile'>('charts')
 
@@ -132,11 +190,24 @@ export default function Dashboard() {
     }
   }
 
-  const loadChartSvg = async (chartId: number) => {
+  const loadChartSvg = async (chart: Chart) => {
+    // If svg_data is already embedded (new charts), decode inline
+    if (chart.svg_data) {
+      try {
+        const svgStr = atob(chart.svg_data)
+        setSvgContent(svgStr)
+        setSvgLoading(false)
+        return
+      } catch {
+        // fall through to API call
+      }
+    }
+
+    // Otherwise fetch from API (legacy charts or stripped list response)
     setSvgLoading(true)
     setSvgContent('')
     try {
-      const res = await chartsApi.getSvg(chartId)
+      const res = await chartsApi.getSvg(chart.id)
       setSvgContent(res.data.svg)
     } catch (err) {
       console.error('Failed to load chart SVG:', err)
@@ -149,33 +220,54 @@ export default function Dashboard() {
     if (selectedChart?.id === chart.id) return
     setSelectedChart(chart)
     setChatSessionId(null)
-    loadChartSvg(chart.id)
+    setSvgLoading(true)
+    setSvgContent('')
+    loadChartSvg(chart)
   }
 
-  const handleChartCreated = (newChart: {
-    id: number
-    native_data: { datetime: string; location: string }
-    result_data: Record<string, unknown>
-    svg_path: string
-    prompt_text: string
-    created_at: string
-  }) => {
-    const chart: Chart = { ...newChart }
-    setCharts((prev) => [chart, ...prev])
-    selectChart(chart)
+  const handleChartCreated = (newChart: Chart) => {
+    setCharts((prev) => [newChart, ...prev])
+    selectChart(newChart)
+  }
+
+  /* ── Delete handlers ── */
+  const requestDeleteChart = (chart: Chart) => {
+    setChartToDelete(chart)
+  }
+
+  const confirmDeleteChart = async () => {
+    if (!chartToDelete) return
+    setIsDeleting(true)
+    try {
+      await chartsApi.delete(chartToDelete.id)
+      setCharts((prev) => prev.filter((c) => c.id !== chartToDelete.id))
+      if (selectedChart?.id === chartToDelete.id) {
+        setSelectedChart(null)
+        setSvgContent('')
+        setChatSessionId(null)
+      }
+      setChartToDelete(null)
+    } catch (err) {
+      console.error('Failed to delete chart:', err)
+    } finally {
+      setIsDeleting(false)
+    }
   }
 
   return (
     <AppLayout>
       <div className="flex h-screen overflow-hidden">
 
-        {/* ── Sidebar (desktop: nav + charts list) ── */}
+        {/* ── Sidebar ── */}
         <Sidebar
           onProfileClick={() => setShowProfile(true)}
           onCreateChart={() => setShowCreateModal(true)}
           charts={charts}
           selectedChart={selectedChart}
           onSelectChart={selectChart}
+          onDeleteChart={requestDeleteChart}
+          collapsed={sidebarCollapsed}
+          onToggleCollapse={() => setSidebarCollapsed((v) => !v)}
           activeMobileTab={activeMobileNav}
           onMobileTabChange={(tab) => {
             setActiveMobileNav(tab)
@@ -183,30 +275,25 @@ export default function Dashboard() {
           }}
         />
 
-        {/* ── Main content area ── */}
+        {/* ── Main content ── */}
         <main className="flex-1 flex flex-col overflow-hidden min-w-0">
 
-          {/* ════════════════════════════════════════
-              DESKTOP: 2 panels side by side — Chart | Chat
-              ════════════════════════════════════════ */}
+          {/* ═══════════════════════════
+              DESKTOP: chart | chat
+              ═══════════════════════════ */}
           <div className="hidden md:flex flex-1 gap-0 overflow-hidden">
 
             {/* Chart panel */}
             <div className="flex-1 flex flex-col min-w-0 overflow-hidden p-4 pr-2">
               <div className="luxury-card flex flex-col h-full overflow-hidden">
-
-                {/* Chart panel header */}
                 <div className="flex items-center justify-between px-5 py-4 border-b border-[rgba(212,175,55,0.08)] shrink-0">
                   <div className="flex items-center gap-3">
                     <div className="w-2 h-2 rounded-full bg-[#D4AF37] shadow-[0_0_6px_rgba(212,175,55,0.8)]" />
-                    <span className="font-serif text-lg font-semibold text-[#F0EAD6]">
-                      Натальная карта
-                    </span>
+                    <span className="font-serif text-lg font-semibold text-[#F0EAD6]">Натальная карта</span>
                   </div>
                   {selectedChart && <ChartHeader chart={selectedChart} />}
                 </div>
 
-                {/* Chart content */}
                 <div className="flex-1 overflow-auto relative">
                   {!selectedChart ? (
                     <EmptyChartState onCreate={() => setShowCreateModal(true)} />
@@ -248,12 +335,12 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* ════════════════════════════════════════
-              MOBILE: Tab switcher — Chart / Chat
-              ════════════════════════════════════════ */}
+          {/* ═══════════════════════════
+              MOBILE: tab switcher
+              ═══════════════════════════ */}
           <div className="md:hidden flex flex-col flex-1 overflow-hidden pb-[72px]">
 
-            {/* Mobile tab bar */}
+            {/* Tab bar */}
             <div className="flex items-center gap-1 px-4 pt-4 pb-2 shrink-0">
               <button
                 onClick={() => setMobilePanelTab('chart')}
@@ -261,7 +348,7 @@ export default function Dashboard() {
                   'flex-1 flex items-center justify-center gap-2 h-9 rounded-xl text-sm font-medium transition-all',
                   mobilePanelTab === 'chart'
                     ? 'bg-[rgba(212,175,55,0.1)] border border-[rgba(212,175,55,0.25)] text-[#D4AF37]'
-                    : 'text-[#8B7FA8] hover:text-[#F0EAD6]'
+                    : 'text-[#8B7FA8]'
                 )}
               >
                 <Star className="w-3.5 h-3.5" />
@@ -273,7 +360,7 @@ export default function Dashboard() {
                   'flex-1 flex items-center justify-center gap-2 h-9 rounded-xl text-sm font-medium transition-all',
                   mobilePanelTab === 'chat'
                     ? 'bg-[rgba(212,175,55,0.1)] border border-[rgba(212,175,55,0.25)] text-[#D4AF37]'
-                    : 'text-[#8B7FA8] hover:text-[#F0EAD6]'
+                    : 'text-[#8B7FA8]'
                 )}
               >
                 <Sparkles className="w-3.5 h-3.5" />
@@ -281,10 +368,10 @@ export default function Dashboard() {
               </button>
             </div>
 
-            {/* Mobile chart list (above content, collapsible feel) */}
+            {/* Charts horizontal scroll */}
             {charts.length > 0 && (
               <div className="px-4 pb-2 shrink-0">
-                <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+                <div className="flex gap-2 overflow-x-auto pb-1">
                   {charts.map((chart) => {
                     const isActive = selectedChart?.id === chart.id
                     return (
@@ -297,9 +384,7 @@ export default function Dashboard() {
                         )}
                       >
                         <p className={cn('text-xs font-semibold whitespace-nowrap', isActive ? 'text-[#D4AF37]' : 'text-[#F0EAD6]')}>
-                          {new Date(chart.native_data.datetime).toLocaleDateString('ru-RU', {
-                            day: 'numeric', month: 'short', year: '2-digit'
-                          })}
+                          {new Date(chart.native_data.datetime).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: '2-digit' })}
                         </p>
                         <p className="text-[10px] text-[#8B7FA8] whitespace-nowrap mt-0.5">
                           {chart.native_data.location.split(',')[0]}
@@ -347,10 +432,7 @@ export default function Dashboard() {
         </main>
 
         {/* Profile slide-over */}
-        <ProfileSlideOver
-          isOpen={showProfile}
-          onClose={() => setShowProfile(false)}
-        />
+        <ProfileSlideOver isOpen={showProfile} onClose={() => setShowProfile(false)} />
 
         {/* Create chart modal */}
         <CreateChartModal
@@ -358,6 +440,16 @@ export default function Dashboard() {
           onClose={() => setShowCreateModal(false)}
           onCreated={handleChartCreated}
         />
+
+        {/* Delete confirmation dialog */}
+        {chartToDelete && (
+          <DeleteConfirmDialog
+            chart={chartToDelete}
+            onConfirm={confirmDeleteChart}
+            onCancel={() => setChartToDelete(null)}
+            isDeleting={isDeleting}
+          />
+        )}
       </div>
     </AppLayout>
   )

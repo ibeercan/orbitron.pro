@@ -149,7 +149,7 @@ async def stream_chat_message(
         raise HTTPException(status_code=404, detail="Chat session not found")
 
     # Get chart
-    chart = await chart_crud.get_by_id_and_user(db, id=str(session.chart_id), user_id=current_user.id)
+    chart = await chart_crud.get_by_id_and_user(db, id=session.chart_id, user_id=current_user.id)
     if not chart:
         raise HTTPException(status_code=404, detail="Chart not found")
 

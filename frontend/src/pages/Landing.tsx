@@ -106,6 +106,12 @@ export default function Landing() {
 
   const { login } = useAuth()
 
+  // Allow scroll on mobile for landing page
+  useEffect(() => {
+    document.body.classList.add('landing-page')
+    return () => document.body.classList.remove('landing-page')
+  }, [])
+
   const {
     register: registerEmail,
     handleSubmit: handleEmailSubmit,
@@ -352,10 +358,10 @@ export default function Landing() {
       </div>
 
       {/* Main layout */}
-      <main className="relative z-10 min-h-screen flex flex-col lg:flex-row">
+      <main className="relative z-10 min-h-screen flex flex-col lg:flex-row items-center justify-center lg:justify-between lg:gap-0">
 
         {/* ── LEFT: Hero section ── */}
-        <div className="flex-1 flex flex-col justify-center px-8 py-16 lg:px-16 xl:px-24 lg:min-h-screen">
+        <div className="flex-1 flex flex-col justify-center px-8 py-10 lg:py-16 lg:px-16 xl:px-24 max-w-2xl w-full mx-auto lg:mx-0 lg:max-w-none">
           {/* Logo */}
           <div className="mb-10 lg:mb-14 animate-in">
             <div className="flex items-center gap-4">
@@ -427,7 +433,7 @@ export default function Landing() {
         </div>
 
         {/* ── RIGHT: Auth form ── */}
-        <div className="flex items-center justify-center px-6 py-10 lg:py-0 lg:px-12 xl:px-16 lg:min-h-screen lg:w-[480px] xl:w-[520px] shrink-0">
+        <div className="flex items-center justify-center px-6 pb-10 lg:py-16 lg:px-12 xl:px-16 w-full lg:w-[480px] xl:w-[520px] shrink-0">
           <div className="w-full max-w-sm animate-in animate-in-delay-2">
 
             {/* Form card */}

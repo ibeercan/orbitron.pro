@@ -1,4 +1,4 @@
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, field_validator, computed_field
 from typing import Optional
 from datetime import datetime
 
@@ -39,7 +39,8 @@ class Chart(BaseModel):
     id: int
     native_data: dict
     result_data: dict
-    svg_path: str
+    svg_data: Optional[str] = None   # base64-encoded SVG (new)
+    svg_path: Optional[str] = None   # legacy field, kept for backward compat
     prompt_text: str
     created_at: datetime
 
