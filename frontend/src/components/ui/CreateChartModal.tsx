@@ -16,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { NumberPicker } from '@/components/ui/number-picker'
 import { chartsApi, geocodingApi } from '@/lib/api/client'
 import { cn } from '@/lib/utils'
 
@@ -404,40 +405,53 @@ export function CreateChartModal({ open, onClose, onCreated }: CreateChartModalP
               <div>
                 <FieldLabel required>Дата рождения</FieldLabel>
                 <div className="grid grid-cols-3 gap-2.5">
-                  <div>
-                    <input
-                      {...register('day')}
-                      type="number"
-                      min={1}
-                      max={31}
-                      placeholder="День"
-                      className={cn('luxury-input w-full h-11 px-3 text-sm text-center', errors.day && 'error')}
-                    />
-                    <FieldError message={(errors.day as { message?: string })?.message} />
-                  </div>
-                  <div>
-                    <input
-                      {...register('month')}
-                      type="number"
-                      min={1}
-                      max={12}
-                      placeholder="Мес."
-                      className={cn('luxury-input w-full h-11 px-3 text-sm text-center', errors.month && 'error')}
-                    />
-                    <FieldError message={(errors.month as { message?: string })?.message} />
-                  </div>
-                  <div>
-                    <input
-                      {...register('year')}
-                      type="number"
-                      min={1900}
-                      max={currentYear}
-                      placeholder="Год"
-                      className={cn('luxury-input w-full h-11 px-3 text-sm text-center', errors.year && 'error')}
-                    />
-                    <FieldError message={(errors.year as { message?: string })?.message} />
-                  </div>
+                  <Controller
+                    name="day"
+                    control={control}
+                    render={({ field }) => (
+                      <NumberPicker
+                        value={field.value ? Number(field.value) : 0}
+                        onChange={(v) => field.onChange(String(v))}
+                        min={1}
+                        max={31}
+                        placeholder="День"
+                      />
+                    )}
+                  />
+                  <Controller
+                    name="month"
+                    control={control}
+                    render={({ field }) => (
+                      <NumberPicker
+                        value={field.value ? Number(field.value) : 0}
+                        onChange={(v) => field.onChange(String(v))}
+                        min={1}
+                        max={12}
+                        placeholder="Мес."
+                      />
+                    )}
+                  />
+                  <Controller
+                    name="year"
+                    control={control}
+                    render={({ field }) => (
+                      <NumberPicker
+                        value={field.value ? Number(field.value) : 0}
+                        onChange={(v) => field.onChange(String(v))}
+                        min={1900}
+                        max={currentYear}
+                        placeholder="Год"
+                      />
+                    )}
+                  />
                 </div>
+                {(errors.day || errors.month || errors.year) && (
+                  <p className="text-[11px] text-red-400 mt-1.5">
+                    {(errors.day as { message?: string })?.message ||
+                      (errors.month as { message?: string })?.message ||
+                      (errors.year as { message?: string })?.message}
+                  </p>
+                )}
               </div>
 
               {/* ── Time field ── */}

@@ -279,6 +279,7 @@ const loadChartSvg = async (chart: Chart) => {
           onDeleteChart={requestDeleteChart}
           collapsed={sidebarCollapsed}
           onToggleCollapse={() => setSidebarCollapsed((v) => !v)}
+          onAstrologerMode={() => selectedChart && setAstrologerMode(true)}
           activeMobileTab={activeMobileNav}
           onMobileTabChange={(tab) => {
             setActiveMobileNav(tab)
@@ -370,7 +371,7 @@ const loadChartSvg = async (chart: Chart) => {
                   }}
                 />
               </div>
-              <div className="relative z-10 flex flex-col h-full max-w-3xl mx-auto w-full px-6 py-6">
+              <div className="relative z-10 flex flex-col h-full w-full px-4">
                 <div className="luxury-card flex flex-col flex-1 overflow-hidden">
                   <AssistantChat
                     chartId={String(selectedChart.id)}
@@ -490,16 +491,7 @@ const loadChartSvg = async (chart: Chart) => {
                 </div>
               ) : (
                 /* Chat tab — show Maximize button to enter astrologer mode */
-                <div className="luxury-card h-full flex flex-col overflow-hidden relative">
-                  {selectedChart && (
-                    <button
-                      onClick={() => setAstrologerMode(true)}
-                      title="Режим астролога"
-                      className="absolute top-3.5 right-3.5 z-10 w-7 h-7 rounded-lg flex items-center justify-center text-[#4A3F6A] hover:text-[#D4AF37] hover:bg-[rgba(212,175,55,0.08)] transition-all"
-                    >
-                      <Maximize2 className="w-3.5 h-3.5" />
-                    </button>
-                  )}
+                <div className="luxury-card h-full flex flex-col overflow-hidden">
                   <AssistantChat
                     chartId={selectedChart ? String(selectedChart.id) : ''}
                     sessionId={chatSessionId}

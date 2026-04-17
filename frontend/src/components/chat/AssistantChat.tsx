@@ -181,7 +181,7 @@ const SUGGESTIONS = [
 ];
 
 /* ── Chat content (inside runtime) ── */
-function ChatContent({ fullscreen }: { fullscreen?: boolean }) {
+function ChatContent() {
   const threadState = useThread();
   const composer = useComposerRuntime({ optional: true });
   const [input, setInput] = useState('');
@@ -269,7 +269,7 @@ function ChatContent({ fullscreen }: { fullscreen?: boolean }) {
       {/* Messages */}
       <div className={cn(
         'flex-1 overflow-y-auto py-4 space-y-4 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-[rgba(212,175,55,0.15)]',
-        fullscreen ? 'px-6 max-w-3xl mx-auto w-full' : 'px-4'
+        'px-4'
       )}>
         {messages.length === 0 ? (
           <div className="flex flex-col h-full justify-center">
@@ -321,7 +321,7 @@ function ChatContent({ fullscreen }: { fullscreen?: boolean }) {
 
                 <div className={cn(
                   'group relative',
-                  isUser ? 'max-w-[80%]' : fullscreen ? 'max-w-[90%]' : 'max-w-[88%]',
+                  isUser ? 'max-w-[80%]' : 'max-w-[88%]',
                 )}>
                   <div className={cn(
                     'w-fit max-w-full text-sm leading-relaxed px-4 py-3',
@@ -368,7 +368,7 @@ function ChatContent({ fullscreen }: { fullscreen?: boolean }) {
       {/* Input */}
       <div className={cn(
         'shrink-0 pt-3 pb-4 border-t border-[rgba(212,175,55,0.07)]',
-        fullscreen ? 'px-6 max-w-3xl mx-auto w-full' : 'px-4'
+        'px-4'
       )}>
         <form onSubmit={handleSubmit} className="flex items-end gap-2.5">
           <textarea
@@ -500,7 +500,7 @@ export function AssistantChat({
             chartId={chartId}
             onSessionCreated={onSessionCreated}
           >
-            <ChatContent fullscreen={fullscreen} />
+            <ChatContent />
           </OrbitronRuntimeProvider>
         )}
       </div>

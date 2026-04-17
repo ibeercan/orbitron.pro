@@ -13,6 +13,7 @@ import {
   Trash2,
   PanelLeftClose,
   PanelLeftOpen,
+  Maximize2,
 } from 'lucide-react'
 
 /* ── Chart type ── */
@@ -35,6 +36,7 @@ interface SidebarProps {
   onDeleteChart?: (chart: Chart) => void
   collapsed?: boolean
   onToggleCollapse?: () => void
+  onAstrologerMode?: () => void
   activeMobileTab?: 'charts' | 'profile'
   onMobileTabChange?: (tab: 'charts' | 'profile') => void
 }
@@ -106,6 +108,7 @@ export function Sidebar({
   onDeleteChart,
   collapsed = false,
   onToggleCollapse,
+  onAstrologerMode,
   activeMobileTab = 'charts',
   onMobileTabChange,
 }: SidebarProps) {
@@ -149,15 +152,26 @@ export function Sidebar({
                 </p>
               </div>
             )}
-            {/* Collapse toggle — shown only in expanded mode inside header */}
+            {/* Action buttons — shown only in expanded mode */}
             {!collapsed && (
-              <button
-                onClick={onToggleCollapse}
-                title="Свернуть панель"
-                className="ml-auto w-7 h-7 rounded-lg flex items-center justify-center text-[#4A3F6A] hover:text-[#D4AF37] hover:bg-[rgba(212,175,55,0.08)] transition-all shrink-0"
-              >
-                <PanelLeftClose className="w-4 h-4" />
-              </button>
+              <div className="ml-auto flex items-center gap-1">
+                {selectedChart && (
+                  <button
+                    onClick={onAstrologerMode}
+                    title="Режим астролога"
+                    className="w-7 h-7 rounded-lg flex items-center justify-center text-[#4A3F6A] hover:text-[#D4AF37] hover:bg-[rgba(212,175,55,0.08)] transition-all"
+                  >
+                    <Maximize2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
+                <button
+                  onClick={onToggleCollapse}
+                  title="Свернуть панель"
+                  className="w-7 h-7 rounded-lg flex items-center justify-center text-[#4A3F6A] hover:text-[#D4AF37] hover:bg-[rgba(212,175,55,0.08)] transition-all"
+                >
+                  <PanelLeftClose className="w-4 h-4" />
+                </button>
+              </div>
             )}
           </div>
 
