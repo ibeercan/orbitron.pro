@@ -27,7 +27,6 @@ export default function Landing() {
   const [isPremium, setIsPremium] = useState(false)
   const [message, setMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const [isSubscriber, setIsSubscriber] = useState(false)
 
   const { login } = useAuth()
 
@@ -143,7 +142,6 @@ export default function Landing() {
       if (exists) {
         setStep('login')
       } else if (is_subscriber) {
-        setIsSubscriber(true)
         setMessage(emailMsg)
         if (data.invite_code) {
           const inviteRes = await subscriptionApi.checkInvite(data.email, data.invite_code)
