@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/auth-context'
-import { chartsApi, aiApi } from '@/lib/api/client'
+import { chartsApi, aiApi, inviteApi } from '@/lib/api/client'
 import { cn } from '@/lib/utils'
 
 interface Chart {
@@ -29,6 +29,8 @@ export default function Dashboard() {
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [isCreatingChart, setIsCreatingChart] = useState(false)
+  const [inviteCodes, setInviteCodes] = useState<{ code: string; used: boolean }[]>([])
+  const [showInviteModal, setShowInviteModal] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -124,7 +126,7 @@ export default function Dashboard() {
           <div>
             <p className="font-medium text-white">{user?.email}</p>
             <p className="text-xs text-gray-500">
-              {user?.subscription_type === 'premium' ? 'Premium' : 'Free'}
+              {user?.is_admin ? 'Admin' : user?.subscription_type === 'premium' ? 'Premium' : 'Free'}
             </p>
           </div>
         </div>
@@ -133,6 +135,22 @@ export default function Dashboard() {
           <button className="w-full rounded-md bg-white/10 px-4 py-2 text-left text-white">
             Мои карты
           </button>
+          {user?.is_admin && (
+            <button
+              onClick={async () => {
+                try {
+                  const res = await inviteApi.list()
+                  setInviteCodes(res.data.codes)
+                  setShowInviteModal(true)
+                } catch (err) {
+                  console.error('Failed to load invites:', err)
+                }
+              }}
+              className="w-full rounded-md px-4 py-2 text-left text-gray-400 hover:bg-white/5 hover:text-white"
+            >
+              Инвайты
+            </button>
+          )}
           <button
             onClick={() => navigate('/profile')}
             className="w-full rounded-md px-4 py-2 text-left text-gray-400 hover:bg-white/5 hover:text-white"
@@ -263,6 +281,54 @@ export default function Dashboard() {
           </div>
         </div>
       </main>
+
+      {/* Admin Invite Modal */}
+      {showInviteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="w-full max-w-md rounded-lg border border-white/20 bg-background p-6">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-white">Управление инвайтами</h2>
+              <button
+                onClick={() => setShowInviteModal(false)}
+                className="text-gray-400 hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
+
+            <button
+              onClick={async () => {
+                try {
+                  const res = await inviteApi.generate()
+                  setInviteCodes([{ code: res.data.code, used: false }, ...inviteCodes])
+                } catch (err) {
+                  console.error('Failed to generate invite:', err)
+                }
+              }}
+              className="mb-4 w-full rounded-md bg-secondary-400 px-4 py-2 font-medium text-gray-900 hover:bg-secondary-300"
+            >
+              Создать новый инвайт
+            </button>
+
+            <div className="max-h-60 space-y-2 overflow-auto">
+              {inviteCodes.map((invite) => (
+                <div
+                  key={invite.code}
+                  className="flex items-center justify-between rounded-md border border-white/10 bg-white/5 px-3 py-2"
+                >
+                  <code className="font-mono text-white">{invite.code}</code>
+                  <span className={invite.used ? 'text-red-400' : 'text-green-400'}>
+                    {invite.used ? 'Использован' : 'Доступен'}
+                  </span>
+                </div>
+              ))}
+              {inviteCodes.length === 0 && (
+                <p className="text-center text-gray-500">Нет инвайтов</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

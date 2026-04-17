@@ -7,6 +7,7 @@ interface User {
   subscription_type: 'free' | 'premium'
   subscription_end: string | null
   is_active: boolean
+  is_admin: boolean
   created_at: string
 }
 

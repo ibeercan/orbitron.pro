@@ -27,6 +27,7 @@ class User(BaseModel):
     subscription_type: str
     subscription_end: str | None
     is_active: bool
+    is_admin: bool = False
 
     class Config:
         from_attributes = True

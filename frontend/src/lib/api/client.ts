@@ -100,3 +100,12 @@ export const aiApi = {
     return api.post(`/ai/${chartId}/interpret`, { question, request_type: requestType })
   },
 }
+
+export const inviteApi = {
+  generate: async () => {
+    return api.post('/invites/generate')
+  },
+  list: async () => {
+    return api.get('/invites')
+  },
+}
