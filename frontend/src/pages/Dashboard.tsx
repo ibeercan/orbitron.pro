@@ -223,20 +223,6 @@ const loadChartSvg = async (chart: Chart) => {
       setSvgLoading(false)
     }
   }
-    }
-
-    // Otherwise fetch from API (legacy charts or stripped list response)
-    setSvgLoading(true)
-    setSvgContent('')
-    try {
-      const res = await chartsApi.getSvg(chart.id)
-      setSvgContent(res.data.svg)
-    } catch (err) {
-      console.error('Failed to load chart SVG:', err)
-    } finally {
-      setSvgLoading(false)
-    }
-  }
 
   const selectChart = (chart: Chart) => {
     if (selectedChart?.id === chart.id) return
