@@ -308,9 +308,9 @@ export default function Dashboard() {
                       <p className="text-sm text-[#8B7FA8]">Строим карту…</p>
                     </div>
                   ) : svgContent ? (
-                    <div className="chart-glow-container relative w-full h-full flex items-center justify-center p-6">
+                    <div className="chart-glow-container w-full h-full overflow-auto">
                       <div
-                        className="relative z-10 w-full h-full flex items-center justify-center [&_svg]:max-w-full [&_svg]:max-h-full [&_svg]:drop-shadow-[0_0_24px_rgba(212,175,55,0.12)]"
+                        className="chart-svg-wrapper"
                         dangerouslySetInnerHTML={{ __html: svgContent }}
                       />
                     </div>
@@ -408,10 +408,12 @@ export default function Dashboard() {
                       <p className="text-xs text-[#8B7FA8]">Строим карту…</p>
                     </div>
                   ) : svgContent ? (
-                    <div
-                      className="flex-1 flex items-center justify-center p-4 [&_svg]:max-w-full [&_svg]:max-h-full"
-                      dangerouslySetInnerHTML={{ __html: svgContent }}
-                    />
+                    <div className="chart-glow-container flex-1 overflow-auto">
+                      <div
+                        className="chart-svg-wrapper"
+                        dangerouslySetInnerHTML={{ __html: svgContent }}
+                      />
+                    </div>
                   ) : (
                     <div className="flex items-center justify-center h-full">
                       <p className="text-sm text-[#8B7FA8]">Ошибка загрузки</p>

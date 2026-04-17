@@ -60,24 +60,30 @@ async def start_chat_for_chart(
     """
     Start a new chat session for a specific chart.
     """
+    # Cache user_id before any DB operations
+    user_id = current_user.id
+
     # Get chart
-    chart = await chart_crud.get_by_id_and_user(db, id=chart_id, user_id=current_user.id)
+    chart = await chart_crud.get_by_id_and_user(db, id=chart_id, user_id=user_id)
     if not chart:
         raise HTTPException(status_code=404, detail="Chart not found")
 
+    # Read native_data while chart is still loaded
+    chart_datetime = (chart.native_data or {}).get("datetime", "Chart")
+
     # Check if session already exists for this chart
     existing_session = await chat_crud.chat_session.get_by_chart(
-        db, chart_id=chart_id, user_id=current_user.id
+        db, chart_id=chart_id, user_id=user_id
     )
     if existing_session:
         return existing_session
 
-    # Create new session
+    # Create new session (CRUD reloads with selectinload to avoid MissingGreenlet)
     session = await chat_crud.chat_session.create(
         db,
-        user_id=current_user.id,
+        user_id=user_id,
         chart_id=chart_id,
-        title=request.title or f"Chat - {chart.native_data.get('datetime', 'Chart')}"
+        title=request.title or f"Chat - {chart_datetime}"
     )
     logger.info("Chat session created", session_id=session.id, chart_id=chart_id)
 
@@ -143,15 +149,24 @@ async def stream_chat_message(
     """
     Stream AI response for a chat message using SSE.
     """
+    # Cache user_id before any DB operations to avoid MissingGreenlet
+    user_id = current_user.id
+
     # Get session
-    session = await chat_crud.chat_session.get_by_id(db, session_id=session_id, user_id=current_user.id)
+    session = await chat_crud.chat_session.get_by_id(db, session_id=session_id, user_id=user_id)
     if not session:
         raise HTTPException(status_code=404, detail="Chat session not found")
 
+    # Read chart_id while session is loaded
+    chart_id = session.chart_id
+
     # Get chart
-    chart = await chart_crud.get_by_id_and_user(db, id=session.chart_id, user_id=current_user.id)
+    chart = await chart_crud.get_by_id_and_user(db, id=chart_id, user_id=user_id)
     if not chart:
         raise HTTPException(status_code=404, detail="Chart not found")
+
+    # Read prompt_text while chart is loaded
+    prompt_text = chart.prompt_text or ""
 
     return StreamingResponse(
         generate_sse(
@@ -159,12 +174,12 @@ async def stream_chat_message(
             user_message_content=request.content,
             db=db,
             current_user=current_user,
-            chart_prompt_text=chart.prompt_text,
+            chart_prompt_text=prompt_text,
         ),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",
             "Connection": "keep-alive",
-            "X-Accel-Buffering": "no-cache",
+            "X-Accel-Buffering": "no",
         },
     )

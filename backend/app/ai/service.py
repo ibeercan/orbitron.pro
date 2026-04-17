@@ -124,8 +124,7 @@ Please provide a detailed astrological interpretation focusing on personality tr
         logger.info("AI request logged for streaming", user_id=user.id, request_id=log_entry.id)
 
         # Prepare prompt
-        full_prompt = f"""
-Astrological Chart Data:
+        full_prompt = f"""Astrological Chart Data:
 {prompt_text}
 
 User Question: {question or "Provide a general interpretation of this natal chart"}
@@ -133,9 +132,11 @@ User Question: {question or "Provide a general interpretation of this natal char
 Please provide a detailed astrological interpretation focusing on personality traits, life themes, and potential.
 """
         try:
-            async for chunk in self.agent.run_stream(full_prompt):
-                if chunk.text():
-                    yield chunk.text()
+            # pydantic-ai: run_stream is an async context manager
+            async with self.agent.run_stream(full_prompt) as result:
+                async for text in result.stream_text(delta=True):
+                    if text:
+                        yield text
             logger.info("AI streaming interpretation completed", user_id=user.id)
         except Exception as e:
             logger.error("AI streaming interpretation failed", user_id=user.id, error=str(e))

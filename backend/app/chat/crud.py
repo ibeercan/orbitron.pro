@@ -34,10 +34,10 @@ class CRUDChatSession:
         return result.scalars().all()
 
     async def create(
-        self, 
-        db: AsyncSession, 
-        user_id: int, 
-        chart_id: int, 
+        self,
+        db: AsyncSession,
+        user_id: int,
+        chart_id: int,
         title: Optional[str] = None
     ) -> ChatSession:
         session = ChatSession(
@@ -48,7 +48,14 @@ class CRUDChatSession:
         db.add(session)
         await db.commit()
         await db.refresh(session)
-        return session
+
+        # Reload with messages eagerly to avoid MissingGreenlet during serialization
+        result = await db.execute(
+            select(ChatSession)
+            .where(ChatSession.id == session.id)
+            .options(selectinload(ChatSession.messages))
+        )
+        return result.scalars().first()
 
     async def update_title(self, db: AsyncSession, session_id: int, title: str) -> Optional[ChatSession]:
         await db.execute(
@@ -57,9 +64,11 @@ class CRUDChatSession:
             .values(title=title)
         )
         await db.commit()
-        
+
         result = await db.execute(
-            select(ChatSession).where(ChatSession.id == session_id)
+            select(ChatSession)
+            .where(ChatSession.id == session_id)
+            .options(selectinload(ChatSession.messages))
         )
         return result.scalars().first()
 
@@ -78,14 +87,14 @@ class CRUDChatMessage:
             content=content
         )
         db.add(message)
-        
+
         # Update session updated_at
         await db.execute(
             update(ChatSession)
             .where(ChatSession.id == session_id)
             .values(updated_at=func.now())
         )
-        
+
         await db.commit()
         await db.refresh(message)
         return message

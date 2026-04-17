@@ -48,7 +48,7 @@ const schema = z
       .min(1, 'Введите время')
       .regex(/^([01]\d|2[0-3]):([0-5]\d)$/, 'Формат HH:MM (24ч)'),
     location: z.string().min(2, 'Выберите место рождения'),
-    theme: z.string().default('classic'),
+    theme: z.string().default('midnight'),
     house_system: z.string().default('placidus'),
     preset: z.string().default('detailed'),
   })
@@ -241,9 +241,13 @@ function AdvancedSettings({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="luxury-select-content">
+                    <SelectItem value="midnight">Полночь (тёмная)</SelectItem>
+                    <SelectItem value="celestial">Небесная</SelectItem>
+                    <SelectItem value="dark">Тёмная</SelectItem>
                     <SelectItem value="classic">Классическая</SelectItem>
-                    <SelectItem value="modern">Современная</SelectItem>
-                    <SelectItem value="cosmic">Космическая</SelectItem>
+                    <SelectItem value="sepia">Сепия</SelectItem>
+                    <SelectItem value="neon">Неон</SelectItem>
+                    <SelectItem value="pastel">Пастель</SelectItem>
                   </SelectContent>
                 </Select>
               )}
@@ -263,8 +267,6 @@ function AdvancedSettings({
                   <SelectContent className="luxury-select-content">
                     <SelectItem value="placidus">Плацидус</SelectItem>
                     <SelectItem value="whole_sign">Целые знаки</SelectItem>
-                    <SelectItem value="koch">Кох</SelectItem>
-                    <SelectItem value="porphyrius">Порфирий</SelectItem>
                   </SelectContent>
                 </Select>
               )}
@@ -330,7 +332,7 @@ export function CreateChartModal({ open, onClose, onCreated }: CreateChartModalP
       year: '',
       time: '',
       location: '',
-      theme: 'classic',
+      theme: 'midnight',
       house_system: 'placidus',
       preset: 'detailed',
     },

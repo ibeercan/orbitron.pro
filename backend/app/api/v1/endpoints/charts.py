@@ -138,7 +138,9 @@ async def delete_chart(
     Delete a chart and all associated chat sessions / messages.
     Returns 204 No Content on success, 404 if not found or not owned by user.
     """
-    deleted = await chart_crud.delete(db, id=chart_id, user_id=current_user.id)
+    # Cache user_id before any DB operations to avoid MissingGreenlet on lazy load
+    user_id = current_user.id
+    deleted = await chart_crud.delete(db, id=chart_id, user_id=user_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Chart not found")
-    logger.info("API: Chart deleted", user_id=current_user.id, chart_id=chart_id)
+    logger.info("API: Chart deleted", user_id=user_id, chart_id=chart_id)

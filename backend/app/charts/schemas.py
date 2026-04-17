@@ -3,13 +3,33 @@ from typing import Optional
 from datetime import datetime
 
 
+VALID_THEMES = {
+    "classic", "dark", "midnight", "celestial", "neon", "sepia", "pastel",
+    "viridis", "plasma", "inferno", "magma", "cividis", "turbo",
+}
+
+VALID_PALETTES = {
+    "auto",  # auto-select matching palette for theme
+    "grey", "rainbow", "elemental", "cardinality",
+    "rainbow_dark", "rainbow_midnight", "rainbow_celestial",
+    "rainbow_neon", "rainbow_sepia",
+}
+
+
 class ChartCreate(BaseModel):
     datetime: str
     location: str
-    theme: Optional[str] = "classic"
+    theme: Optional[str] = "midnight"
     house_system: Optional[str] = "placidus"
     preset: Optional[str] = "detailed"
-    zodiac_palette: Optional[str] = "rainbow"
+    zodiac_palette: Optional[str] = "auto"
+
+    @field_validator("theme")
+    @classmethod
+    def validate_theme(cls, v: str) -> str:
+        if v not in VALID_THEMES:
+            raise ValueError(f"Theme must be one of: {', '.join(sorted(VALID_THEMES))}")
+        return v
 
     @field_validator("preset")
     @classmethod
@@ -21,8 +41,8 @@ class ChartCreate(BaseModel):
     @field_validator("zodiac_palette")
     @classmethod
     def validate_palette(cls, v: str) -> str:
-        if v not in ["rainbow", "elemental", "cardinality", "grey"]:
-            raise ValueError("Palette must be one of: rainbow, elemental, cardinality, grey")
+        if v not in VALID_PALETTES:
+            raise ValueError(f"Palette must be one of: {', '.join(sorted(VALID_PALETTES))}")
         return v
 
     @field_validator("datetime")
