@@ -52,7 +52,7 @@ async def get_chat_session(
 
 @router.post("/chart/{chart_id}/start", response_model=ChatSessionResponse)
 async def start_chat_for_chart(
-    chart_id: str,
+    chart_id: int,
     request: StartChatRequest,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
@@ -67,7 +67,7 @@ async def start_chat_for_chart(
 
     # Check if session already exists for this chart
     existing_session = await chat_crud.chat_session.get_by_chart(
-        db, chart_id=int(chart_id), user_id=current_user.id
+        db, chart_id=chart_id, user_id=current_user.id
     )
     if existing_session:
         return existing_session
@@ -76,7 +76,7 @@ async def start_chat_for_chart(
     session = await chat_crud.chat_session.create(
         db,
         user_id=current_user.id,
-        chart_id=int(chart_id),
+        chart_id=chart_id,
         title=request.title or f"Chat - {chart.native_data.get('datetime', 'Chart')}"
     )
     logger.info("Chat session created", session_id=session.id, chart_id=chart_id)

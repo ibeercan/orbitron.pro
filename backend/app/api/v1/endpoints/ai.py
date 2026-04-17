@@ -19,7 +19,7 @@ async def interpret_chart(
     *,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
-    chart_id: str,
+    chart_id: int,
     interpret_in: AIInterpretRequest,
 ) -> Any:
     """
