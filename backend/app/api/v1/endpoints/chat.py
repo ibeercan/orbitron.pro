@@ -1,6 +1,9 @@
-from typing import Any
+from typing import Any, AsyncGenerator
+import json
+import asyncio
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
@@ -9,8 +12,8 @@ from app.models.user import User
 from app.chat.schemas import (
     ChatSessionResponse,
     ChatSessionListResponse,
-    SendMessageRequest,
-    SendMessageResponse,
+    StartChatRequest,
+    StreamMessageRequest,
 )
 from app.chat import crud as chat_crud
 from app.ai.service import ai_service
@@ -47,63 +50,10 @@ async def get_chat_session(
     return session
 
 
-@router.post("/{session_id}/messages", response_model=SendMessageResponse)
-async def send_message(
-    session_id: int,
-    request: SendMessageRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
-) -> Any:
-    """
-    Send a message to a chat session and get AI response.
-    """
-    # Get session
-    session = await chat_crud.chat_session.get_by_id(db, session_id=session_id, user_id=current_user.id)
-    if not session:
-        raise HTTPException(status_code=404, detail="Chat session not found")
-
-    # Get chart
-    chart = await chart_crud.get_by_id_and_user(db, id=str(session.chart_id), user_id=current_user.id)
-    if not chart:
-        raise HTTPException(status_code=404, detail="Chart not found")
-
-    # Save user message
-    user_message = await chat_crud.chat_message.create(
-        db, session_id=session_id, role="user", content=request.content
-    )
-    logger.info("User message saved", session_id=session_id, message_id=user_message.id)
-
-    # Get AI response
-    try:
-        interpretation = await ai_service.interpret_chart(
-            db, current_user, chart.prompt_text, request.content
-        )
-    except ValueError as e:
-        # AI limit reached
-        await db.rollback()
-        raise HTTPException(status_code=429, detail=str(e))
-    except Exception as e:
-        logger.error("AI interpretation failed", error=str(e))
-        raise HTTPException(status_code=500, detail="AI interpretation failed")
-
-    # Save assistant message
-    assistant_message = await chat_crud.chat_message.create(
-        db, session_id=session_id, role="assistant", content=interpretation
-    )
-    logger.info("Assistant message saved", session_id=session_id, message_id=assistant_message.id)
-
-    # Refresh session with messages
-    session = await chat_crud.chat_session.get_by_id(db, session_id=session_id, user_id=current_user.id)
-    
-    return SendMessageResponse(
-        message=assistant_message,
-        session=session
-    )
-
-
 @router.post("/chart/{chart_id}/start", response_model=ChatSessionResponse)
 async def start_chat_for_chart(
     chart_id: str,
+    request: StartChatRequest,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ) -> Any:
@@ -127,8 +77,94 @@ async def start_chat_for_chart(
         db,
         user_id=current_user.id,
         chart_id=int(chart_id),
-        title=f"Chat - {chart.native_data.get('datetime', 'Chart')}"
+        title=request.title or f"Chat - {chart.native_data.get('datetime', 'Chart')}"
     )
     logger.info("Chat session created", session_id=session.id, chart_id=chart_id)
 
     return session
+
+
+async def generate_sse(
+    session_id: int,
+    user_message_content: str,
+    db: AsyncSession,
+    current_user: User,
+    chart_prompt_text: str,
+) -> AsyncGenerator[str, None]:
+    """
+    Generate SSE stream for AI response.
+    """
+    full_response = ""
+    message_id = None
+
+    try:
+        # Save user message
+        user_message = await chat_crud.chat_message.create(
+            db, session_id=session_id, role="user", content=user_message_content
+        )
+        message_id = user_message.id
+        logger.info("User message saved", session_id=session_id, message_id=message_id)
+
+        # Yield user message confirmation
+        yield f"data: {json.dumps({'type': 'user_message', 'content': user_message_content})}\n\n"
+        await asyncio.sleep(0.05)
+
+        # Stream AI response
+        async for chunk in ai_service.stream_interpret_chart(
+            db, current_user, chart_prompt_text, user_message_content
+        ):
+            full_response += chunk
+            yield f"data: {json.dumps({'type': 'content', 'content': chunk})}\n\n"
+
+        # Save assistant message
+        assistant_message = await chat_crud.chat_message.create(
+            db, session_id=session_id, role="assistant", content=full_response
+        )
+        logger.info("Assistant message saved", session_id=session_id, message_id=assistant_message.id)
+
+        # Yield completion
+        yield f"data: {json.dumps({'type': 'done', 'message_id': assistant_message.id})}\n\n"
+
+    except ValueError as e:
+        logger.warning("AI limit reached in stream", user_id=current_user.id)
+        yield f"data: {json.dumps({'type': 'error', 'error': str(e)})}\n\n"
+    except Exception as e:
+        logger.error("AI streaming failed", error=str(e))
+        yield f"data: {json.dumps({'type': 'error', 'error': 'AI interpretation failed'})}\n\n"
+
+
+@router.post("/{session_id}/stream")
+async def stream_chat_message(
+    session_id: int,
+    request: StreamMessageRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """
+    Stream AI response for a chat message using SSE.
+    """
+    # Get session
+    session = await chat_crud.chat_session.get_by_id(db, session_id=session_id, user_id=current_user.id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Chat session not found")
+
+    # Get chart
+    chart = await chart_crud.get_by_id_and_user(db, id=str(session.chart_id), user_id=current_user.id)
+    if not chart:
+        raise HTTPException(status_code=404, detail="Chart not found")
+
+    return StreamingResponse(
+        generate_sse(
+            session_id=session_id,
+            user_message_content=request.content,
+            db=db,
+            current_user=current_user,
+            chart_prompt_text=chart.prompt_text,
+        ),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no-cache",
+        },
+    )

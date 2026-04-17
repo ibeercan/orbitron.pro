@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Optional, AsyncGenerator
 
 from pydantic_ai import Agent
 from pydantic_ai.models import Model
@@ -102,6 +102,43 @@ Please provide a detailed astrological interpretation focusing on personality tr
             return result.data
         except Exception as e:
             logger.error("AI interpretation failed", user_id=user.id, error=str(e))
+            raise
+
+    async def stream_interpret_chart(
+        self, db: AsyncSession, user: User, prompt_text: str, question: str = ""
+    ) -> AsyncGenerator[str, None]:
+        """Stream chart interpretation using AI."""
+        logger.info("AI streaming interpretation requested", user_id=user.id, question_length=len(question))
+
+        if not await self.check_ai_limit(db, user):
+            logger.warning("AI request limit reached", user_id=user.id)
+            raise ValueError("AI request limit reached for free users")
+
+        # Log the request
+        log_entry = RequestLog(
+            user_id=user.id,
+            endpoint="/chat/stream"
+        )
+        db.add(log_entry)
+        await db.commit()
+        logger.info("AI request logged for streaming", user_id=user.id, request_id=log_entry.id)
+
+        # Prepare prompt
+        full_prompt = f"""
+Astrological Chart Data:
+{prompt_text}
+
+User Question: {question or "Provide a general interpretation of this natal chart"}
+
+Please provide a detailed astrological interpretation focusing on personality traits, life themes, and potential.
+"""
+        try:
+            async for chunk in self.agent.run_stream(full_prompt):
+                if chunk.text():
+                    yield chunk.text()
+            logger.info("AI streaming interpretation completed", user_id=user.id)
+        except Exception as e:
+            logger.error("AI streaming interpretation failed", user_id=user.id, error=str(e))
             raise
 
 

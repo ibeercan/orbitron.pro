@@ -95,6 +95,20 @@ export const chartsApi = {
   },
 }
 
+export const geocodingApi = {
+  search: async (query: string) => {
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5`,
+      {
+        headers: {
+          'User-Agent': 'Orbitron/1.0',
+        },
+      }
+    );
+    return response.json();
+  },
+}
+
 export const aiApi = {
   interpret: async (chartId: string, question: string, requestType: string = 'general') => {
     return api.post(`/ai/${chartId}/interpret`, { question, request_type: requestType })

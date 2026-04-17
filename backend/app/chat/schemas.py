@@ -30,10 +30,9 @@ class ChatSessionListResponse(BaseModel):
     sessions: list[ChatSessionResponse]
 
 
-class SendMessageRequest(BaseModel):
+class StartChatRequest(BaseModel):
+    title: Optional[str] = None
+
+
+class StreamMessageRequest(BaseModel):
     content: str
-
-
-class SendMessageResponse(BaseModel):
-    message: ChatMessageResponse
-    session: ChatSessionResponse

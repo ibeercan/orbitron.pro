@@ -1,0 +1,251 @@
+import React, { useState, useCallback, useEffect, useRef } from 'react';
+import {
+  useExternalStoreRuntime,
+  ThreadMessageLike,
+  AppendMessage,
+  AssistantRuntimeProvider,
+} from '@assistant-ui/react';
+
+interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  createdAt: Date;
+}
+
+interface OrbitronRuntimeProviderProps {
+  children: React.ReactNode;
+  baseUrl: string;
+  sessionId: number | null;
+  chartId: string;
+  onSessionCreated?: (sessionId: number) => void;
+}
+
+function convertMessage(message: ChatMessage, _index: number): ThreadMessageLike {
+  return {
+    role: message.role,
+    content: [{ type: 'text', text: message.content }],
+    id: message.id,
+    createdAt: message.createdAt,
+  };
+}
+
+function useOrbitronChatRuntime({
+  baseUrl,
+  sessionId: initialSessionId,
+  chartId,
+  onSessionCreated,
+}: {
+  baseUrl: string;
+  sessionId: number | null;
+  chartId: string;
+  onSessionCreated?: (sessionId: number) => void;
+}) {
+  const baseApiUrl = baseUrl.replace(/\/$/, '');
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [isRunning, setIsRunning] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [sessionId, setSessionId] = useState<number | null>(initialSessionId);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const loadedSessionRef = useRef<number | null>(null);
+
+  // Sync external sessionId when chart changes (reset)
+  useEffect(() => {
+    setSessionId(initialSessionId);
+    if (!initialSessionId) {
+      setMessages([]);
+      loadedSessionRef.current = null;
+    }
+  }, [initialSessionId]);
+
+  // Notify parent when session is created
+  useEffect(() => {
+    if (sessionId && sessionId !== initialSessionId) {
+      onSessionCreated?.(sessionId);
+    }
+  }, [sessionId, initialSessionId, onSessionCreated]);
+
+  // Load history when sessionId is available and not yet loaded
+  useEffect(() => {
+    if (!sessionId || loadedSessionRef.current === sessionId) return;
+
+    const loadHistory = async () => {
+      setIsLoading(true);
+      try {
+        const res = await fetch(`${baseApiUrl}/chat/${sessionId}`, {
+          credentials: 'include',
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        const history: ChatMessage[] = (data.messages ?? []).map(
+          (m: { id: number; role: string; content: string; created_at: string }) => ({
+            id: String(m.id),
+            role: m.role as 'user' | 'assistant',
+            content: m.content,
+            createdAt: new Date(m.created_at),
+          })
+        );
+        setMessages(history);
+        loadedSessionRef.current = sessionId;
+      } catch {
+        // silent — history is optional
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadHistory();
+  }, [sessionId, baseApiUrl]);
+
+  const handleNewMessage = useCallback(async (message: AppendMessage) => {
+    if (!chartId) return;
+
+    const textContent = message.content[0];
+    if (!textContent || textContent.type !== 'text') {
+      throw new Error('Only text messages are supported');
+    }
+
+    const userText = textContent.text;
+    const userMessageId = `user-${Date.now()}`;
+    const userMsg: ChatMessage = {
+      id: userMessageId,
+      role: 'user',
+      content: userText,
+      createdAt: new Date(),
+    };
+
+    setMessages((prev) => [...prev, userMsg]);
+
+    setIsRunning(true);
+    const assistantMessageId = `assistant-${Date.now()}`;
+    const assistantMsg: ChatMessage = {
+      id: assistantMessageId,
+      role: 'assistant',
+      content: '',
+      createdAt: new Date(),
+    };
+    setMessages((prev) => [...prev, assistantMsg]);
+
+    abortControllerRef.current = new AbortController();
+
+    try {
+      let activeSessionId = sessionId;
+
+      if (!activeSessionId) {
+        const startRes = await fetch(`${baseApiUrl}/chat/chart/${chartId}/start`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: 'New Chat' }),
+          credentials: 'include',
+        });
+        if (!startRes.ok) throw new Error('Failed to create session');
+        const sessionData = await startRes.json();
+        activeSessionId = sessionData.id;
+        setSessionId(activeSessionId);
+        loadedSessionRef.current = activeSessionId; // mark as loaded — messages already in state
+      }
+
+      const response = await fetch(`${baseApiUrl}/chat/${activeSessionId}/stream`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: userText }),
+        credentials: 'include',
+        signal: abortControllerRef.current.signal,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error((errorData as { detail?: string }).detail || 'Request failed');
+      }
+
+      if (!response.body) throw new Error('No response body');
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          try {
+            const data = JSON.parse(line.slice(6)) as { type: string; content?: string; error?: string };
+
+            if (data.type === 'content') {
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === assistantMessageId
+                    ? { ...m, content: m.content + (data.content ?? '') }
+                    : m
+                )
+              );
+            } else if (data.type === 'error') {
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === assistantMessageId
+                    ? { ...m, content: m.content || `Ошибка: ${data.error}` }
+                    : m
+                )
+              );
+            }
+          } catch {}
+        }
+      }
+    } catch (err) {
+      if (err instanceof Error && err.name !== 'AbortError') {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === assistantMessageId
+              ? { ...m, content: m.content || `Ошибка: ${err.message}` }
+              : m
+          )
+        );
+      }
+    } finally {
+      setIsRunning(false);
+    }
+  }, [chartId, sessionId, baseApiUrl]);
+
+  const handleCancel = useCallback(async () => {
+    abortControllerRef.current?.abort();
+    setIsRunning(false);
+  }, []);
+
+  const runtime = useExternalStoreRuntime<ChatMessage>({
+    messages,
+    isRunning,
+    isLoading,
+    onNew: handleNewMessage,
+    onCancel: handleCancel,
+    convertMessage,
+  });
+
+  return runtime;
+}
+
+export function OrbitronRuntimeProvider({
+  children,
+  baseUrl,
+  sessionId,
+  chartId,
+  onSessionCreated,
+}: OrbitronRuntimeProviderProps) {
+  const runtime = useOrbitronChatRuntime({
+    baseUrl,
+    sessionId,
+    chartId,
+    onSessionCreated,
+  });
+
+  return (
+    <AssistantRuntimeProvider runtime={runtime}>
+      {children}
+    </AssistantRuntimeProvider>
+  );
+}
