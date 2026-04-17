@@ -5,7 +5,7 @@ import { Sidebar } from '@/components/layout/Sidebar'
 import { ProfileSlideOver } from '@/components/layout/ProfileSlideOver'
 import { AssistantChat } from '@/components/chat/AssistantChat'
 import { CreateChartModal } from '@/components/ui/CreateChartModal'
-import { Loader2, Calendar, MapPin, Sparkles, Star, Trash2, AlertTriangle } from 'lucide-react'
+import { Loader2, Calendar, MapPin, Sparkles, Star, Trash2, AlertTriangle, Maximize2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface Chart {
@@ -177,6 +177,9 @@ export default function Dashboard() {
   const [mobilePanelTab, setMobilePanelTab] = useState<'chart' | 'chat'>('chart')
   const [activeMobileNav, setActiveMobileNav] = useState<'charts' | 'profile'>('charts')
 
+  /* Astrologer mode — fullscreen chat */
+  const [astrologerMode, setAstrologerMode] = useState(false)
+
   useEffect(() => {
     loadCharts()
   }, [])
@@ -284,7 +287,7 @@ const loadChartSvg = async (chart: Chart) => {
         />
 
         {/* ── Main content ── */}
-        <main className="flex-1 flex flex-col overflow-hidden min-w-0">
+        <main className="flex-1 flex flex-col overflow-hidden min-w-0 relative">
 
           {/* ═══════════════════════════
               DESKTOP: chart | chat
@@ -333,7 +336,17 @@ const loadChartSvg = async (chart: Chart) => {
 
             {/* Chat panel */}
             <div className="w-[340px] xl:w-[380px] 2xl:w-[420px] shrink-0 flex flex-col overflow-hidden p-4 pl-2">
-              <div className="luxury-card flex flex-col h-full overflow-hidden">
+              <div className="luxury-card flex flex-col h-full overflow-hidden relative">
+                {/* Astrologer mode button */}
+                {selectedChart && (
+                  <button
+                    onClick={() => setAstrologerMode(true)}
+                    title="Режим астролога — только чат"
+                    className="absolute top-3.5 right-3.5 z-10 w-7 h-7 rounded-lg flex items-center justify-center text-[#4A3F6A] hover:text-[#D4AF37] hover:bg-[rgba(212,175,55,0.08)] transition-all"
+                  >
+                    <Maximize2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
                 <AssistantChat
                   chartId={selectedChart ? String(selectedChart.id) : ''}
                   sessionId={chatSessionId}
@@ -342,6 +355,34 @@ const loadChartSvg = async (chart: Chart) => {
               </div>
             </div>
           </div>
+
+          {/* ═══════════════════════════
+              ASTROLOGER MODE OVERLAY (desktop)
+              ═══════════════════════════ */}
+          {astrologerMode && selectedChart && (
+            <div className="absolute inset-0 z-50 hidden md:flex flex-col">
+              {/* Dark starfield backdrop */}
+              <div className="absolute inset-0 bg-[#0A0612]">
+                <div className="absolute inset-0 opacity-30"
+                  style={{
+                    backgroundImage: `radial-gradient(ellipse at 20% 30%, rgba(123,47,190,0.15) 0%, transparent 50%),
+                      radial-gradient(ellipse at 80% 70%, rgba(212,175,55,0.08) 0%, transparent 50%)`,
+                  }}
+                />
+              </div>
+              <div className="relative z-10 flex flex-col h-full max-w-3xl mx-auto w-full px-6 py-6">
+                <div className="luxury-card flex flex-col flex-1 overflow-hidden">
+                  <AssistantChat
+                    chartId={String(selectedChart.id)}
+                    sessionId={chatSessionId}
+                    onSessionCreated={(id) => setChatSessionId(id)}
+                    fullscreen
+                    onExitFullscreen={() => setAstrologerMode(false)}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* ═══════════════════════════
               MOBILE: tab switcher
