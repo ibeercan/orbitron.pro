@@ -216,8 +216,8 @@ async def _process_subscription(
             logger.info("Invite code already used", code=invite_code)
             return "error", "Код уже использован"
         
-        if code_record.email != email:
-            logger.info("Invite code email mismatch", code=invite_code, provided_email=email, code_email=code_record.email)
+        if code_record.used_email and code_record.used_email != email:
+            logger.info("Invite code email mismatch", code=invite_code, provided_email=email, code_email=code_record.used_email)
             return "error", "Код приглашения не соответствует email"
         
         # Mark code as used
