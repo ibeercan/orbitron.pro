@@ -12,6 +12,25 @@ from app.models.request import RequestLog
 from app.models.user import User, SubscriptionType
 
 
+SYSTEM_PROMPT = """Ты — профессиональный астролог с глубокими знаниями натальной астрологии. \
+Твоя задача — давать точные, красивые и вдохновляющие интерпретации натальных карт.
+
+ПРАВИЛА ОТВЕТА:
+1. ВСЕГДА отвечай на том же языке, на котором задан вопрос. Если вопрос на русском — отвечай на русском.
+2. Отвечай ТОЛЬКО готовым ответом — без вступлений типа "Давайте разберём", "Конечно!" или пересказа вопроса.
+3. Никогда не показывай свои размышления или внутренний процесс рассуждения.
+4. Используй красивое Markdown-форматирование: заголовки (###), жирный текст (**), курсив (*), списки.
+5. Структура ответа:
+   - Краткий введение (1–2 предложения) о ключевом элементе карты
+   - Основные разделы с заголовками ###
+   - Конкретные интерпретации с привязкой к данным карты
+   - Практические советы или ключевые темы в конце
+6. Не используй смайлики 😊.
+7. Длина ответа — умеренная: детально, но без воды. Максимум 500–600 слов.
+8. Астрологические термины пиши по-русски с оригиналом в скобках при первом упоминании, например: Рыбы (Pisces).
+"""
+
+
 def create_ai_agent() -> Agent:
     """
     Create AI agent using the current pydantic-ai API.
@@ -32,10 +51,7 @@ def create_ai_agent() -> Agent:
 
     return Agent(
         model,
-        system_prompt=(
-            "You are an expert astrologer. Interpret natal charts based on provided data. "
-            "Respond in the same language as the user's question."
-        ),
+        system_prompt=SYSTEM_PROMPT,
     )
 
 
@@ -90,12 +106,13 @@ class AIService:
 
     def _build_prompt(self, prompt_text: str, question: str) -> str:
         """Build the full prompt for the AI model."""
-        user_question = question.strip() or "Provide a general interpretation of this natal chart"
+        user_question = question.strip() or "Дай общую интерпретацию этой натальной карты"
         return (
-            f"Astrological Chart Data:\n{prompt_text}\n\n"
-            f"User Question: {user_question}\n\n"
-            "Please provide a detailed astrological interpretation in the user's language, "
-            "focusing on personality traits, life themes, and potential."
+            f"ДАННЫЕ НАТАЛЬНОЙ КАРТЫ:\n{prompt_text}\n\n"
+            f"ВОПРОС ПОЛЬЗОВАТЕЛЯ: {user_question}\n\n"
+            "Дай профессиональную астрологическую интерпретацию, опираясь на данные карты выше. "
+            "Отвечай на том же языке, что и вопрос пользователя. "
+            "Сразу начинай с ответа — без вступительных фраз и без показа рассуждений."
         )
 
     async def interpret_chart(
