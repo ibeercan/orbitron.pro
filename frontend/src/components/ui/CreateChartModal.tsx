@@ -2,17 +2,13 @@ import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Loader2, MapPin, ChevronDown, ChevronUp, Sparkles } from 'lucide-react'
+import { Loader2, MapPin, ChevronDown, ChevronUp, Star, X } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog'
-import { Label } from '@/components/ui/label'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
 import {
   Select,
   SelectContent,
@@ -21,8 +17,9 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { chartsApi, geocodingApi } from '@/lib/api/client'
+import { cn } from '@/lib/utils'
 
-// --- Validation schema ---
+/* ── Validation schema ── */
 function getDaysInMonth(month: number, year: number) {
   return new Date(year, month, 0).getDate()
 }
@@ -68,7 +65,7 @@ const schema = z
 
 type FormValues = z.input<typeof schema>
 
-// --- Nominatim suggestion ---
+/* ── Geocoding suggestion type ── */
 interface GeoSuggestion {
   place_id: number
   display_name: string
@@ -76,7 +73,23 @@ interface GeoSuggestion {
   lon: string
 }
 
-// --- Location autocomplete component ---
+/* ── Styled field label ── */
+function FieldLabel({ children, required }: { children: React.ReactNode; required?: boolean }) {
+  return (
+    <label className="block text-[10px] font-semibold text-[#8B7FA8] uppercase tracking-[0.12em] mb-1.5">
+      {children}
+      {required && <span className="text-[#D4AF37] ml-1">*</span>}
+    </label>
+  )
+}
+
+/* ── Styled error message ── */
+function FieldError({ message }: { message?: string }) {
+  if (!message) return null
+  return <p className="text-[11px] text-red-400 mt-1.5 flex items-center gap-1">{message}</p>
+}
+
+/* ── Location autocomplete ── */
 function LocationAutocomplete({
   value,
   onChange,
@@ -140,38 +153,47 @@ function LocationAutocomplete({
   return (
     <div ref={containerRef} className="relative">
       <div className="relative">
-        <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
-        <Input
+        <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#4A3F6A] pointer-events-none" />
+        <input
           value={query}
           onChange={handleInputChange}
           onFocus={() => suggestions.length > 0 && setIsOpen(true)}
           placeholder="Москва, Россия"
-          className={`pl-9 pr-9 ${error ? 'border-red-500/60 focus:border-red-500' : ''}`}
           autoComplete="off"
+          className={cn(
+            'luxury-input w-full h-11 pl-10 pr-10 text-sm',
+            error && 'error'
+          )}
         />
         {isSearching && (
-          <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 animate-spin" />
+          <Loader2 className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#D4AF37] animate-spin" />
         )}
       </div>
 
+      {/* Dropdown suggestions */}
       {isOpen && suggestions.length > 0 && (
-        <div className="absolute z-50 mt-1 w-full rounded-lg border border-white/10 bg-gray-900 shadow-xl overflow-hidden">
+        <div className="absolute z-[60] mt-1.5 w-full rounded-xl border border-[rgba(212,175,55,0.15)] overflow-hidden"
+          style={{
+            background: 'linear-gradient(145deg, rgba(22,15,40,0.98) 0%, rgba(13,9,32,0.99) 100%)',
+            boxShadow: '0 16px 48px rgba(0,0,0,0.6), 0 0 0 1px rgba(212,175,55,0.06)',
+          }}
+        >
           {suggestions.map((s) => {
             const parts = s.display_name.split(',')
             const city = parts[0]
-            const rest = parts.slice(1, 3).join(',')
+            const rest = parts.slice(1, 3).join(', ')
             return (
               <button
                 key={s.place_id}
                 type="button"
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => handleSelect(s)}
-                className="w-full flex items-start gap-3 px-3 py-2.5 text-left hover:bg-white/5 transition-colors group"
+                className="w-full flex items-start gap-3 px-4 py-3 text-left hover:bg-[rgba(212,175,55,0.05)] transition-colors border-b border-[rgba(212,175,55,0.06)] last:border-0"
               >
-                <MapPin className="h-4 w-4 text-secondary-400 mt-0.5 shrink-0 group-hover:text-secondary-300" />
+                <MapPin className="w-3.5 h-3.5 text-[#D4AF37] mt-0.5 shrink-0" />
                 <div className="min-w-0">
-                  <p className="text-sm text-white truncate">{city}</p>
-                  <p className="text-xs text-gray-500 truncate">{rest}</p>
+                  <p className="text-sm text-[#F0EAD6] font-medium truncate">{city}</p>
+                  <p className="text-xs text-[#8B7FA8] truncate mt-0.5">{rest}</p>
                 </div>
               </button>
             )
@@ -179,89 +201,12 @@ function LocationAutocomplete({
         </div>
       )}
 
-      {error && <p className="mt-1 text-xs text-red-400">{error}</p>}
+      <FieldError message={error} />
     </div>
   )
 }
 
-// --- Date fields ---
-function DateTimeFields({
-  register,
-  errors,
-}: {
-  register: ReturnType<typeof useForm<FormValues>>['register']
-  errors: Record<string, { message?: string }>
-}) {
-  return (
-    <div className="space-y-3">
-      <Label>Дата рождения</Label>
-      <div className="grid grid-cols-3 gap-2">
-        <div>
-          <Input
-            {...register('day')}
-            placeholder="День"
-            type="number"
-            min={1}
-            max={31}
-            className={errors.day ? 'border-red-500/60' : ''}
-          />
-          {errors.day && (
-            <p className="mt-1 text-xs text-red-400">{errors.day.message}</p>
-          )}
-        </div>
-        <div>
-          <Input
-            {...register('month')}
-            placeholder="Месяц"
-            type="number"
-            min={1}
-            max={12}
-            className={errors.month ? 'border-red-500/60' : ''}
-          />
-          {errors.month && (
-            <p className="mt-1 text-xs text-red-400">{errors.month.message}</p>
-          )}
-        </div>
-        <div>
-          <Input
-            {...register('year')}
-            placeholder="Год"
-            type="number"
-            min={1900}
-            max={currentYear}
-            className={errors.year ? 'border-red-500/60' : ''}
-          />
-          {errors.year && (
-            <p className="mt-1 text-xs text-red-400">{errors.year.message}</p>
-          )}
-        </div>
-      </div>
-
-      <div>
-        <Label className="mb-1.5 block">Время рождения</Label>
-        <Input
-          {...register('time')}
-          placeholder="12:00"
-          maxLength={5}
-          className={`w-32 ${errors.time ? 'border-red-500/60' : ''}`}
-          onChange={(e) => {
-            let val = e.target.value.replace(/[^\d:]/g, '')
-            if (val.length === 2 && !val.includes(':')) {
-              val = val + ':'
-            }
-            e.target.value = val
-            register('time').onChange(e)
-          }}
-        />
-        {errors.time && (
-          <p className="mt-1 text-xs text-red-400">{errors.time.message}</p>
-        )}
-      </div>
-    </div>
-  )
-}
-
-// --- Advanced settings ---
+/* ── Advanced settings section ── */
 function AdvancedSettings({
   control,
 }: {
@@ -270,33 +215,32 @@ function AdvancedSettings({
   const [open, setOpen] = useState(false)
 
   return (
-    <div className="border border-white/5 rounded-xl overflow-hidden">
+    <div className="rounded-xl border border-[rgba(212,175,55,0.1)] overflow-hidden">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center justify-between px-4 py-3 text-sm text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
+        className="w-full flex items-center justify-between px-4 py-3 text-sm text-[#8B7FA8] hover:text-[#D4AF37] hover:bg-[rgba(212,175,55,0.04)] transition-all"
       >
-        <span>Дополнительные настройки</span>
-        {open ? (
-          <ChevronUp className="h-4 w-4" />
-        ) : (
-          <ChevronDown className="h-4 w-4" />
-        )}
+        <span className="font-medium">Дополнительные настройки</span>
+        {open
+          ? <ChevronUp className="w-4 h-4" />
+          : <ChevronDown className="w-4 h-4" />
+        }
       </button>
 
       {open && (
-        <div className="px-4 pb-4 space-y-4 border-t border-white/5">
+        <div className="px-4 pb-4 space-y-4 border-t border-[rgba(212,175,55,0.08)]">
           <div className="pt-4">
-            <Label className="mb-1.5 block">Тема оформления</Label>
+            <FieldLabel>Тема оформления</FieldLabel>
             <Controller
               name="theme"
               control={control}
               render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger>
+                  <SelectTrigger className="luxury-select-trigger">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="luxury-select-content">
                     <SelectItem value="classic">Классическая</SelectItem>
                     <SelectItem value="modern">Современная</SelectItem>
                     <SelectItem value="cosmic">Космическая</SelectItem>
@@ -307,16 +251,16 @@ function AdvancedSettings({
           </div>
 
           <div>
-            <Label className="mb-1.5 block">Система домов</Label>
+            <FieldLabel>Система домов</FieldLabel>
             <Controller
               name="house_system"
               control={control}
               render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger>
+                  <SelectTrigger className="luxury-select-trigger">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="luxury-select-content">
                     <SelectItem value="placidus">Плацидус</SelectItem>
                     <SelectItem value="whole_sign">Целые знаки</SelectItem>
                     <SelectItem value="koch">Кох</SelectItem>
@@ -328,16 +272,16 @@ function AdvancedSettings({
           </div>
 
           <div>
-            <Label className="mb-1.5 block">Детализация</Label>
+            <FieldLabel>Детализация</FieldLabel>
             <Controller
               name="preset"
               control={control}
               render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger>
+                  <SelectTrigger className="luxury-select-trigger">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="luxury-select-content">
                     <SelectItem value="minimal">Минимальная</SelectItem>
                     <SelectItem value="standard">Стандартная</SelectItem>
                     <SelectItem value="detailed">Подробная</SelectItem>
@@ -352,7 +296,7 @@ function AdvancedSettings({
   )
 }
 
-// --- Main modal ---
+/* ── Main modal ── */
 interface CreateChartModalProps {
   open: boolean
   onClose: () => void
@@ -398,7 +342,7 @@ export function CreateChartModal({ open, onClose, onCreated }: CreateChartModalP
     setIsSubmitting(true)
     setServerError(null)
 
-    const day = String(data.day).padStart(2, '0')
+    const day   = String(data.day).padStart(2, '0')
     const month = String(data.month).padStart(2, '0')
     const datetime = `${data.year}-${month}-${day}T${data.time}:00`
 
@@ -425,69 +369,147 @@ export function CreateChartModal({ open, onClose, onCreated }: CreateChartModalP
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <div className="flex items-center gap-3 mb-1">
-            <div className="w-9 h-9 rounded-xl bg-secondary-400/10 flex items-center justify-center">
-              <Sparkles className="h-5 w-5 text-secondary-400" />
+      <DialogContent className="p-0 border-0 bg-transparent shadow-none max-w-md w-full">
+        <div className="luxury-card overflow-hidden">
+          {/* Modal header */}
+          <div className="flex items-center justify-between px-6 pt-6 pb-5 border-b border-[rgba(212,175,55,0.08)]">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-[rgba(212,175,55,0.1)] border border-[rgba(212,175,55,0.2)] flex items-center justify-center">
+                <Star className="w-4.5 h-4.5 text-[#D4AF37]" style={{ width: 18, height: 18 }} />
+              </div>
+              <div>
+                <DialogTitle className="font-serif text-xl font-semibold text-[#F0EAD6] m-0">
+                  Новая натальная карта
+                </DialogTitle>
+                <DialogDescription className="text-xs text-[#8B7FA8] mt-0.5">
+                  Введите дату, время и место рождения
+                </DialogDescription>
+              </div>
             </div>
-            <DialogTitle>Новая натальная карта</DialogTitle>
-          </div>
-          <DialogDescription>
-            Введите дату, время и место рождения для построения натальной карты
-          </DialogDescription>
-        </DialogHeader>
-
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 mt-2">
-          {/* Date & time */}
-          <DateTimeFields register={register} errors={errors as Record<string, { message?: string }>} />
-
-          {/* Location */}
-          <div>
-            <Label className="mb-1.5 block">Место рождения</Label>
-            <LocationAutocomplete
-              value={locationValue}
-              onChange={(val) => setValue('location', val, { shouldValidate: true })}
-              error={(errors.location as { message?: string })?.message}
-            />
-          </div>
-
-          {/* Advanced */}
-          <AdvancedSettings control={control} />
-
-          {/* Server error */}
-          {serverError && (
-            <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
-              {serverError}
-            </div>
-          )}
-
-          {/* Actions */}
-          <div className="flex gap-3 pt-1">
-            <Button
-              type="button"
-              variant="outline"
-              className="flex-1"
+            <button
               onClick={onClose}
-              disabled={isSubmitting}
+              className="w-8 h-8 rounded-xl flex items-center justify-center text-[#8B7FA8] hover:text-[#F0EAD6] hover:bg-[rgba(212,175,55,0.08)] transition-all"
             >
-              Отмена
-            </Button>
-            <Button type="submit" className="flex-1" disabled={isSubmitting}>
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  Строим карту…
-                </>
-              ) : (
-                <>
-                  <Sparkles className="h-4 w-4 mr-2" />
-                  Создать карту
-                </>
-              )}
-            </Button>
+              <X className="w-4 h-4" />
+            </button>
           </div>
-        </form>
+
+          {/* Form body */}
+          <div className="px-6 py-6 max-h-[70vh] overflow-y-auto">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+
+              {/* ── Date fields ── */}
+              <div>
+                <FieldLabel required>Дата рождения</FieldLabel>
+                <div className="grid grid-cols-3 gap-2.5">
+                  <div>
+                    <input
+                      {...register('day')}
+                      type="number"
+                      min={1}
+                      max={31}
+                      placeholder="День"
+                      className={cn('luxury-input w-full h-11 px-3 text-sm text-center', errors.day && 'error')}
+                    />
+                    <FieldError message={(errors.day as { message?: string })?.message} />
+                  </div>
+                  <div>
+                    <input
+                      {...register('month')}
+                      type="number"
+                      min={1}
+                      max={12}
+                      placeholder="Мес."
+                      className={cn('luxury-input w-full h-11 px-3 text-sm text-center', errors.month && 'error')}
+                    />
+                    <FieldError message={(errors.month as { message?: string })?.message} />
+                  </div>
+                  <div>
+                    <input
+                      {...register('year')}
+                      type="number"
+                      min={1900}
+                      max={currentYear}
+                      placeholder="Год"
+                      className={cn('luxury-input w-full h-11 px-3 text-sm text-center', errors.year && 'error')}
+                    />
+                    <FieldError message={(errors.year as { message?: string })?.message} />
+                  </div>
+                </div>
+              </div>
+
+              {/* ── Time field ── */}
+              <div>
+                <FieldLabel required>Время рождения</FieldLabel>
+                <input
+                  {...register('time')}
+                  placeholder="12:00"
+                  maxLength={5}
+                  className={cn('luxury-input h-11 px-4 text-sm w-36', errors.time && 'error')}
+                  onChange={(e) => {
+                    let val = e.target.value.replace(/[^\d:]/g, '')
+                    if (val.length === 2 && !val.includes(':')) val = val + ':'
+                    e.target.value = val
+                    register('time').onChange(e)
+                  }}
+                />
+                <FieldError message={(errors.time as { message?: string })?.message} />
+                <p className="text-[11px] text-[#4A3F6A] mt-1">
+                  Используйте 24-часовой формат (например, 14:30)
+                </p>
+              </div>
+
+              {/* ── Location ── */}
+              <div>
+                <FieldLabel required>Место рождения</FieldLabel>
+                <LocationAutocomplete
+                  value={locationValue}
+                  onChange={(val) => setValue('location', val, { shouldValidate: true })}
+                  error={(errors.location as { message?: string })?.message}
+                />
+              </div>
+
+              {/* ── Advanced settings ── */}
+              <AdvancedSettings control={control} />
+
+              {/* ── Server error ── */}
+              {serverError && (
+                <div className="px-4 py-3 rounded-xl border border-red-500/20 bg-red-500/08 text-sm text-red-400">
+                  {serverError}
+                </div>
+              )}
+
+              {/* ── Actions ── */}
+              <div className="flex gap-3 pt-1">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  disabled={isSubmitting}
+                  className="btn-ghost flex-1 h-11 text-sm font-medium"
+                >
+                  Отмена
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="btn-gold flex-1 h-11 text-sm flex items-center justify-center gap-2"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Строим карту…
+                    </>
+                  ) : (
+                    <>
+                      <Star className="w-4 h-4" />
+                      Создать карту
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   )

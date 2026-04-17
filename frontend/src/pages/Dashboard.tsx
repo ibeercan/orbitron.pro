@@ -5,7 +5,7 @@ import { Sidebar } from '@/components/layout/Sidebar'
 import { ProfileSlideOver } from '@/components/layout/ProfileSlideOver'
 import { AssistantChat } from '@/components/chat/AssistantChat'
 import { CreateChartModal } from '@/components/ui/CreateChartModal'
-import { Plus, MapPin, Calendar, Loader2, Sparkles } from 'lucide-react'
+import { Loader2, Calendar, MapPin, Sparkles, Star } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface Chart {
@@ -17,6 +17,95 @@ interface Chart {
   created_at: string
 }
 
+/* ── Empty state illustration ── */
+function EmptyChartState({ onCreate }: { onCreate: () => void }) {
+  return (
+    <div className="flex flex-col items-center justify-center h-full text-center px-8 py-12">
+      {/* Animated constellation */}
+      <div className="relative w-28 h-28 mb-6 animate-float">
+        <svg viewBox="0 0 112 112" fill="none" className="w-full h-full">
+          <defs>
+            <radialGradient id="ecBg" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="rgba(212,175,55,0.08)" />
+              <stop offset="100%" stopColor="transparent" />
+            </radialGradient>
+            <filter id="ecGlow">
+              <feGaussianBlur stdDeviation="2" result="b" />
+              <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
+            </filter>
+          </defs>
+          <circle cx="56" cy="56" r="52" fill="url(#ecBg)" />
+          <circle cx="56" cy="56" r="52" stroke="rgba(212,175,55,0.12)" strokeWidth="1" />
+          <circle cx="56" cy="56" r="36" stroke="rgba(212,175,55,0.08)" strokeWidth="1" strokeDasharray="3 4" />
+          <circle cx="56" cy="56" r="20" stroke="rgba(212,175,55,0.1)" strokeWidth="1" />
+
+          {/* Stars */}
+          {[
+            [56, 8], [96, 30], [96, 82], [56, 104], [16, 82], [16, 30],
+          ].map(([cx, cy], i) => (
+            <g key={i}>
+              <circle cx={cx} cy={cy} r="3" fill="#D4AF37" filter="url(#ecGlow)" opacity="0.7" />
+              <line
+                x1={56} y1={56} x2={cx} y2={cy}
+                stroke="rgba(212,175,55,0.15)" strokeWidth="0.8"
+              />
+            </g>
+          ))}
+
+          {/* Center */}
+          <circle cx="56" cy="56" r="7" fill="#D4AF37" filter="url(#ecGlow)" opacity="0.9">
+            <animate attributeName="opacity" values="0.7;1;0.7" dur="2s" repeatCount="indefinite" />
+          </circle>
+          <circle cx="56" cy="56" r="3.5" fill="#FFF8DC" opacity="0.6" />
+        </svg>
+      </div>
+
+      <h3 className="font-serif text-2xl font-semibold text-[#F0EAD6] mb-2">
+        Нет выбранной карты
+      </h3>
+      <p className="text-sm text-[#8B7FA8] leading-relaxed max-w-xs mb-6">
+        Выберите натальную карту в боковой панели, чтобы её просмотреть и поговорить с ИИ-астрологом
+      </p>
+      <button
+        onClick={onCreate}
+        className="btn-gold px-6 py-2.5 text-sm flex items-center gap-2"
+      >
+        <Star className="w-4 h-4" />
+        Создать первую карту
+      </button>
+    </div>
+  )
+}
+
+/* ── Chart header info ── */
+function ChartHeader({ chart }: { chart: Chart }) {
+  const date = new Date(chart.native_data.datetime)
+  const birthDate = date.toLocaleDateString('ru-RU', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  })
+  const birthTime = date.toLocaleTimeString('ru-RU', {
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+  const location = chart.native_data.location.split(',').slice(0, 2).join(', ').trim()
+
+  return (
+    <div className="flex items-center gap-5 flex-wrap">
+      <div className="flex items-center gap-2 text-sm">
+        <Calendar className="w-3.5 h-3.5 text-[#D4AF37]" />
+        <span className="text-[#F0EAD6] font-medium">{birthDate}</span>
+        <span className="text-[#8B7FA8]">{birthTime}</span>
+      </div>
+      <div className="flex items-center gap-2 text-sm">
+        <MapPin className="w-3.5 h-3.5 text-[#D4AF37]" />
+        <span className="text-[#8B7FA8]">{location}</span>
+      </div>
+    </div>
+  )
+}
+
 export default function Dashboard() {
   const [charts, setCharts] = useState<Chart[]>([])
   const [selectedChart, setSelectedChart] = useState<Chart | null>(null)
@@ -25,6 +114,10 @@ export default function Dashboard() {
   const [showProfile, setShowProfile] = useState(false)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [chatSessionId, setChatSessionId] = useState<number | null>(null)
+
+  /* Mobile tabs */
+  const [mobilePanelTab, setMobilePanelTab] = useState<'chart' | 'chat'>('chart')
+  const [activeMobileNav, setActiveMobileNav] = useState<'charts' | 'profile'>('charts')
 
   useEffect(() => {
     loadCharts()
@@ -59,7 +152,14 @@ export default function Dashboard() {
     loadChartSvg(chart.id)
   }
 
-  const handleChartCreated = (newChart: { id: number; native_data: { datetime: string; location: string }; result_data: Record<string, unknown>; svg_path: string; prompt_text: string; created_at: string }) => {
+  const handleChartCreated = (newChart: {
+    id: number
+    native_data: { datetime: string; location: string }
+    result_data: Record<string, unknown>
+    svg_path: string
+    prompt_text: string
+    created_at: string
+  }) => {
     const chart: Chart = { ...newChart }
     setCharts((prev) => [chart, ...prev])
     selectChart(chart)
@@ -67,160 +167,190 @@ export default function Dashboard() {
 
   return (
     <AppLayout>
-      <div className="flex h-screen">
-        {/* Sidebar */}
-        <Sidebar onProfileClick={() => setShowProfile(true)} />
+      <div className="flex h-screen overflow-hidden">
 
-        {/* Main Content */}
-        <main className="flex-1 flex flex-col md:pl-4 p-4 pb-24 md:pb-4 overflow-hidden">
-          {/* Mobile header */}
-          <div className="md:hidden flex items-center justify-between mb-4">
-            <h1 className="text-xl font-semibold text-white">Мои карты</h1>
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="p-2 rounded-xl bg-secondary-400 text-gray-900 active:scale-95 transition-transform"
-            >
-              <Plus className="h-5 w-5" />
-            </button>
-          </div>
+        {/* ── Sidebar (desktop: nav + charts list) ── */}
+        <Sidebar
+          onProfileClick={() => setShowProfile(true)}
+          onCreateChart={() => setShowCreateModal(true)}
+          charts={charts}
+          selectedChart={selectedChart}
+          onSelectChart={selectChart}
+          activeMobileTab={activeMobileNav}
+          onMobileTabChange={(tab) => {
+            setActiveMobileNav(tab)
+            if (tab === 'profile') setShowProfile(true)
+          }}
+        />
 
-          <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-4 min-h-0">
-            {/* Charts List */}
-            <div className="floating-card flex flex-col min-h-0">
-              <div className="flex items-center justify-between p-4 border-b border-white/10">
-                <h2 className="font-semibold text-white">Натальные карты</h2>
-                <button
-                  onClick={() => setShowCreateModal(true)}
-                  className="hidden md:flex items-center gap-2 px-4 py-2 rounded-xl bg-secondary-400 text-gray-900 font-medium hover:bg-secondary-300 active:scale-95 transition-all"
-                >
-                  <Plus className="h-4 w-4" />
-                  Создать
-                </button>
-              </div>
+        {/* ── Main content area ── */}
+        <main className="flex-1 flex flex-col overflow-hidden min-w-0">
 
-              <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                {charts.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center h-full text-center py-8">
-                    <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-white/5 flex items-center justify-center">
-                      <Sparkles className="h-8 w-8 text-gray-500" />
-                    </div>
-                    <p className="text-gray-400 mb-4 text-sm">У вас пока нет натальных карт</p>
-                    <button
-                      onClick={() => setShowCreateModal(true)}
-                      className="px-6 py-3 rounded-xl bg-secondary-400 font-medium text-gray-900 hover:bg-secondary-300 transition-colors"
-                    >
-                      Создать первую карту
-                    </button>
+          {/* ════════════════════════════════════════
+              DESKTOP: 2 panels side by side — Chart | Chat
+              ════════════════════════════════════════ */}
+          <div className="hidden md:flex flex-1 gap-0 overflow-hidden">
+
+            {/* Chart panel */}
+            <div className="flex-1 flex flex-col min-w-0 overflow-hidden p-4 pr-2">
+              <div className="luxury-card flex flex-col h-full overflow-hidden">
+
+                {/* Chart panel header */}
+                <div className="flex items-center justify-between px-5 py-4 border-b border-[rgba(212,175,55,0.08)] shrink-0">
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 rounded-full bg-[#D4AF37] shadow-[0_0_6px_rgba(212,175,55,0.8)]" />
+                    <span className="font-serif text-lg font-semibold text-[#F0EAD6]">
+                      Натальная карта
+                    </span>
                   </div>
-                ) : (
-                  charts.map((chart) => (
-                    <button
-                      key={chart.id}
-                      onClick={() => selectChart(chart)}
-                      className={cn(
-                        'w-full p-4 rounded-xl text-left transition-all active:scale-[0.99]',
-                        selectedChart?.id === chart.id
-                          ? 'bg-secondary-400/10 border border-secondary-400/30'
-                          : 'bg-white/5 border border-white/5 hover:border-white/10'
-                      )}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div
-                          className={cn(
-                            'w-10 h-10 rounded-xl flex items-center justify-center shrink-0',
-                            selectedChart?.id === chart.id
-                              ? 'bg-secondary-400/20'
-                              : 'bg-gradient-to-br from-primary-400/20 to-secondary-400/20'
-                          )}
-                        >
-                          <Sparkles
-                            className={cn(
-                              'h-5 w-5',
-                              selectedChart?.id === chart.id
-                                ? 'text-secondary-400'
-                                : 'text-gray-500'
-                            )}
-                          />
+                  {selectedChart && <ChartHeader chart={selectedChart} />}
+                </div>
+
+                {/* Chart content */}
+                <div className="flex-1 overflow-auto relative">
+                  {!selectedChart ? (
+                    <EmptyChartState onCreate={() => setShowCreateModal(true)} />
+                  ) : svgLoading ? (
+                    <div className="flex flex-col items-center justify-center h-full gap-4">
+                      <div className="relative">
+                        <div className="w-12 h-12 rounded-full border border-[rgba(212,175,55,0.2)] flex items-center justify-center">
+                          <Loader2 className="w-5 h-5 text-[#D4AF37] animate-spin" />
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-white truncate text-sm">
-                            {new Date(chart.native_data.datetime).toLocaleDateString('ru-RU', {
-                              day: 'numeric',
-                              month: 'long',
-                              year: 'numeric',
-                            })}
-                          </p>
-                          <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-0.5">
-                            <MapPin className="h-3 w-3 shrink-0" />
-                            <span className="truncate">{chart.native_data.location}</span>
-                          </div>
-                        </div>
-                        <div className="text-xs text-gray-600 shrink-0">
-                          {new Date(chart.created_at).toLocaleDateString('ru-RU', {
-                            day: 'numeric',
-                            month: 'short',
-                          })}
-                        </div>
+                        <div className="absolute inset-0 rounded-full animate-pulse-gold" />
                       </div>
-                    </button>
-                  ))
-                )}
+                      <p className="text-sm text-[#8B7FA8]">Строим карту…</p>
+                    </div>
+                  ) : svgContent ? (
+                    <div className="chart-glow-container relative w-full h-full flex items-center justify-center p-6">
+                      <div
+                        className="relative z-10 w-full h-full flex items-center justify-center [&_svg]:max-w-full [&_svg]:max-h-full [&_svg]:drop-shadow-[0_0_24px_rgba(212,175,55,0.12)]"
+                        dangerouslySetInnerHTML={{ __html: svgContent }}
+                      />
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center h-full">
+                      <p className="text-sm text-[#8B7FA8]">Не удалось загрузить карту</p>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
-            {/* Chart Viewer */}
-            <div className="floating-card flex flex-col min-h-0">
-              <div className="flex items-center justify-between p-4 border-b border-white/10">
-                <h2 className="font-semibold text-white">Карта</h2>
-                {selectedChart && (
-                  <div className="flex items-center gap-2 text-sm text-gray-400">
-                    <Calendar className="h-4 w-4" />
-                    {new Date(selectedChart.native_data.datetime).toLocaleDateString('ru-RU')}
-                  </div>
-                )}
+            {/* Chat panel */}
+            <div className="w-[340px] xl:w-[380px] 2xl:w-[420px] shrink-0 flex flex-col overflow-hidden p-4 pl-2">
+              <div className="luxury-card flex flex-col h-full overflow-hidden">
+                <AssistantChat
+                  chartId={selectedChart ? String(selectedChart.id) : ''}
+                  sessionId={chatSessionId}
+                  onSessionCreated={(id) => setChatSessionId(id)}
+                />
               </div>
+            </div>
+          </div>
 
-              <div className="flex-1 overflow-auto p-4">
-                {selectedChart ? (
-                  svgLoading ? (
+          {/* ════════════════════════════════════════
+              MOBILE: Tab switcher — Chart / Chat
+              ════════════════════════════════════════ */}
+          <div className="md:hidden flex flex-col flex-1 overflow-hidden pb-[72px]">
+
+            {/* Mobile tab bar */}
+            <div className="flex items-center gap-1 px-4 pt-4 pb-2 shrink-0">
+              <button
+                onClick={() => setMobilePanelTab('chart')}
+                className={cn(
+                  'flex-1 flex items-center justify-center gap-2 h-9 rounded-xl text-sm font-medium transition-all',
+                  mobilePanelTab === 'chart'
+                    ? 'bg-[rgba(212,175,55,0.1)] border border-[rgba(212,175,55,0.25)] text-[#D4AF37]'
+                    : 'text-[#8B7FA8] hover:text-[#F0EAD6]'
+                )}
+              >
+                <Star className="w-3.5 h-3.5" />
+                Карта
+              </button>
+              <button
+                onClick={() => setMobilePanelTab('chat')}
+                className={cn(
+                  'flex-1 flex items-center justify-center gap-2 h-9 rounded-xl text-sm font-medium transition-all',
+                  mobilePanelTab === 'chat'
+                    ? 'bg-[rgba(212,175,55,0.1)] border border-[rgba(212,175,55,0.25)] text-[#D4AF37]'
+                    : 'text-[#8B7FA8] hover:text-[#F0EAD6]'
+                )}
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                ИИ-Астролог
+              </button>
+            </div>
+
+            {/* Mobile chart list (above content, collapsible feel) */}
+            {charts.length > 0 && (
+              <div className="px-4 pb-2 shrink-0">
+                <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+                  {charts.map((chart) => {
+                    const isActive = selectedChart?.id === chart.id
+                    return (
+                      <button
+                        key={chart.id}
+                        onClick={() => selectChart(chart)}
+                        className={cn(
+                          'shrink-0 px-3 py-2 rounded-xl text-left transition-all',
+                          isActive ? 'chart-item-active' : 'chart-item'
+                        )}
+                      >
+                        <p className={cn('text-xs font-semibold whitespace-nowrap', isActive ? 'text-[#D4AF37]' : 'text-[#F0EAD6]')}>
+                          {new Date(chart.native_data.datetime).toLocaleDateString('ru-RU', {
+                            day: 'numeric', month: 'short', year: '2-digit'
+                          })}
+                        </p>
+                        <p className="text-[10px] text-[#8B7FA8] whitespace-nowrap mt-0.5">
+                          {chart.native_data.location.split(',')[0]}
+                        </p>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Panel content */}
+            <div className="flex-1 overflow-hidden px-4 pb-2">
+              {mobilePanelTab === 'chart' ? (
+                <div className="luxury-card h-full flex flex-col overflow-hidden">
+                  {!selectedChart ? (
+                    <EmptyChartState onCreate={() => setShowCreateModal(true)} />
+                  ) : svgLoading ? (
                     <div className="flex flex-col items-center justify-center h-full gap-3">
-                      <Loader2 className="h-8 w-8 animate-spin text-secondary-400" />
-                      <p className="text-xs text-gray-500">Загружаем карту…</p>
+                      <Loader2 className="w-6 h-6 text-[#D4AF37] animate-spin" />
+                      <p className="text-xs text-[#8B7FA8]">Строим карту…</p>
                     </div>
                   ) : svgContent ? (
                     <div
-                      className="w-full h-full flex items-center justify-center [&_svg]:max-w-full [&_svg]:max-h-full"
+                      className="flex-1 flex items-center justify-center p-4 [&_svg]:max-w-full [&_svg]:max-h-full"
                       dangerouslySetInnerHTML={{ __html: svgContent }}
                     />
                   ) : (
                     <div className="flex items-center justify-center h-full">
-                      <p className="text-sm text-gray-500">Не удалось загрузить карту</p>
+                      <p className="text-sm text-[#8B7FA8]">Ошибка загрузки</p>
                     </div>
-                  )
-                ) : (
-                  <div className="flex flex-col items-center justify-center h-full text-center gap-3">
-                    <div className="w-16 h-16 mb-2 rounded-2xl bg-white/5 flex items-center justify-center">
-                      <Sparkles className="h-8 w-8 text-gray-600" />
-                    </div>
-                    <p className="text-gray-400 text-sm">Выберите карту для просмотра</p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* AI Chat */}
-            <div className="lg:col-span-2 min-h-[400px]">
-              <AssistantChat
-                chartId={selectedChart ? String(selectedChart.id) : ''}
-                sessionId={chatSessionId}
-                onSessionCreated={(id) => setChatSessionId(id)}
-              />
+                  )}
+                </div>
+              ) : (
+                <div className="luxury-card h-full flex flex-col overflow-hidden">
+                  <AssistantChat
+                    chartId={selectedChart ? String(selectedChart.id) : ''}
+                    sessionId={chatSessionId}
+                    onSessionCreated={(id) => setChatSessionId(id)}
+                  />
+                </div>
+              )}
             </div>
           </div>
         </main>
 
         {/* Profile slide-over */}
-        <ProfileSlideOver isOpen={showProfile} onClose={() => setShowProfile(false)} />
+        <ProfileSlideOver
+          isOpen={showProfile}
+          onClose={() => setShowProfile(false)}
+        />
 
         {/* Create chart modal */}
         <CreateChartModal
