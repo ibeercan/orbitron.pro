@@ -2,7 +2,8 @@ from datetime import datetime
 from typing import Optional, AsyncGenerator
 
 from pydantic_ai import Agent
-from pydantic_ai.models.openai import OpenAIModel
+from pydantic_ai.models.openai import OpenAIChatModel
+from pydantic_ai.providers.openai import OpenAIProvider
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 
@@ -12,15 +13,22 @@ from app.models.user import User, SubscriptionType
 
 
 def create_ai_agent() -> Agent:
-    """Create AI agent with proper model initialization."""
+    """
+    Create AI agent using the current pydantic-ai API.
+
+    In pydantic-ai >= 0.1.x the model is OpenAIChatModel and credentials
+    are passed via OpenAIProvider (not directly to the model constructor).
+    This supports any OpenAI-compatible endpoint via base_url.
+    """
     if not settings.AI_API_KEY:
         raise ValueError("AI_API_KEY is not configured")
 
-    model = OpenAIModel(
-        model_name=settings.AI_MODEL,
-        api_key=settings.AI_API_KEY,
-        base_url=settings.AI_BASE_URL,
-    )
+    provider_kwargs: dict = {"api_key": settings.AI_API_KEY}
+    if settings.AI_BASE_URL:
+        provider_kwargs["base_url"] = settings.AI_BASE_URL
+
+    provider = OpenAIProvider(**provider_kwargs)
+    model = OpenAIChatModel(settings.AI_MODEL, provider=provider)
 
     return Agent(
         model,
