@@ -190,17 +190,39 @@ export default function Dashboard() {
     }
   }
 
-  const loadChartSvg = async (chart: Chart) => {
+const loadChartSvg = async (chart: Chart) => {
     // If svg_data is already embedded (new charts), decode inline
     if (chart.svg_data) {
       try {
-        const svgStr = atob(chart.svg_data)
+        // atob returns binary string, need TextDecoder for proper UTF-8
+        const binaryStr = atob(chart.svg_data)
+        const bytes = new Uint8Array(binaryStr.length)
+        for (let i = 0; i < binaryStr.length; i++) {
+          bytes[i] = binaryStr.charCodeAt(i)
+        }
+        const decoder = new TextDecoder('utf-8')
+        const svgStr = decoder.decode(bytes)
         setSvgContent(svgStr)
         setSvgLoading(false)
         return
-      } catch {
+      } catch (e) {
+        console.error('Failed to decode SVG:', e)
         // fall through to API call
       }
+    }
+
+    // Otherwise fetch from API (legacy charts or stripped list response)
+    setSvgLoading(true)
+    setSvgContent('')
+    try {
+      const res = await chartsApi.getSvg(chart.id)
+      setSvgContent(res.data.svg)
+    } catch (err) {
+      console.error('Failed to load chart SVG:', err)
+    } finally {
+      setSvgLoading(false)
+    }
+  }
     }
 
     // Otherwise fetch from API (legacy charts or stripped list response)

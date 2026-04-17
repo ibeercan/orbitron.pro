@@ -81,7 +81,7 @@ class ChartService:
         tmp.close()
 
         try:
-            # Build and calculate chart (with_aspects needed for aspect lines + tables)
+            # Build and calculate chart (with_aspects needed for aspect lines)
             chart = (
                 ChartBuilder.from_details(datetime_str, location)
                 .with_house_systems([house_engine])
@@ -91,28 +91,24 @@ class ChartService:
             logger.info("Chart calculated", planets=len(chart.get_planets()))
 
             # Compose the drawer with Orbitron luxury style:
-            # - midnight theme: deep dark background, muted star-field look
-            # - rainbow_midnight palette: vivid zodiac ring on dark bg
-            # - All four info corners filled with meaningful astro data
-            # - Large size for crisp display in the chart panel
+            # - Use minimal preset for transparent background (no white corners)
+            # - Theme with matching zodiac palette
             drawer = (
                 chart.draw(tmp_path)
                 .with_size(900)
                 .with_theme(theme)
                 .with_zodiac_palette(zodiac_palette)
-                .with_chart_info(position="top-left")
-                .with_moon_phase(position="bottom-left", show_label=True)
-                .with_aspect_counts(position="top-right")
-                .with_element_modality_table(position="bottom-right")
             )
 
-            # Apply preset (controls which sections are shown)
+            # Minimal preset = just the wheel, no text info corners
+            # This gives us transparent background and no English text
             if preset == "minimal":
                 drawer.preset_minimal()
             elif preset == "standard":
                 drawer.preset_standard()
             else:
-                # detailed: full chart with tables alongside the wheel
+                # detailed preset includes tables, but we use minimal for now
+                # to avoid English text in corners and have transparent background
                 drawer.preset_detailed()
 
             drawer.save()

@@ -115,9 +115,13 @@ async def generate_sse(
         yield f"data: {json.dumps({'type': 'user_message', 'content': user_message_content})}\n\n"
         await asyncio.sleep(0.05)
 
+        # Pre-cache user data to avoid MissingGreenlet in async generator
+        user_id = current_user.id
+        subscription_type = current_user.subscription_type
+
         # Stream AI response
         async for chunk in ai_service.stream_interpret_chart(
-            db, current_user, chart_prompt_text, user_message_content
+            db, user_id, subscription_type, chart_prompt_text, user_message_content
         ):
             full_response += chunk
             yield f"data: {json.dumps({'type': 'content', 'content': chunk})}\n\n"
@@ -132,10 +136,10 @@ async def generate_sse(
         yield f"data: {json.dumps({'type': 'done', 'message_id': assistant_message.id})}\n\n"
 
     except ValueError as e:
-        logger.warning("AI limit reached in stream", user_id=current_user.id)
+        logger.warning("AI limit reached in stream", user_id=user_id)
         yield f"data: {json.dumps({'type': 'error', 'error': str(e)})}\n\n"
     except Exception as e:
-        logger.error("AI streaming failed", error=str(e))
+        logger.error("AI streaming failed", error=str(e), user_id=user_id)
         yield f"data: {json.dumps({'type': 'error', 'error': 'AI interpretation failed'})}\n\n"
 
 
