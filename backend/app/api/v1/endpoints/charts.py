@@ -24,7 +24,8 @@ async def create_natal_chart(
     """
     Create a new natal chart.
     """
-    logger.info("API: Create natal chart requested", user_id=current_user.id, datetime=chart_in.datetime, location=chart_in.location)
+    user_id = current_user.id
+    logger.info("API: Create natal chart requested", user_id=user_id, datetime=chart_in.datetime, location=chart_in.location)
     try:
         chart_data = await chart_service.create_natal_chart(
             chart_in.datetime,
@@ -34,28 +35,18 @@ async def create_natal_chart(
             chart_in.preset,
             chart_in.zodiac_palette,
         )
-        chart = await chart_crud.create(db, obj_in=chart_data, user_id=current_user.id)
-        logger.info("API: Natal chart created successfully", user_id=current_user.id, chart_id=chart.id)
-        return Chart.from_orm(chart)
+        chart = await chart_crud.create(db, obj_in=chart_data, user_id=user_id)
+        
+        # Extract id before any potential session expiry
+        chart_id = chart.id
+        await db.commit()
+        await db.refresh(chart)
+        
+        logger.info("API: Natal chart created successfully", user_id=user_id, chart_id=chart_id)
+        return Chart.model_validate(chart)
     except Exception as e:
-        logger.error("API: Failed to create natal chart", user_id=current_user.id, error=str(e))
+        logger.error("API: Failed to create natal chart", user_id=user_id, error=str(e))
         raise HTTPException(status_code=400, detail=str(e))
-
-
-@router.get("/{chart_id}", response_model=Chart)
-async def get_chart(
-    *,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
-    chart_id: str,
-) -> Any:
-    """
-    Get a specific chart by ID.
-    """
-    chart = await chart_crud.get_by_id_and_user(db, id=chart_id, user_id=current_user.id)
-    if not chart:
-        raise HTTPException(status_code=404, detail="Chart not found")
-    return Chart.from_orm(chart)
 
 
 @router.get("/", response_model=List[Chart])
@@ -72,7 +63,23 @@ async def get_user_charts(
     charts = await chart_crud.get_user_charts(
         db, user_id=current_user.id, skip=skip, limit=limit
     )
-    return [Chart.from_orm(chart) for chart in charts]
+    return [Chart.model_validate(chart) for chart in charts]
+
+
+@router.get("/{chart_id}", response_model=Chart)
+async def get_chart(
+    *,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+    chart_id: int,
+) -> Any:
+    """
+    Get a specific chart by ID.
+    """
+    chart = await chart_crud.get_by_id_and_user(db, id=chart_id, user_id=current_user.id)
+    if not chart:
+        raise HTTPException(status_code=404, detail="Chart not found")
+    return Chart.model_validate(chart)
 
 
 @router.get("/{chart_id}/svg")
@@ -80,7 +87,7 @@ async def get_chart_svg(
     *,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
-    chart_id: str,
+    chart_id: int,
 ) -> Any:
     """
     Get SVG file for a chart.

@@ -34,11 +34,12 @@ class ChartCreate(BaseModel):
 
 
 class Chart(BaseModel):
-    id: str
+    id: int
     native_data: dict
     result_data: dict
     svg_path: str
     prompt_text: str
+    created_at: str
 
     class Config:
         from_attributes = True
