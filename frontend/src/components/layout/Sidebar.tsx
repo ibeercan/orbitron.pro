@@ -152,8 +152,27 @@ export function Sidebar({
                 </p>
               </div>
             )}
-            {/* Action buttons — shown only in expanded mode */}
-            {!collapsed && (
+            {/* Action buttons — shown in both modes (in header) */}
+            {collapsed ? (
+              <div className="ml-auto flex items-center gap-1">
+                {selectedChart && (
+                  <button
+                    onClick={onAstrologerMode}
+                    title="Режим астролога"
+                    className="w-7 h-7 rounded-lg flex items-center justify-center text-[#4A3F6A] hover:text-[#D4AF37] hover:bg-[rgba(212,175,55,0.08)] transition-all"
+                  >
+                    <Maximize2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
+                <button
+                  onClick={onToggleCollapse}
+                  title="Развернуть панель"
+                  className="w-7 h-7 rounded-lg flex items-center justify-center text-[#4A3F6A] hover:text-[#D4AF37] hover:bg-[rgba(212,175,55,0.08)] transition-all"
+                >
+                  <PanelLeftOpen className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
               <div className="ml-auto flex items-center gap-1">
                 {selectedChart && (
                   <button
