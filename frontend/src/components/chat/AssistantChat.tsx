@@ -384,7 +384,7 @@ function ChatContent() {
             onKeyDown={handleKeyDown}
             placeholder="Спросите об астрологии…"
             disabled={isRunning}
-            className="luxury-input flex-1 min-h-[40px] max-h-[120px] px-4 py-2.5 text-sm resize-none overflow-y-auto leading-relaxed scrollbar-hide"
+            className="luxury-input flex-1 min-h-[40px] max-h-[120px] px-4 py-2.5 text-sm resize-none overflow-y-auto leading-relaxed"
             style={{ height: '40px' }}
           />
 
