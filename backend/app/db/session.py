@@ -38,16 +38,16 @@ async def get_db() -> AsyncSession:
 logger = structlog.get_logger()
 
 
-@event.listens_for(engine, "connect")
+@event.listens_for(engine.sync_engine, "connect")
 def receive_connect(dbapi_connection, connection_record):
     logger.debug("database_connection_established")
 
 
-@event.listens_for(engine, "checkout")
+@event.listens_for(engine.sync_engine, "checkout")
 def receive_checkout(dbapi_connection, connection_record, connection_proxy):
     logger.debug("database_connection_checked_out_from_pool")
 
 
-@event.listens_for(engine, "checkin")
+@event.listens_for(engine.sync_engine, "checkin")
 def receive_checkin(dbapi_connection, connection_record):
     logger.debug("database_connection_returned_to_pool")
