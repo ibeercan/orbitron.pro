@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
@@ -12,6 +13,8 @@ from app.api.v1.api import api_router
 from app.core.config import settings
 from app.core.middleware import SubscriptionMiddleware
 import structlog
+import uuid
+from sqlalchemy import text
 
 # Configure structured logging
 import logging
@@ -37,6 +40,16 @@ structlog.configure(
 )
 
 logger = structlog.get_logger()
+
+
+class RequestIDMiddleware:
+    """Middleware to add unique request ID for tracing."""
+    async def __call__(self, request: Request, call_next):
+        request_id = str(uuid.uuid4())
+        request.state.request_id = request_id
+        response: Response = await call_next(request)
+        response.headers["X-Request-ID"] = request_id
+        return response
 
 # Rate limiter
 limiter = Limiter(key_func=get_remote_address, default_limits=["100/minute"])
@@ -75,6 +88,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Request ID middleware (must be first to ensure it's on all requests)
+app.add_middleware(RequestIDMiddleware)
+
 # Subscription middleware
 app.add_middleware(SubscriptionMiddleware)
 
@@ -85,3 +101,17 @@ app.include_router(api_router, prefix="/api/v1")
 async def health_check():
     """Health check endpoint."""
     return {"status": "healthy", "service": "orbitron-backend"}
+
+
+@app.get("/health/db")
+async def db_health_check(db: AsyncSession = Depends(get_db)):
+    """Database health check endpoint."""
+    try:
+        await db.execute(text("SELECT 1"))
+        return {"status": "healthy", "database": "connected"}
+    except Exception as e:
+        logger.error("database_health_check_failed", error=str(e))
+        return JSONResponse(
+            status_code=503,
+            content={"status": "unhealthy", "database": "disconnected", "detail": str(e)}
+        )

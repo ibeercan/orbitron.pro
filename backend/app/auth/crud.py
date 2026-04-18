@@ -2,21 +2,34 @@ from typing import Any, Dict, Optional, Union
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, InterfaceError, DBAPIError
 
 from app.core.security import get_password_hash, verify_password
+from app.core.config import settings
 from app.models.user import User
 from app.auth.schemas import UserCreate
+import structlog
 
 
 class CRUDUser:
+    def __init__(self):
+        self.logger = structlog.get_logger(__name__)
+
     async def get_by_email(self, db: AsyncSession, *, email: str) -> Optional[User]:
-        result = await db.execute(select(User).where(User.email == email))
-        return result.scalars().first()
+        try:
+            result = await db.execute(select(User).where(User.email == email))
+            return result.scalars().first()
+        except (InterfaceError, DBAPIError) as e:
+            self.logger.error("database_error_in_get_by_email", email=email, error=str(e))
+            raise
 
     async def get_by_id(self, db: AsyncSession, *, id: int) -> Optional[User]:
-        result = await db.execute(select(User).where(User.id == id))
-        return result.scalars().first()
+        try:
+            result = await db.execute(select(User).where(User.id == id))
+            return result.scalars().first()
+        except (InterfaceError, DBAPIError) as e:
+            self.logger.error("database_error_in_get_by_id", id=id, error=str(e))
+            raise
 
     async def create(self, db: AsyncSession, *, obj_in: UserCreate, is_premium: bool = False) -> User:
         from app.models.user import SubscriptionType
@@ -33,6 +46,10 @@ class CRUDUser:
         except IntegrityError:
             await db.rollback()
             raise ValueError("User with this email already exists")
+        except (InterfaceError, DBAPIError) as e:
+            await db.rollback()
+            self.logger.error("database_error_in_create", email=obj_in.email, error=str(e))
+            raise
         return db_obj
 
     async def authenticate(
