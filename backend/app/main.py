@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, Response, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -55,6 +56,7 @@ class RequestIDMiddleware:
 limiter = Limiter(key_func=get_remote_address, default_limits=["100/minute"])
 
 
+@asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan manager."""
     logger.info("Starting Orbitron Backend")
