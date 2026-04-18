@@ -109,20 +109,6 @@
   ::-webkit-scrollbar-thumb:hover {
     background: rgba(212, 175, 55, 0.4);
   }
-  /* Textarea scrollbar */
-  textarea::-webkit-scrollbar {
-    width: 3px;
-  }
-  textarea::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  textarea::-webkit-scrollbar-thumb {
-    background: rgba(212, 175, 55, 0.3);
-    border-radius: 1.5px;
-  }
-  textarea::-webkit-scrollbar-thumb:hover {
-    background: rgba(212, 175, 55, 0.5);
-  }
 
   /* Selection */
   ::selection {
