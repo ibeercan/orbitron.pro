@@ -1,0 +1,23 @@
+"""Application constants."""
+
+# Authentication
+COOKIE_NAME = "access_token"
+OAUTH2_SCHEME = "Bearer"
+
+# Rate limits
+DEFAULT_RATE_LIMIT = "100/minute"
+AUTH_RATE_LIMIT = "20/minute"
+
+# Database pool settings
+DB_POOL_SIZE = 20
+DB_MAX_OVERFLOW = 30
+DB_POOL_RECYCLE = 1800
+DB_POOL_PRE_PING = True
+
+# Pagination
+DEFAULT_PAGE_LIMIT = 100
+MAX_PAGE_LIMIT = 1000
+
+# Chart limits
+FREE_CHARTS_LIMIT = 10
+PREMIUM_CHARTS_LIMIT = None  # No limit

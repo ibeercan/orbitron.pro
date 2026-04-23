@@ -1,28 +1,49 @@
-from pydantic_settings import BaseSettings
+import json
+from pathlib import Path
 from typing import List, Optional
-import structlog
-import logging
 
-log_level = getattr(logging, "INFO", logging.INFO)
-logging.basicConfig(level=log_level)
+from pydantic import BaseModel, field_validator
+from pydantic_settings import BaseSettings
 
-structlog.configure(
-    processors=[
-        structlog.stdlib.filter_by_level,
-        structlog.stdlib.add_logger_name,
-        structlog.processors.TimeStamper(fmt="iso"),
-        structlog.processors.StackInfoRenderer(),
-        structlog.processors.format_exc_info,
-        structlog.processors.UnicodeDecoder(),
-        structlog.processors.JSONRenderer()
-    ],
-    context_class=dict,
-    logger_factory=structlog.stdlib.LoggerFactory(),
-    wrapper_class=structlog.stdlib.BoundLogger,
-    cache_logger_on_first_use=True,
-)
 
-logger = structlog.get_logger()
+class AIProviderConfig(BaseModel):
+    name: str
+    api_key: str
+    base_url: str = ""
+    models: List[str] = []
+    enabled: bool = True
+
+    @field_validator("api_key")
+    @classmethod
+    def api_key_not_empty(cls, v: str) -> str:
+        if not v or not v.strip():
+            raise ValueError("api_key must not be empty")
+        return v
+
+    @field_validator("models")
+    @classmethod
+    def models_not_empty(cls, v: List[str]) -> List[str]:
+        if not v:
+            raise ValueError("models list must not be empty")
+        return v
+
+
+_DEFAULT_SYSTEM_PROMPT = """Ты — профессиональный астролог с глубокими знаниями натальной астрологии. \
+Твоя задача — давать точные, красивые и вдохновляющие интерпретации натальных карт.
+
+ПРАВИЛА ОТВЕТА:
+1. ВСЕГДА отвечай на том же языке, на котором задан вопрос. Если вопрос на русском — отвечай на русском.
+2. Отвечай ТОЛЬКО готовым ответом — без вступлений типа "Давайте разберём", "Конечно!" или пересказа вопроса.
+3. Никогда не показывай свои размышления или внутренний процесс рассуждения.
+4. Используй красивое Markdown-форматирование: заголовки (###), жирный текст (**), курсив (*), списки.
+5. Структура ответа:
+   - Краткий введение (1–2 предложения) о ключевом элементе карты
+   - Основные разделы с заголовками ###
+   - Конкретные интерпретации с привязкой к данным карты
+   - Практические советы или ключевые темы в конце
+6. Не используй смайлики 😊.
+7. Длина ответа — умеренная: детально, но без воды. Максимум 500–600 слов.
+8. Астрологические термины пиши по-русски с оригиналом в скобках при первом упоминании, например: Рыбы (Pisces)."""
 
 
 class Settings(BaseSettings):
@@ -31,33 +52,48 @@ class Settings(BaseSettings):
     POSTGRES_USER: str = "user"
     POSTGRES_PASSWORD: str = ""
     DATABASE_URL: Optional[str] = None
-    
+
     @property
     def computed_database_url(self) -> str:
-        """Build DATABASE_URL from individual credentials if not set."""
         if self.DATABASE_URL:
             return self.DATABASE_URL
         if self.POSTGRES_PASSWORD:
             return f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@postgres:5432/{self.POSTGRES_DB}"
         return f"postgresql://{self.POSTGRES_USER}@postgres:5432/{self.POSTGRES_DB}"
 
-    # JWT
-    SECRET_KEY: str = "your-secret-key-change-in-production"
+    # JWT — MUST be set in .env for production
+    SECRET_KEY: str = "dev-only-insecure-key-change-in-production"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
-    # AI
-    AI_API_KEY: str = ""
-    AI_BASE_URL: Optional[str] = None
-    AI_MODEL: str = "gpt-4"
+    # AI Providers
+    AI_PROVIDERS: str = "[]"
+    AI_SYSTEM_PROMPT_FILE: str = ""
+    AI_RETRY_MAX_ATTEMPTS: int = 3
+    AI_RETRY_MIN_WAIT: int = 1
+    AI_RETRY_MAX_WAIT: int = 10
+
+    # AI Token Tracking
+    AI_TOKEN_TRACKING_ENABLED: bool = True
+    AI_COST_PER_1K_PROMPT: float = 0.03
+    AI_COST_PER_1K_COMPLETION: float = 0.06
+
+    # AI Cache
+    AI_CACHE_ENABLED: bool = False
+    AI_CACHE_TTL_SECONDS: int = 21600
 
     # Redis
     REDIS_URL: str = "redis://localhost:6379"
 
     # Security
-    ALLOWED_ORIGINS: List[str] = ["https://orbitron.pro"]
-    
+    ALLOWED_ORIGINS: List[str] = [
+        "https://orbitron.pro",
+        "http://localhost",
+        "http://localhost:5173",
+        "http://localhost:3000",
+    ]
+
     # Cookies
     COOKIE_DOMAIN: Optional[str] = None
     COOKIE_SECURE: bool = True
@@ -70,5 +106,25 @@ class Settings(BaseSettings):
 
     class Config:
         env_file = ".env"
+
+    @property
+    def ai_providers(self) -> List[AIProviderConfig]:
+        try:
+            raw = json.loads(self.AI_PROVIDERS)
+            if not isinstance(raw, list):
+                raise ValueError("AI_PROVIDERS must be a JSON array")
+            providers = [AIProviderConfig(**p) for p in raw]
+            return [p for p in providers if p.enabled and p.api_key]
+        except (json.JSONDecodeError, ValueError) as exc:
+            raise ValueError(f"Invalid AI_PROVIDERS config: {exc}") from exc
+
+    @property
+    def system_prompt(self) -> str:
+        if self.AI_SYSTEM_PROMPT_FILE:
+            path = Path(self.AI_SYSTEM_PROMPT_FILE)
+            if path.is_file():
+                return path.read_text(encoding="utf-8").strip()
+        return _DEFAULT_SYSTEM_PROMPT
+
 
 settings = Settings()

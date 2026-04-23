@@ -105,6 +105,10 @@ dmypy.json
 .vscode/
 .idea/
 
+# Local development
+dev.db
+*.db
+
 # Charts
 charts/
 

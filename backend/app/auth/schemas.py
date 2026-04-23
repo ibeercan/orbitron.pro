@@ -1,4 +1,10 @@
-from pydantic import BaseModel, EmailStr
+"""Authentication schemas."""
+
+import re
+
+from pydantic import BaseModel, EmailStr, Field, field_validator
+
+__all__ = ["Token", "TokenData", "UserCreate", "UserLogin", "User"]
 
 
 class Token(BaseModel):
@@ -12,8 +18,19 @@ class TokenData(BaseModel):
 
 class UserCreate(BaseModel):
     email: EmailStr
-    password: str
+    password: str = Field(min_length=8, max_length=128)
     invite_code: str | None = None
+
+    @field_validator("password")
+    @classmethod
+    def validate_password_strength(cls, v: str) -> str:
+        if not re.search(r"[A-Z]", v):
+            raise ValueError("Password must contain at least one uppercase letter")
+        if not re.search(r"[a-z]", v):
+            raise ValueError("Password must contain at least one lowercase letter")
+        if not re.search(r"\d", v):
+            raise ValueError("Password must contain at least one digit")
+        return v
 
 
 class UserLogin(BaseModel):
@@ -29,5 +46,4 @@ class User(BaseModel):
     is_active: bool
     is_admin: bool = False
 
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}

@@ -1,8 +1,8 @@
-from typing import Any, AsyncGenerator
+from typing import Annotated, Any, AsyncGenerator
 import json
 import asyncio
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -11,6 +11,7 @@ from app.auth.deps import get_current_active_user
 from app.models.user import User, SubscriptionType
 from app.chat.schemas import (
     ChatSessionResponse,
+    ChatSessionListItemResponse,
     ChatSessionListResponse,
     StartChatRequest,
     StreamMessageRequest,
@@ -18,7 +19,7 @@ from app.chat.schemas import (
 from app.chat import crud as chat_crud
 from app.ai.service import ai_service
 from app.charts.crud import chart as chart_crud
-from app.core.config import logger
+from app.core.logging import logger
 
 router = APIRouter()
 
@@ -27,10 +28,12 @@ router = APIRouter()
 async def list_chat_sessions(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=100),
 ) -> Any:
-    """Get all chat sessions for the current user."""
+    """Get all chat sessions for the current user (paginated, without messages)."""
     user_id = current_user.id
-    sessions = await chat_crud.chat_session.get_all_by_user(db, user_id=user_id)
+    sessions = await chat_crud.chat_session.get_all_by_user(db, user_id=user_id, skip=skip, limit=limit)
     return ChatSessionListResponse(sessions=sessions)
 
 
@@ -44,7 +47,7 @@ async def get_chat_session(
     user_id = current_user.id
     session = await chat_crud.chat_session.get_by_id(db, session_id=session_id, user_id=user_id)
     if not session:
-        raise HTTPException(status_code=404, detail="Chat session not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Chat session not found")
     return session
 
 
@@ -60,7 +63,7 @@ async def start_chat_for_chart(
 
     chart = await chart_crud.get_by_id_and_user(db, id=chart_id, user_id=user_id)
     if not chart:
-        raise HTTPException(status_code=404, detail="Chart not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Chart not found")
 
     chart_datetime = (chart.native_data or {}).get("datetime", "Chart")
 
@@ -76,6 +79,7 @@ async def start_chat_for_chart(
         chart_id=chart_id,
         title=request.title or f"Chat - {chart_datetime}"
     )
+    await db.commit()
     logger.info("Chat session created", session_id=session.id, chart_id=chart_id)
     return session
 
@@ -85,73 +89,79 @@ async def generate_sse(
     user_message_content: str,
     db: AsyncSession,
     user_id: int,
-    subscription_type: SubscriptionType,
+    subscription_type: str,
     chart_prompt_text: str,
+    chart_id: int,
 ) -> AsyncGenerator[str, None]:
-    """
-    Generate SSE stream for AI response.
-    Accepts only primitive types to avoid SQLAlchemy lazy-loading
-    in async generator context (MissingGreenlet).
-    """
+    """Generate SSE stream for AI response."""
     full_response = ""
 
     try:
-        # Save user message
         user_message = await chat_crud.chat_message.create(
             db, session_id=session_id, role="user", content=user_message_content
         )
+        await db.commit()
         logger.info("User message saved", session_id=session_id, message_id=user_message.id)
 
         yield f"data: {json.dumps({'type': 'user_message', 'content': user_message_content})}\n\n"
         await asyncio.sleep(0.01)
 
-        # Stream AI response — passes primitives only, no ORM objects
         async for chunk in ai_service.stream_interpret_chart(
-            db, user_id, subscription_type, chart_prompt_text, user_message_content
+            db, user_id, subscription_type, chart_prompt_text, user_message_content, chart_id
         ):
             full_response += chunk
             yield f"data: {json.dumps({'type': 'content', 'content': chunk})}\n\n"
 
-        # Save assistant message
-        assistant_message = await chat_crud.chat_message.create(
-            db, session_id=session_id, role="assistant", content=full_response
-        )
-        logger.info("Assistant message saved", session_id=session_id, message_id=assistant_message.id)
-
-        yield f"data: {json.dumps({'type': 'done', 'message_id': assistant_message.id})}\n\n"
-
     except ValueError as e:
         logger.warning("AI limit reached in stream", user_id=user_id, error=str(e))
+        full_response = f"Ошибка: {e}"
         yield f"data: {json.dumps({'type': 'error', 'error': str(e)})}\n\n"
     except Exception as e:
         logger.error("AI streaming failed", error=str(e), user_id=user_id)
+        full_response = "Ошибка: AI interpretation failed"
         yield f"data: {json.dumps({'type': 'error', 'error': 'AI interpretation failed'})}\n\n"
+
+    if full_response:
+        try:
+            await db.rollback()
+        except Exception:
+            pass
+        try:
+            assistant_message = await chat_crud.chat_message.create(
+                db, session_id=session_id, role="assistant", content=full_response
+            )
+            await db.commit()
+            logger.info("Assistant message saved", session_id=session_id, message_id=assistant_message.id)
+            yield f"data: {json.dumps({'type': 'done', 'message_id': assistant_message.id})}\n\n"
+        except Exception as e:
+            logger.error("Failed to save assistant message", error=str(e), session_id=session_id)
+    else:
+        try:
+            await db.rollback()
+        except Exception:
+            pass
 
 
 @router.post("/{session_id}/stream")
 async def stream_chat_message(
     session_id: int,
     request: StreamMessageRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
-):
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
+) -> StreamingResponse:
     """Stream AI response for a chat message using SSE."""
-    # Extract all primitive values from ORM objects BEFORE creating StreamingResponse.
-    # This is critical: once StreamingResponse is returned, the DB session context
-    # is no longer guaranteed, and accessing lazy-loaded ORM attributes causes
-    # sqlalchemy.exc.MissingGreenlet.
     user_id: int = current_user.id
     subscription_type: SubscriptionType = current_user.subscription_type
 
     session = await chat_crud.chat_session.get_by_id(db, session_id=session_id, user_id=user_id)
     if not session:
-        raise HTTPException(status_code=404, detail="Chat session not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Chat session not found")
 
     chart_id: int = session.chart_id
 
     chart = await chart_crud.get_by_id_and_user(db, id=chart_id, user_id=user_id)
     if not chart:
-        raise HTTPException(status_code=404, detail="Chart not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Chart not found")
 
     prompt_text: str = chart.prompt_text or ""
 
@@ -163,6 +173,7 @@ async def stream_chat_message(
             user_id=user_id,
             subscription_type=subscription_type,
             chart_prompt_text=prompt_text,
+            chart_id=chart_id,
         ),
         media_type="text/event-stream",
         headers={

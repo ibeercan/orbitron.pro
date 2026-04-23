@@ -1,43 +1,53 @@
-from typing import Any, Dict, Optional, Union
+"""User CRUD operations."""
 
-from sqlalchemy.ext.asyncio import AsyncSession
+from typing import Optional
+
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, InterfaceError, DBAPIError
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.logging import get_logger
 from app.core.security import get_password_hash, verify_password
-from app.core.config import settings
-from app.models.user import User
+from app.models.user import User, SubscriptionType
 from app.auth.schemas import UserCreate
-import structlog
+
+__all__ = ["user", "CRUDUser"]
 
 
 class CRUDUser:
-    def __init__(self):
-        self.logger = structlog.get_logger(__name__)
+    """CRUD operations for User model."""
+
+    def __init__(self) -> None:
+        self.logger = get_logger(__name__)
 
     async def get_by_email(self, db: AsyncSession, *, email: str) -> Optional[User]:
+        """Get active (non-deleted) user by email."""
         try:
-            result = await db.execute(select(User).where(User.email == email))
+            result = await db.execute(
+                select(User).where(User.email == email, User.deleted_at.is_(None))
+            )
             return result.scalars().first()
         except (InterfaceError, DBAPIError) as e:
-            self.logger.error("database_error_in_get_by_email", email=email, error=str(e))
+            self.logger.error("database_error", operation="get_by_email", email=email, error=str(e))
             raise
 
     async def get_by_id(self, db: AsyncSession, *, id: int) -> Optional[User]:
+        """Get active (non-deleted) user by ID."""
         try:
-            result = await db.execute(select(User).where(User.id == id))
+            result = await db.execute(
+                select(User).where(User.id == id, User.deleted_at.is_(None))
+            )
             return result.scalars().first()
         except (InterfaceError, DBAPIError) as e:
-            self.logger.error("database_error_in_get_by_id", id=id, error=str(e))
+            self.logger.error("database_error", operation="get_by_id", id=id, error=str(e))
             raise
 
     async def create(self, db: AsyncSession, *, obj_in: UserCreate, is_premium: bool = False) -> User:
-        from app.models.user import SubscriptionType
-        
+        """Create new user."""
         db_obj = User(
             email=obj_in.email,
             hashed_password=get_password_hash(obj_in.password),
-            subscription_type=SubscriptionType.PREMIUM if is_premium else SubscriptionType.FREE,
+            subscription_type=SubscriptionType.PREMIUM.value if is_premium else SubscriptionType.FREE.value,
         )
         db.add(db_obj)
         try:
@@ -48,13 +58,14 @@ class CRUDUser:
             raise ValueError("User with this email already exists")
         except (InterfaceError, DBAPIError) as e:
             await db.rollback()
-            self.logger.error("database_error_in_create", email=obj_in.email, error=str(e))
+            self.logger.error("database_error", operation="create", email=obj_in.email, error=str(e))
             raise
         return db_obj
 
     async def authenticate(
         self, db: AsyncSession, *, email: str, password: str
     ) -> Optional[User]:
+        """Authenticate active user by email and password."""
         user = await self.get_by_email(db, email=email)
         if not user:
             return None
@@ -62,8 +73,10 @@ class CRUDUser:
             return None
         return user
 
-    async def is_active(self, user: User) -> bool:
-        return user.is_active
+    @staticmethod
+    def is_active(user: User) -> bool:
+        """Check if user is active and not soft-deleted."""
+        return user.is_active and user.deleted_at is None
 
 
 user = CRUDUser()

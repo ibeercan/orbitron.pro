@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { chartsApi } from '@/lib/api/client'
+import { chartsApi, chatApi } from '@/lib/api/client'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { ProfileSlideOver } from '@/components/layout/ProfileSlideOver'
@@ -227,13 +227,24 @@ const loadChartSvg = async (chart: Chart) => {
     }
   }
 
-  const selectChart = (chart: Chart) => {
+  const selectChart = async (chart: Chart) => {
     if (selectedChart?.id === chart.id) return
     setSelectedChart(chart)
     setChatSessionId(null)
     setSvgLoading(true)
     setSvgContent('')
     loadChartSvg(chart)
+
+    try {
+      const res = await chatApi.listSessions()
+      const sessions = res.data.sessions ?? []
+      const match = sessions.find((s: { chart_id: number }) => s.chart_id === chart.id)
+      if (match) {
+        setChatSessionId(match.id)
+      }
+    } catch {
+      // no existing session — will be created on first message
+    }
   }
 
   const handleChartCreated = (newChart: Chart) => {

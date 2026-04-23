@@ -1,3 +1,5 @@
+import base64
+from pathlib import Path
 from typing import Any, List
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -9,7 +11,9 @@ from app.models.user import User
 from app.charts.schemas import ChartCreate, Chart
 from app.charts.service import chart_service
 from app.charts.crud import chart as chart_crud
-from app.core.config import logger
+from app.core.logging import logger
+
+SVG_BASE_DIR = Path("/app/charts")
 
 router = APIRouter()
 
@@ -21,10 +25,7 @@ async def create_natal_chart(
     current_user: User = Depends(get_current_active_user),
     chart_in: ChartCreate,
 ) -> Any:
-    """
-    Create a new natal chart. SVG is generated in-memory and stored as
-    base64 in the database — no files are written to disk.
-    """
+    """Create a new natal chart. SVG is stored as base64 in the database."""
     user_id = current_user.id
     logger.info(
         "API: Create natal chart requested",
@@ -50,7 +51,7 @@ async def create_natal_chart(
 
     except Exception as e:
         logger.error("API: Failed to create natal chart", user_id=user_id, error=str(e))
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.get("/", response_model=List[Chart])
@@ -65,11 +66,10 @@ async def get_user_charts(
     charts = await chart_crud.get_user_charts(
         db, user_id=current_user.id, skip=skip, limit=limit
     )
-    # Return charts without svg_data in list view to reduce payload
     result = []
     for c in charts:
         validated = Chart.model_validate(c)
-        validated.svg_data = None  # strip heavy field from list response
+        validated.svg_data = None
         result.append(validated)
     return result
 
@@ -84,7 +84,7 @@ async def get_chart(
     """Get a specific chart by ID including its SVG data."""
     chart = await chart_crud.get_by_id_and_user(db, id=chart_id, user_id=current_user.id)
     if not chart:
-        raise HTTPException(status_code=404, detail="Chart not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Chart not found")
     return Chart.model_validate(chart)
 
 
@@ -95,36 +95,34 @@ async def get_chart_svg(
     current_user: User = Depends(get_current_active_user),
     chart_id: int,
 ) -> Any:
-    """
-    Get SVG content for a chart.
-    Returns the base64-decoded SVG string, identical contract to the old endpoint.
-    Supports both new (svg_data in DB) and legacy (svg_path on disk) charts.
-    """
+    """Get SVG content for a chart. Returns base64-decoded SVG string."""
     chart = await chart_crud.get_by_id_and_user(db, id=chart_id, user_id=current_user.id)
     if not chart:
-        raise HTTPException(status_code=404, detail="Chart not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Chart not found")
 
-    # New path: svg stored as base64 in DB
     if chart.svg_data:
-        import base64
         try:
             svg_str = base64.b64decode(chart.svg_data).decode("utf-8")
             return {"svg": svg_str}
         except Exception:
-            raise HTTPException(status_code=500, detail="Failed to decode SVG data")
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to decode SVG data")
 
-    # Legacy path: svg stored as file on disk
+    # Legacy path: svg stored as file on disk — validate path to prevent traversal
     if chart.svg_path:
         try:
-            with open(chart.svg_path, "rb") as f:
-                svg_content = f.read()
+            svg_path = Path(chart.svg_path).resolve()
+            if not str(svg_path).startswith(str(SVG_BASE_DIR.resolve())):
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid SVG path")
+            svg_content = svg_path.read_bytes()
             return {"svg": svg_content.decode("utf-8")}
         except FileNotFoundError:
-            raise HTTPException(status_code=404, detail="SVG file not found on disk")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="SVG file not found on disk")
+        except HTTPException:
+            raise
         except Exception:
-            raise HTTPException(status_code=500, detail="Failed to read SVG file")
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to read SVG file")
 
-    raise HTTPException(status_code=404, detail="No SVG data available for this chart")
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No SVG data available for this chart")
 
 
 @router.delete("/{chart_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -134,13 +132,10 @@ async def delete_chart(
     current_user: User = Depends(get_current_active_user),
     chart_id: int,
 ) -> None:
-    """
-    Delete a chart and all associated chat sessions / messages.
-    Returns 204 No Content on success, 404 if not found or not owned by user.
-    """
-    # Cache user_id before any DB operations to avoid MissingGreenlet on lazy load
+    """Soft-delete a chart and all associated chat sessions."""
     user_id = current_user.id
-    deleted = await chart_crud.delete(db, id=chart_id, user_id=user_id)
+    deleted = await chart_crud.soft_delete(db, id=chart_id, user_id=user_id)
     if not deleted:
-        raise HTTPException(status_code=404, detail="Chart not found")
-    logger.info("API: Chart deleted", user_id=user_id, chart_id=chart_id)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Chart not found")
+    await db.commit()
+    logger.info("API: Chart soft-deleted", user_id=user_id, chart_id=chart_id)

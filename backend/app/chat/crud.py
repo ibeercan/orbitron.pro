@@ -10,7 +10,7 @@ class CRUDChatSession:
     async def get_by_id(self, db: AsyncSession, session_id: int, user_id: int) -> Optional[ChatSession]:
         result = await db.execute(
             select(ChatSession)
-            .where(ChatSession.id == session_id, ChatSession.user_id == user_id)
+            .where(ChatSession.id == session_id, ChatSession.user_id == user_id, ChatSession.deleted_at.is_(None))
             .options(selectinload(ChatSession.messages))
         )
         return result.scalars().first()
@@ -18,20 +18,22 @@ class CRUDChatSession:
     async def get_by_chart(self, db: AsyncSession, chart_id: int, user_id: int) -> Optional[ChatSession]:
         result = await db.execute(
             select(ChatSession)
-            .where(ChatSession.chart_id == chart_id, ChatSession.user_id == user_id)
+            .where(ChatSession.chart_id == chart_id, ChatSession.user_id == user_id, ChatSession.deleted_at.is_(None))
             .options(selectinload(ChatSession.messages))
             .order_by(ChatSession.updated_at.desc())
         )
         return result.scalars().first()
 
-    async def get_all_by_user(self, db: AsyncSession, user_id: int) -> list[ChatSession]:
+    async def get_all_by_user(self, db: AsyncSession, user_id: int, skip: int = 0, limit: int = 50) -> list[ChatSession]:
+        """List sessions for a user without loading all messages (pagination)."""
         result = await db.execute(
             select(ChatSession)
-            .where(ChatSession.user_id == user_id)
-            .options(selectinload(ChatSession.messages))
+            .where(ChatSession.user_id == user_id, ChatSession.deleted_at.is_(None))
             .order_by(ChatSession.updated_at.desc())
+            .offset(skip)
+            .limit(limit)
         )
-        return result.scalars().all()
+        return list(result.scalars().all())
 
     async def create(
         self,
@@ -46,10 +48,8 @@ class CRUDChatSession:
             title=title or f"Chat for chart {chart_id}"
         )
         db.add(session)
-        await db.commit()
-        await db.refresh(session)
+        await db.flush()
 
-        # Reload with messages eagerly to avoid MissingGreenlet during serialization
         result = await db.execute(
             select(ChatSession)
             .where(ChatSession.id == session.id)
@@ -63,7 +63,6 @@ class CRUDChatSession:
             .where(ChatSession.id == session_id)
             .values(title=title)
         )
-        await db.commit()
 
         result = await db.execute(
             select(ChatSession)
@@ -88,14 +87,13 @@ class CRUDChatMessage:
         )
         db.add(message)
 
-        # Update session updated_at
         await db.execute(
             update(ChatSession)
             .where(ChatSession.id == session_id)
             .values(updated_at=func.now())
         )
 
-        await db.commit()
+        await db.flush()
         await db.refresh(message)
         return message
 

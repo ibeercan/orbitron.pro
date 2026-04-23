@@ -1,7 +1,7 @@
+import re
 from pydantic import BaseModel, field_validator, computed_field
 from typing import Optional
 from datetime import datetime
-
 
 VALID_THEMES = {
     "classic", "dark", "midnight", "celestial", "neon", "sepia", "pastel",
@@ -9,11 +9,13 @@ VALID_THEMES = {
 }
 
 VALID_PALETTES = {
-    "auto",  # auto-select matching palette for theme
+    "auto",
     "grey", "rainbow", "elemental", "cardinality",
     "rainbow_dark", "rainbow_midnight", "rainbow_celestial",
     "rainbow_neon", "rainbow_sepia",
 }
+
+VALID_HOUSE_SYSTEMS = {"placidus", "whole_sign"}
 
 
 class ChartCreate(BaseModel):
@@ -29,6 +31,13 @@ class ChartCreate(BaseModel):
     def validate_theme(cls, v: str) -> str:
         if v not in VALID_THEMES:
             raise ValueError(f"Theme must be one of: {', '.join(sorted(VALID_THEMES))}")
+        return v
+
+    @field_validator("house_system")
+    @classmethod
+    def validate_house_system(cls, v: str) -> str:
+        if v not in VALID_HOUSE_SYSTEMS:
+            raise ValueError(f"house_system must be one of: {', '.join(sorted(VALID_HOUSE_SYSTEMS))}")
         return v
 
     @field_validator("preset")
@@ -59,8 +68,8 @@ class Chart(BaseModel):
     id: int
     native_data: dict
     result_data: dict
-    svg_data: Optional[str] = None   # base64-encoded SVG (new)
-    svg_path: Optional[str] = None   # legacy field, kept for backward compat
+    svg_data: Optional[str] = None
+    svg_path: Optional[str] = None
     prompt_text: str
     created_at: datetime
 
@@ -73,5 +82,4 @@ class Chart(BaseModel):
             return datetime.fromisoformat(v.replace('Z', '+00:00'))
         return v
 
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}

@@ -80,9 +80,11 @@ export function NumberPicker({
           max={max}
           value={value}
           onChange={(e) => {
-            const v = parseInt(e.target.value) || 0
-            if (v >= min && v <= max) {
+            const v = parseInt(e.target.value)
+            if (!isNaN(v)) {
               onChange(v)
+            } else if (e.target.value === '') {
+              onChange(min)
             }
           }}
           onFocus={() => setFocused(true)}

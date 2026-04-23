@@ -7,7 +7,7 @@ from typing import Dict, Any
 from stellium import ChartBuilder
 from stellium.engines import PlacidusHouses, WholeSignHouses
 
-from app.core.config import logger
+from app.core.logging import logger
 
 
 # Mapping of house system names to engine classes

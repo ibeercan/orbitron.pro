@@ -17,7 +17,6 @@ interface PasswordFormData {
 
 type Step = 'email' | 'login' | 'check' | 'register' | 'success'
 
-/* ── Orbitron Logo SVG ── */
 function OrbitronLogo({ size = 64 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 100 100" fill="none">
@@ -53,7 +52,6 @@ function OrbitronLogo({ size = 64 }: { size?: number }) {
         </filter>
       </defs>
 
-      {/* Outer orbit */}
       <ellipse cx="50" cy="50" rx="40" ry="16" fill="none"
         stroke="url(#orbitPurple)" strokeWidth="1.2"
         transform="rotate(-25 50 50)"
@@ -62,7 +60,6 @@ function OrbitronLogo({ size = 64 }: { size?: number }) {
           from="0 50 50" to="360 50 50" dur="45s" additive="sum" repeatCount="indefinite" />
       </ellipse>
 
-      {/* Middle orbit */}
       <ellipse cx="50" cy="50" rx="28" ry="10" fill="none"
         stroke="url(#orbitGold)" strokeWidth="1.4"
         transform="rotate(15 50 50)">
@@ -70,19 +67,16 @@ function OrbitronLogo({ size = 64 }: { size?: number }) {
           from="360 50 50" to="0 50 50" dur="28s" additive="sum" repeatCount="indefinite" />
       </ellipse>
 
-      {/* Planet on middle orbit */}
       <circle cx="78" cy="50" r="3.5" fill="#D4AF37" filter="url(#goldGlow)">
         <animateTransform attributeName="transform" type="rotate"
           from="0 50 50" to="360 50 50" dur="28s" repeatCount="indefinite" />
       </circle>
 
-      {/* Small planet on outer */}
       <circle cx="50" cy="10" r="2.5" fill="#9D50E0" filter="url(#goldGlow)">
         <animateTransform attributeName="transform" type="rotate"
           from="0 50 50" to="360 50 50" dur="45s" repeatCount="indefinite" />
       </circle>
 
-      {/* Core */}
       <circle cx="50" cy="50" r="9" fill="url(#coreGold)" filter="url(#coreGlow)">
         <animate attributeName="r" values="8;10;8" dur="3s" repeatCount="indefinite" />
         <animate attributeName="opacity" values="0.85;1;0.85" dur="3s" repeatCount="indefinite" />
@@ -106,7 +100,6 @@ export default function Landing() {
 
   const { login } = useAuth()
 
-  // Allow scroll on mobile for landing page
   useEffect(() => {
     document.body.classList.add('landing-page')
     return () => document.body.classList.remove('landing-page')
@@ -126,7 +119,6 @@ export default function Landing() {
     reset: resetPassword,
   } = useForm<PasswordFormData>()
 
-  /* ── Canvas starfield ── */
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
@@ -140,7 +132,6 @@ export default function Landing() {
     resize()
     window.addEventListener('resize', resize)
 
-    /* Stars */
     type Star = { x: number; y: number; r: number; alpha: number; twinkleSpeed: number; twinkleOffset: number }
     const stars: Star[] = Array.from({ length: 280 }, () => ({
       x: Math.random() * window.innerWidth,
@@ -151,7 +142,6 @@ export default function Landing() {
       twinkleOffset: Math.random() * Math.PI * 2,
     }))
 
-    /* Shooting stars */
     type Meteor = { x: number; y: number; vx: number; vy: number; life: number; maxLife: number; color: string }
     const meteors: Meteor[] = []
 
@@ -160,11 +150,9 @@ export default function Landing() {
     const animate = () => {
       t += 0.016
 
-      /* Background */
       ctx.fillStyle = '#0A0612'
       ctx.fillRect(0, 0, canvas.width, canvas.height)
 
-      /* Nebula blobs */
       const g1 = ctx.createRadialGradient(canvas.width * 0.15, canvas.height * 0.3, 0, canvas.width * 0.15, canvas.height * 0.3, canvas.width * 0.35)
       g1.addColorStop(0, 'rgba(123,47,190,0.06)')
       g1.addColorStop(1, 'transparent')
@@ -177,7 +165,6 @@ export default function Landing() {
       ctx.fillStyle = g2
       ctx.fillRect(0, 0, canvas.width, canvas.height)
 
-      /* Stars */
       stars.forEach((s) => {
         const pulse = Math.sin(t * s.twinkleSpeed * 60 + s.twinkleOffset) * 0.3 + 0.7
         ctx.beginPath()
@@ -186,7 +173,6 @@ export default function Landing() {
         ctx.fill()
       })
 
-      /* Spawn meteors */
       if (Math.random() < 0.007) {
         const isGold = Math.random() > 0.5
         meteors.push({
@@ -200,7 +186,6 @@ export default function Landing() {
         })
       }
 
-      /* Draw meteors */
       for (let i = meteors.length - 1; i >= 0; i--) {
         const m = meteors[i]
         m.x += m.vx
@@ -221,7 +206,6 @@ export default function Landing() {
         ctx.lineCap = 'round'
         ctx.stroke()
 
-        /* Head glow */
         ctx.beginPath()
         ctx.arc(m.x, m.y, 1.5 * m.life, 0, Math.PI * 2)
         ctx.fillStyle = m.color
@@ -240,7 +224,6 @@ export default function Landing() {
     }
   }, [])
 
-  /* ── Handlers ── */
   const checkEmail = useCallback(async (data: SubscribeFormData) => {
     setIsLoading(true)
     setEmail(data.email)
@@ -338,7 +321,6 @@ export default function Landing() {
     resetPassword()
   }
 
-  /* ── Form title / subtitle ── */
   const formTitle = {
     email:    { title: 'Добро пожаловать',   subtitle: 'Войдите или зарегистрируйтесь' },
     login:    { title: 'С возвращением',      subtitle: 'Введите пароль от аккаунта' },
@@ -349,97 +331,31 @@ export default function Landing() {
 
   return (
     <div className="relative min-h-screen overflow-hidden">
-      {/* Canvas background */}
       <canvas ref={canvasRef} className="fixed inset-0 z-0" />
 
-      {/* Gradient overlay */}
       <div className="fixed inset-0 z-[1] pointer-events-none">
         <div className="absolute inset-0 bg-gradient-to-br from-[#0A0612]/60 via-transparent to-[#0D0919]/40" />
       </div>
 
-      {/* Main layout */}
-      <main className="relative z-10 min-h-screen flex flex-col lg:flex-row items-center justify-center lg:justify-between lg:gap-0">
+      <main className="relative z-10 min-h-screen flex flex-col items-center justify-center px-6 py-12">
+        <div className="w-full max-w-md mx-auto flex flex-col items-center gap-8">
 
-        {/* ── LEFT: Hero section ── */}
-        <div className="flex-1 flex flex-col justify-center px-8 py-10 lg:py-16 lg:px-16 xl:px-24 max-w-2xl w-full mx-auto lg:mx-0 lg:max-w-none">
           {/* Logo */}
-          <div className="mb-10 lg:mb-14 animate-in">
-            <div className="flex items-center gap-4">
-              <div className="animate-float">
-                <OrbitronLogo size={56} />
-              </div>
-              <div>
-                <span className="text-xs font-semibold tracking-[0.22em] uppercase text-[#8B7FA8] block mb-0.5">
-                  ИИ Астролог
-                </span>
-                <span className="font-serif text-2xl font-semibold gold-gradient-text leading-none tracking-wide">
-                  Orbitron
-                </span>
-              </div>
+          <div className="flex flex-col items-center animate-in">
+            <div className="animate-float mb-5">
+              <OrbitronLogo size={64} />
             </div>
-          </div>
-
-          {/* Headline */}
-          <div className="animate-in animate-in-delay-1">
-            <h1 className="font-serif text-5xl lg:text-6xl xl:text-display-lg font-semibold leading-tight mb-6 max-w-lg">
+            <h1 className="font-serif text-4xl sm:text-5xl font-semibold text-center leading-tight">
               <span className="text-[#F0EAD6]">Познайте себя</span>
               <br />
               <span className="gold-shimmer-text">через звёзды</span>
             </h1>
-            <p className="text-[#8B7FA8] text-lg leading-relaxed max-w-md mb-10">
-              Персональный ИИ-астролог, который интерпретирует вашу натальную карту
-              и отвечает на любые вопросы о вашей судьбе и характере.
-            </p>
           </div>
 
-          {/* Feature pills */}
-          <div className="flex flex-col gap-3 max-w-sm animate-in animate-in-delay-2">
-            <div className="feature-pill">
-              <div className="w-8 h-8 rounded-lg bg-[rgba(212,175,55,0.12)] flex items-center justify-center shrink-0">
-                <Sparkles className="w-4 h-4 text-[#D4AF37]" />
-              </div>
-              <div>
-                <span className="text-sm font-medium text-[#F0EAD6]">Точная натальная карта</span>
-                <p className="text-xs text-[#8B7FA8] mt-0.5">Профессиональные расчёты по дате, времени и месту рождения</p>
-              </div>
-            </div>
-            <div className="feature-pill">
-              <div className="w-8 h-8 rounded-lg bg-[rgba(212,175,55,0.12)] flex items-center justify-center shrink-0">
-                <Star className="w-4 h-4 text-[#D4AF37]" />
-              </div>
-              <div>
-                <span className="text-sm font-medium text-[#F0EAD6]">ИИ-интерпретация</span>
-                <p className="text-xs text-[#8B7FA8] mt-0.5">Глубокий анализ планет, домов и аспектов вашей карты</p>
-              </div>
-            </div>
-            <div className="feature-pill">
-              <div className="w-8 h-8 rounded-lg bg-[rgba(212,175,55,0.12)] flex items-center justify-center shrink-0">
-                <Shield className="w-4 h-4 text-[#D4AF37]" />
-              </div>
-              <div>
-                <span className="text-sm font-medium text-[#F0EAD6]">Диалог с астрологом</span>
-                <p className="text-xs text-[#8B7FA8] mt-0.5">Задавайте любые вопросы — ИИ отвечает в контексте вашей карты</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Bottom decorative text — desktop only */}
-          <div className="hidden lg:flex items-center gap-3 mt-auto pt-12 animate-in animate-in-delay-3">
-            <div className="gold-divider w-12" />
-            <span className="text-xs text-[#4A3F6A] tracking-widest uppercase font-medium">
-              Раннний доступ · 2026
-            </span>
-          </div>
-        </div>
-
-        {/* ── RIGHT: Auth form ── */}
-        <div className="flex items-center justify-center px-6 pb-10 lg:py-16 lg:px-12 xl:px-16 w-full lg:w-[480px] xl:w-[520px] shrink-0">
-          <div className="w-full max-w-sm animate-in animate-in-delay-2">
-
-            {/* Form card */}
+          {/* Form card */}
+          <div className="w-full animate-in animate-in-delay-1">
             {step === 'success' ? (
               <div className="luxury-card p-8 text-center">
-                {/* Success state */}
                 <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-[rgba(212,175,55,0.12)] flex items-center justify-center">
                   <OrbitronLogo size={40} />
                 </div>
@@ -457,7 +373,6 @@ export default function Landing() {
               </div>
             ) : (
               <div className="luxury-card overflow-hidden">
-                {/* Card header */}
                 <div className="px-7 pt-7 pb-5 border-b border-[rgba(212,175,55,0.08)]">
                   <div className="flex items-center justify-between">
                     <div>
@@ -476,7 +391,6 @@ export default function Landing() {
                     )}
                   </div>
 
-                  {/* Premium badge */}
                   {isPremium && (step === 'register' || step === 'email') && (
                     <div className="mt-3">
                       <span className="badge-gold">Premium навсегда</span>
@@ -484,10 +398,7 @@ export default function Landing() {
                   )}
                 </div>
 
-                {/* Card body */}
                 <div className="px-7 py-6">
-
-                  {/* Email shown as tag (non-email steps) */}
                   {step !== 'email' && (
                     <div className="mb-5 flex items-center gap-2 px-3.5 py-2.5 rounded-lg bg-[rgba(212,175,55,0.06)] border border-[rgba(212,175,55,0.15)]">
                       <div className="w-1.5 h-1.5 rounded-full bg-[#D4AF37] shrink-0" />
@@ -495,7 +406,6 @@ export default function Landing() {
                     </div>
                   )}
 
-                  {/* ── Step: email ── */}
                   {step === 'email' && (
                     <form onSubmit={handleEmailSubmit(checkEmail)} className="flex flex-col gap-4">
                       <div>
@@ -547,7 +457,6 @@ export default function Landing() {
                     </form>
                   )}
 
-                  {/* ── Step: login ── */}
                   {step === 'login' && (
                     <form onSubmit={handlePasswordSubmit(onLogin)} className="flex flex-col gap-4">
                       <div>
@@ -578,7 +487,6 @@ export default function Landing() {
                     </form>
                   )}
 
-                  {/* ── Step: check (waitlist) ── */}
                   {step === 'check' && (
                     <div className="flex flex-col gap-4">
                       {message && (
@@ -594,7 +502,6 @@ export default function Landing() {
                     </div>
                   )}
 
-                  {/* ── Step: register ── */}
                   {step === 'register' && (
                     <form onSubmit={handlePasswordSubmit(onRegister)} className="flex flex-col gap-4">
                       <div>
@@ -629,7 +536,6 @@ export default function Landing() {
                   )}
                 </div>
 
-                {/* Card footer */}
                 <div className="px-7 pb-6">
                   <p className="text-xs text-[#4A3F6A] text-center">
                     Продолжая, вы соглашаетесь с условиями использования сервиса
@@ -638,19 +544,47 @@ export default function Landing() {
               </div>
             )}
           </div>
+
+          {/* Feature pills */}
+          <div className="w-full max-w-lg flex flex-col sm:flex-row gap-3 sm:gap-4 animate-in animate-in-delay-2">
+            <div className="feature-pill sm:flex-1">
+              <div className="w-8 h-8 rounded-lg bg-[rgba(212,175,55,0.12)] flex items-center justify-center shrink-0">
+                <Sparkles className="w-4 h-4 text-[#D4AF37]" />
+              </div>
+              <div>
+                <span className="text-sm font-medium text-[#F0EAD6]">Точная натальная карта</span>
+                <p className="text-xs text-[#8B7FA8] mt-0.5">Профессиональные расчёты по дате, времени и месту рождения</p>
+              </div>
+            </div>
+            <div className="feature-pill sm:flex-1">
+              <div className="w-8 h-8 rounded-lg bg-[rgba(212,175,55,0.12)] flex items-center justify-center shrink-0">
+                <Star className="w-4 h-4 text-[#D4AF37]" />
+              </div>
+              <div>
+                <span className="text-sm font-medium text-[#F0EAD6]">ИИ-интерпретация</span>
+                <p className="text-xs text-[#8B7FA8] mt-0.5">Глубокий анализ планет, домов и аспектов вашей карты</p>
+              </div>
+            </div>
+            <div className="feature-pill sm:flex-1">
+              <div className="w-8 h-8 rounded-lg bg-[rgba(212,175,55,0.12)] flex items-center justify-center shrink-0">
+                <Shield className="w-4 h-4 text-[#D4AF37]" />
+              </div>
+              <div>
+                <span className="text-sm font-medium text-[#F0EAD6]">Диалог с астрологом</span>
+                <p className="text-xs text-[#8B7FA8] mt-0.5">Задавайте любые вопросы — ИИ отвечает в контексте вашей карты</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom decorative text */}
+          <div className="flex items-center gap-3 animate-in animate-in-delay-3">
+            <div className="gold-divider w-12" />
+            <span className="text-xs text-[#4A3F6A] tracking-widest uppercase font-medium">
+              Ранний доступ · 2026
+            </span>
+          </div>
         </div>
       </main>
-
-      {/* Footer */}
-      <footer className="relative z-10 fixed bottom-0 left-0 right-0 flex justify-between items-center px-8 py-4 pointer-events-none">
-        <span className="text-xs text-[#2E2548] tracking-widest uppercase font-medium">
-          © 2026 Orbitron
-        </span>
-        <div className="flex items-center gap-2">
-          <div className="gold-dot w-1 h-1" />
-          <span className="text-xs text-[#2E2548]">ИИ-астрология нового поколения</span>
-        </div>
-      </footer>
     </div>
   )
 }

@@ -13,21 +13,37 @@ interface ChatMessage {
   createdAt: Date;
 }
 
+type ApiMessage = {
+  id: number;
+  role: string;
+  content: string;
+  created_at: string;
+};
+
+function toChatMessage(m: ApiMessage): ChatMessage {
+  return {
+    id: String(m.id),
+    role: m.role as 'user' | 'assistant',
+    content: m.content,
+    createdAt: new Date(m.created_at),
+  };
+}
+
+function convertMessage(message: ChatMessage): ThreadMessageLike {
+  return {
+    role: message.role,
+    content: [{ type: 'text' as const, text: message.content }],
+    id: message.id,
+    createdAt: message.createdAt,
+  };
+}
+
 interface OrbitronRuntimeProviderProps {
   children: React.ReactNode;
   baseUrl: string;
   sessionId: number | null;
   chartId: string;
   onSessionCreated?: (sessionId: number) => void;
-}
-
-function convertMessage(message: ChatMessage, _index: number): ThreadMessageLike {
-  return {
-    role: message.role,
-    content: [{ type: 'text', text: message.content }],
-    id: message.id,
-    createdAt: message.createdAt,
-  };
 }
 
 function useOrbitronChatRuntime({
@@ -49,52 +65,49 @@ function useOrbitronChatRuntime({
   const abortControllerRef = useRef<AbortController | null>(null);
   const loadedSessionRef = useRef<number | null>(null);
 
-  // Sync external sessionId when chart changes (reset)
   useEffect(() => {
+    if (initialSessionId === sessionId) return;
     setSessionId(initialSessionId);
     if (!initialSessionId) {
       setMessages([]);
       loadedSessionRef.current = null;
+    } else if (loadedSessionRef.current !== initialSessionId) {
+      setMessages([]);
     }
   }, [initialSessionId]);
 
-  // Notify parent when session is created
   useEffect(() => {
     if (sessionId && sessionId !== initialSessionId) {
       onSessionCreated?.(sessionId);
     }
   }, [sessionId, initialSessionId, onSessionCreated]);
 
-  // Load history when sessionId is available and not yet loaded
   useEffect(() => {
     if (!sessionId || loadedSessionRef.current === sessionId) return;
 
+    let cancelled = false;
     const loadHistory = async () => {
       setIsLoading(true);
       try {
         const res = await fetch(`${baseApiUrl}/chat/${sessionId}`, {
           credentials: 'include',
         });
-        if (!res.ok) return;
+        if (!res.ok || cancelled) return;
         const data = await res.json();
-        const history: ChatMessage[] = (data.messages ?? []).map(
-          (m: { id: number; role: string; content: string; created_at: string }) => ({
-            id: String(m.id),
-            role: m.role as 'user' | 'assistant',
-            content: m.content,
-            createdAt: new Date(m.created_at),
-          })
-        );
-        setMessages(history);
-        loadedSessionRef.current = sessionId;
+        const history: ChatMessage[] = (data.messages ?? []).map(toChatMessage);
+        if (!cancelled) {
+          setMessages(history);
+          loadedSessionRef.current = sessionId;
+        }
       } catch {
-        // silent — history is optional
+        // history is optional — silent fail
       } finally {
-        setIsLoading(false);
+        if (!cancelled) setIsLoading(false);
       }
     };
 
     loadHistory();
+    return () => { cancelled = true; };
   }, [sessionId, baseApiUrl]);
 
   const handleNewMessage = useCallback(async (message: AppendMessage) => {
@@ -107,25 +120,23 @@ function useOrbitronChatRuntime({
 
     const userText = textContent.text;
     const userMessageId = `user-${Date.now()}`;
+    const assistantMessageId = `assistant-${Date.now()}`;
+
     const userMsg: ChatMessage = {
       id: userMessageId,
       role: 'user',
       content: userText,
       createdAt: new Date(),
     };
-
-    setMessages((prev) => [...prev, userMsg]);
-
-    setIsRunning(true);
-    const assistantMessageId = `assistant-${Date.now()}`;
     const assistantMsg: ChatMessage = {
       id: assistantMessageId,
       role: 'assistant',
       content: '',
       createdAt: new Date(),
     };
-    setMessages((prev) => [...prev, assistantMsg]);
 
+    setMessages((prev) => [...prev, userMsg, assistantMsg]);
+    setIsRunning(true);
     abortControllerRef.current = new AbortController();
 
     try {
@@ -142,7 +153,18 @@ function useOrbitronChatRuntime({
         const sessionData = await startRes.json();
         activeSessionId = sessionData.id;
         setSessionId(activeSessionId);
-        loadedSessionRef.current = activeSessionId; // mark as loaded — messages already in state
+
+        const existing: ChatMessage[] = (sessionData.messages ?? []).map(toChatMessage);
+        if (existing.length > 0) {
+          // Merge: keep the user + assistant placeholders at the end,
+          // prepend loaded history, deduplicate by id
+          setMessages((prev) => {
+            const existingIds = new Set(existing.map((m) => m.id));
+            const newOnly = prev.filter((m) => !existingIds.has(m.id));
+            return [...existing, ...newOnly];
+          });
+          loadedSessionRef.current = activeSessionId;
+        }
       }
 
       const response = await fetch(`${baseApiUrl}/chat/${activeSessionId}/stream`, {
@@ -223,7 +245,7 @@ function useOrbitronChatRuntime({
     isLoading,
     onNew: handleNewMessage,
     onCancel: handleCancel,
-    convertMessage,
+    convertMessage: (message) => convertMessage(message),
   });
 
   return runtime;

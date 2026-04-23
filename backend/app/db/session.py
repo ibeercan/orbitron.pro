@@ -1,22 +1,43 @@
+"""Database session management."""
+
+from typing import AsyncGenerator
+
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import QueuePool
-from sqlalchemy import event
+from sqlalchemy.pool import NullPool
 
 from app.core.config import settings
-import structlog
+from app.core.constants import DB_POOL_SIZE, DB_MAX_OVERFLOW, DB_POOL_RECYCLE
 
-# Convert to async URL
-async_database_url = settings.computed_database_url.replace("postgresql://", "postgresql+asyncpg://")
 
-engine = create_async_engine(
-    async_database_url,
-    pool_size=20,
-    max_overflow=30,
-    pool_pre_ping=True,
-    pool_recycle=1800,  # 30 minutes
-    echo=False,  # Set to False in production
-)
+def get_engine():
+    """Create async engine based on database URL.
+    
+    Supports both PostgreSQL and SQLite for local development.
+    """
+    db_url = settings.computed_database_url
+
+    if db_url.startswith("sqlite"):
+        async_database_url = db_url.replace("sqlite://", "sqlite+aiosqlite://")
+        return create_async_engine(
+            async_database_url,
+            connect_args={"check_same_thread": False},
+            poolclass=NullPool,
+            echo=False,
+        )
+
+    async_database_url = db_url.replace("postgresql://", "postgresql+asyncpg://")
+    return create_async_engine(
+        async_database_url,
+        pool_size=DB_POOL_SIZE,
+        max_overflow=DB_MAX_OVERFLOW,
+        pool_pre_ping=True,
+        pool_recycle=DB_POOL_RECYCLE,
+        echo=False,
+    )
+
+
+engine = get_engine()
 
 AsyncSessionLocal = sessionmaker(
     autocommit=False,
@@ -26,28 +47,11 @@ AsyncSessionLocal = sessionmaker(
     expire_on_commit=False,
 )
 
-async def get_db() -> AsyncSession:
+
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
+    """Database session dependency for FastAPI."""
     async with AsyncSessionLocal() as session:
         try:
             yield session
         finally:
             await session.close()
-
-
-# Database connection pool monitoring
-logger = structlog.get_logger()
-
-
-@event.listens_for(engine.sync_engine, "connect")
-def receive_connect(dbapi_connection, connection_record):
-    logger.debug("database_connection_established")
-
-
-@event.listens_for(engine.sync_engine, "checkout")
-def receive_checkout(dbapi_connection, connection_record, connection_proxy):
-    logger.debug("database_connection_checked_out_from_pool")
-
-
-@event.listens_for(engine.sync_engine, "checkin")
-def receive_checkin(dbapi_connection, connection_record):
-    logger.debug("database_connection_returned_to_pool")

@@ -1,95 +1,144 @@
-from datetime import datetime
-from typing import Optional, AsyncGenerator
+"""AI service with streaming, retry, caching, fallback models and token tracking."""
 
+import hashlib
+from datetime import datetime, timezone
+from typing import AsyncGenerator
+
+import redis.asyncio as redis
 from pydantic_ai import Agent
 from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.openai import OpenAIProvider
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
+from tenacity import (
+    retry,
+    stop_after_attempt,
+    wait_exponential,
+    retry_if_exception_type,
+)
 
-from app.core.config import settings, logger
+from app.core.config import settings, AIProviderConfig
+from app.core.logging import logger
 from app.models.request import RequestLog
-from app.models.user import User, SubscriptionType
+from app.models.user import SubscriptionType
+
+SYSTEM_PROMPT = settings.system_prompt
+
+AI_CACHE_ENABLED = settings.AI_CACHE_ENABLED
+AI_CACHE_TTL_SECONDS = settings.AI_CACHE_TTL_SECONDS
+AI_RETRY_MAX_ATTEMPTS = settings.AI_RETRY_MAX_ATTEMPTS
+AI_RETRY_MIN_WAIT = settings.AI_RETRY_MIN_WAIT
+AI_RETRY_MAX_WAIT = settings.AI_RETRY_MAX_WAIT
+AI_TOKEN_TRACKING_ENABLED = settings.AI_TOKEN_TRACKING_ENABLED
+AI_COST_PER_1K_PROMPT = settings.AI_COST_PER_1K_PROMPT
+AI_COST_PER_1K_COMPLETION = settings.AI_COST_PER_1K_COMPLETION
+
+_redis_pool = None
 
 
-SYSTEM_PROMPT = """Ты — профессиональный астролог с глубокими знаниями натальной астрологии. \
-Твоя задача — давать точные, красивые и вдохновляющие интерпретации натальных карт.
+def create_ai_agent(model_name: str, provider: AIProviderConfig) -> Agent:
+    """Create AI agent from provider config."""
+    provider_kwargs = {"api_key": provider.api_key}
+    if provider.base_url:
+        provider_kwargs["base_url"] = provider.base_url
 
-ПРАВИЛА ОТВЕТА:
-1. ВСЕГДА отвечай на том же языке, на котором задан вопрос. Если вопрос на русском — отвечай на русском.
-2. Отвечай ТОЛЬКО готовым ответом — без вступлений типа "Давайте разберём", "Конечно!" или пересказа вопроса.
-3. Никогда не показывай свои размышления или внутренний процесс рассуждения.
-4. Используй красивое Markdown-форматирование: заголовки (###), жирный текст (**), курсив (*), списки.
-5. Структура ответа:
-   - Краткий введение (1–2 предложения) о ключевом элементе карты
-   - Основные разделы с заголовками ###
-   - Конкретные интерпретации с привязкой к данным карты
-   - Практические советы или ключевые темы в конце
-6. Не используй смайлики 😊.
-7. Длина ответа — умеренная: детально, но без воды. Максимум 500–600 слов.
-8. Астрологические термины пиши по-русски с оригиналом в скобках при первом упоминании, например: Рыбы (Pisces).
-"""
+    provider_obj = OpenAIProvider(**provider_kwargs)
+    chat_model = OpenAIChatModel(model_name, provider=provider_obj)
+
+    return Agent(chat_model, system_prompt=SYSTEM_PROMPT)
 
 
-def create_ai_agent() -> Agent:
+async def get_redis():
+    """Get Redis connection, return None if unavailable."""
+    global _redis_pool
+    if not AI_CACHE_ENABLED:
+        return None
+    try:
+        if _redis_pool is None:
+            _redis_pool = redis.from_url(settings.REDIS_URL, decode_responses=False)
+        return _redis_pool
+    except Exception as e:
+        logger.warning("Redis connection failed", error=str(e))
+        return None
+
+
+AI_ERRORS_RETRY = (Exception,)
+
+
+def get_cache_key(chart_id: int, prompt_text: str, question: str) -> str:
+    """Generate cache key from chart data and question."""
+    data = f"{chart_id}:{prompt_text[:100]}:{question}"
+    return f"ai_cache:{hashlib.md5(data.encode()).hexdigest()}"
+
+
+def calculate_cost(prompt_tokens: int, completion_tokens: int) -> float:
+    """Calculate API cost in USD."""
+    return (prompt_tokens / 1000 * AI_COST_PER_1K_PROMPT) + \
+           (completion_tokens / 1000 * AI_COST_PER_1K_COMPLETION)
+
+
+async def call_with_fallback(prompt: str) -> tuple:
+    """Call AI with fallback across providers and models.
+
+    Returns tuple of (result, model_name).
+    Raises RuntimeError if all providers fail or none configured.
     """
-    Create AI agent using the current pydantic-ai API.
+    providers = settings.ai_providers
 
-    In pydantic-ai >= 0.1.x the model is OpenAIChatModel and credentials
-    are passed via OpenAIProvider (not directly to the model constructor).
-    This supports any OpenAI-compatible endpoint via base_url.
-    """
-    if not settings.AI_API_KEY:
-        raise ValueError("AI_API_KEY is not configured")
+    if not providers:
+        raise RuntimeError("No AI providers configured. Set AI_PROVIDERS in .env")
 
-    provider_kwargs: dict = {"api_key": settings.AI_API_KEY}
-    if settings.AI_BASE_URL:
-        provider_kwargs["base_url"] = settings.AI_BASE_URL
+    errors = []
+    for provider in providers:
+        for model_name in provider.models:
+            try:
+                agent = create_ai_agent(model_name, provider)
+                result = await agent.run(prompt)
+                logger.info("AI request success", provider=provider.name, model=model_name)
+                return result, model_name
+            except Exception as e:
+                error_type = type(e).__name__
+                logger.warning(
+                    "AI model failed, trying next model",
+                    provider=provider.name,
+                    model=model_name,
+                    error=error_type,
+                    error_message=str(e),
+                )
+                errors.append(f"{provider.name}/{model_name}: {error_type}")
+                continue
 
-    provider = OpenAIProvider(**provider_kwargs)
-    model = OpenAIChatModel(settings.AI_MODEL, provider=provider)
+        logger.warning("All models failed for provider", provider=provider.name)
 
-    return Agent(
-        model,
-        system_prompt=SYSTEM_PROMPT,
-    )
+    raise RuntimeError(f"All AI providers failed: {', '.join(errors)}")
 
 
 class AIService:
-    def __init__(self):
-        self._agent: Optional[Agent] = None
-
-    @property
-    def agent(self) -> Agent:
-        if self._agent is None:
-            self._agent = create_ai_agent()
-        return self._agent
+    """AI Service with streaming, retry, caching, fallback and token tracking."""
 
     async def _check_and_log_request(
         self,
         db: AsyncSession,
         user_id: int,
-        subscription_type: SubscriptionType,
+        subscription_type: str,
         endpoint: str,
+        chart_id: int | None = None,
+        method: str = "POST",
     ) -> None:
-        """
-        Check monthly AI request limit and log the request.
-        Raises ValueError if limit reached.
-        """
-        if subscription_type != SubscriptionType.PREMIUM:
-            start_of_month = datetime.utcnow().replace(
+        if subscription_type != SubscriptionType.PREMIUM.value:
+            start_of_month = datetime.now(timezone.utc).replace(
                 day=1, hour=0, minute=0, second=0, microsecond=0
             )
             result = await db.execute(
                 select(func.count(RequestLog.id)).where(
                     RequestLog.user_id == user_id,
-                    RequestLog.endpoint == "/ai/interpret",
-                    RequestLog.timestamp >= start_of_month,
+                    RequestLog.endpoint == endpoint,
+                    RequestLog.created_at >= start_of_month,
                 )
             )
             count = result.scalar() or 0
             logger.info(
-                "AI limit check",
+                "ai_limit_check",
                 user_id=user_id,
                 current_count=count,
                 limit=settings.FREE_AI_REQUESTS_PER_MONTH,
@@ -99,13 +148,19 @@ class AIService:
                     f"AI request limit reached ({settings.FREE_AI_REQUESTS_PER_MONTH}/month for free users)"
                 )
 
-        log_entry = RequestLog(user_id=user_id, endpoint=endpoint)
-        db.add(log_entry)
+        log_entry = RequestLog(
+            user_id=user_id,
+            endpoint=endpoint,
+            chart_id=chart_id,
+            method=method,
+        )
+        async with db.begin_nested():
+            db.add(log_entry)
+            await db.flush()
         await db.commit()
-        logger.info("AI request logged", user_id=user_id)
+        logger.info("ai_request_logged", user_id=user_id, endpoint=endpoint, chart_id=chart_id)
 
     def _build_prompt(self, prompt_text: str, question: str) -> str:
-        """Build the full prompt for the AI model."""
         user_question = question.strip() or "Дай общую интерпретацию этой натальной карты"
         return (
             f"ДАННЫЕ НАТАЛЬНОЙ КАРТЫ:\n{prompt_text}\n\n"
@@ -115,71 +170,143 @@ class AIService:
             "Сразу начинай с ответа — без вступительных фраз и без показа рассуждений."
         )
 
-    async def interpret_chart(
+    async def _log_token_usage(
         self,
         db: AsyncSession,
-        user: User,
-        prompt_text: str,
-        question: str = "",
-    ) -> str:
-        """Non-streaming chart interpretation."""
-        user_id: int = user.id
-        subscription_type: SubscriptionType = user.subscription_type
+        user_id: int,
+        model_name: str,
+        prompt_tokens: int,
+        completion_tokens: int,
+    ) -> None:
+        if not AI_TOKEN_TRACKING_ENABLED:
+            return
 
-        logger.info("AI interpretation requested", user_id=user_id)
-        await self._check_and_log_request(db, user_id, subscription_type, "/ai/interpret")
-
-        full_prompt = self._build_prompt(prompt_text, question)
         try:
-            result = await self.agent.run(full_prompt)
-            # pydantic-ai v0.x: result.output (not result.data)
-            output = result.output
-            logger.info("AI interpretation completed", user_id=user_id, length=len(output))
-            return output
+            total_tokens = prompt_tokens + completion_tokens
+            cost = calculate_cost(prompt_tokens, completion_tokens)
+
+            from app.ai.token_usage import TokenUsage
+            usage = TokenUsage(
+                user_id=user_id,
+                model=model_name,
+                prompt_tokens=prompt_tokens,
+                completion_tokens=completion_tokens,
+                total_tokens=total_tokens,
+                cost_usd=cost,
+            )
+            async with db.begin_nested():
+                db.add(usage)
+                await db.flush()
+            await db.commit()
+            logger.info(
+                "ai_token_usage_logged",
+                user_id=user_id,
+                model=model_name,
+                prompt_tokens=prompt_tokens,
+                completion_tokens=completion_tokens,
+                total_tokens=total_tokens,
+                cost_usd=cost,
+            )
         except Exception as e:
-            logger.error("AI interpretation failed", user_id=user_id, error=str(e))
-            raise
+            logger.error("ai_token_usage_log_failed", error=str(e))
+            try:
+                await db.rollback()
+            except Exception:
+                pass
+
+    async def _get_cached_response(self, chart_id: int, prompt_text: str, question: str) -> str | None:
+        if not AI_CACHE_ENABLED:
+            return None
+
+        try:
+            redis_client = await get_redis()
+            if not redis_client:
+                return None
+
+            cache_key = get_cache_key(chart_id, prompt_text, question)
+            cached = await redis_client.get(cache_key)
+            if cached:
+                logger.info("ai_cache_hit", chart_id=chart_id)
+                return cached.decode("utf-8") if isinstance(cached, bytes) else cached
+        except Exception as e:
+            logger.warning("ai_cache_get_failed", error=str(e))
+
+        return None
+
+    async def _set_cached_response(
+        self,
+        chart_id: int,
+        prompt_text: str,
+        question: str,
+        response: str,
+    ) -> None:
+        if not AI_CACHE_ENABLED:
+            return
+
+        try:
+            redis_client = await get_redis()
+            if not redis_client:
+                return
+
+            cache_key = get_cache_key(chart_id, prompt_text, question)
+            await redis_client.setex(cache_key, AI_CACHE_TTL_SECONDS, response)
+            logger.info("ai_cache_set", chart_id=chart_id, ttl=AI_CACHE_TTL_SECONDS)
+        except Exception as e:
+            logger.warning("ai_cache_set_failed", error=str(e))
+
+    @retry(
+        stop=stop_after_attempt(AI_RETRY_MAX_ATTEMPTS),
+        wait=wait_exponential(multiplier=1, min=AI_RETRY_MIN_WAIT, max=AI_RETRY_MAX_WAIT),
+        retry=retry_if_exception_type(AI_ERRORS_RETRY),
+        reraise=True,
+    )
+    async def _call_ai_with_retry(self, prompt: str, chart_id: int = None) -> tuple:
+        result, model_name = await call_with_fallback(prompt)
+        return result, model_name
 
     async def stream_interpret_chart(
         self,
         db: AsyncSession,
         user_id: int,
-        subscription_type: SubscriptionType,
+        subscription_type: str,
         prompt_text: str,
         question: str = "",
+        chart_id: int = None,
     ) -> AsyncGenerator[str, None]:
-        """
-        Stream chart interpretation using pydantic-ai's run_stream_events API.
-
-        Uses run_stream_events() which yields AgentStreamEvent objects.
-        Text deltas arrive as PartDeltaEvent with delta.content_delta.
-
-        Args:
-            db: Database session
-            user_id: Pre-extracted user ID (never pass User ORM object into generators)
-            subscription_type: Pre-extracted subscription type
-            prompt_text: Astrological chart data
-            question: User's question
-        """
-        logger.info("AI streaming requested", user_id=user_id)
-        await self._check_and_log_request(db, user_id, subscription_type, "/chat/stream")
+        logger.info("ai_streaming_requested", user_id=user_id, chart_id=chart_id)
+        await self._check_and_log_request(db, user_id, subscription_type, "/chat/stream", chart_id=chart_id)
 
         full_prompt = self._build_prompt(prompt_text, question)
 
+        if chart_id:
+            cached_response = await self._get_cached_response(chart_id, prompt_text, question)
+            if cached_response:
+                yield cached_response
+                return
+
         try:
-            # pydantic-ai: run_stream_events returns AsyncIterator[AgentStreamEvent | AgentRunResultEvent]
-            # PartDeltaEvent carries incremental text in event.delta.content_delta
-            async for event in self.agent.run_stream_events(full_prompt):
-                event_type = type(event).__name__
-                if event_type == "PartDeltaEvent":
-                    delta = getattr(event, "delta", None)
-                    if delta is not None:
-                        content_delta = getattr(delta, "content_delta", None)
-                        if content_delta:
-                            yield content_delta
-            logger.info("AI streaming completed", user_id=user_id)
+            result, model_name = await self._call_ai_with_retry(full_prompt, chart_id)
+
+            output = result.output
+            usage = result.usage()
+
+            if usage and AI_TOKEN_TRACKING_ENABLED:
+                await self._log_token_usage(
+                    db,
+                    user_id,
+                    model_name,
+                    usage.input_tokens or 0,
+                    usage.output_tokens or 0,
+                )
+
+            if chart_id and output:
+                await self._set_cached_response(chart_id, prompt_text, question, output)
+
+            yield output
+            logger.info("ai_streaming_completed", user_id=user_id, model=model_name, length=len(output))
+
         except Exception as e:
-            logger.error("AI streaming failed", user_id=user_id, error=str(e))
+            logger.error("ai_streaming_failed", user_id=user_id, error=str(e))
             raise
 
 
