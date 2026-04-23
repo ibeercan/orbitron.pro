@@ -338,41 +338,46 @@ export default function Landing() {
       </div>
 
       <main className="relative z-10 min-h-screen flex flex-col items-center justify-center px-6 py-12">
-        <div className="w-full max-w-md mx-auto flex flex-col items-center gap-8">
 
-          {/* Logo */}
-          <div className="flex flex-col items-center animate-in">
-            <div className="animate-float mb-5">
-              <OrbitronLogo size={64} />
-            </div>
-            <h1 className="font-serif text-4xl sm:text-5xl font-semibold text-center leading-tight">
-              <span className="text-[#F0EAD6]">Познайте себя</span>
-              <br />
-              <span className="gold-shimmer-text">через звёзды</span>
-            </h1>
-          </div>
-
-          {/* Form card */}
-          <div className="w-full animate-in animate-in-delay-1">
-            {step === 'success' ? (
-              <div className="luxury-card p-8 text-center">
-                <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-[rgba(212,175,55,0.12)] flex items-center justify-center">
-                  <OrbitronLogo size={40} />
-                </div>
-                <h2 className="font-serif text-2xl font-semibold text-[#F0EAD6] mb-2">
-                  Добро пожаловать!
-                </h2>
-                <p className="text-[#8B7FA8] text-sm">Переходим в личный кабинет...</p>
-                <div className="mt-6 flex justify-center">
-                  <div className="flex gap-1.5">
-                    <div className="w-2 h-2 rounded-full bg-[#D4AF37] animate-typing-1" />
-                    <div className="w-2 h-2 rounded-full bg-[#D4AF37] animate-typing-2" />
-                    <div className="w-2 h-2 rounded-full bg-[#D4AF37] animate-typing-3" />
-                  </div>
-                </div>
+            {/* Logo — centered above everything */}
+            <div className="flex flex-col items-center animate-in mb-8">
+              <div className="animate-float mb-5">
+                <OrbitronLogo size={64} />
               </div>
-            ) : (
-              <div className="luxury-card overflow-hidden">
+              <h1 className="font-serif text-4xl sm:text-5xl font-semibold text-center leading-tight">
+                <span className="text-[#F0EAD6]">Познайте себя</span>
+                <br />
+                <span className="gold-shimmer-text">через звёзды</span>
+              </h1>
+            </div>
+
+            {/* Form + Feature pills row — left spacer balances pills to keep form centered */}
+            <div className="w-full max-w-5xl flex flex-col sm:flex-row items-start justify-center gap-6 sm:gap-8">
+
+              {/* Left spacer — invisible, same width as pills */}
+              <div className="hidden sm:block sm:w-72 sm:shrink-0" />
+
+              {/* Form card — visually centered */}
+              <div className="w-full sm:w-96 sm:shrink-0 animate-in animate-in-delay-1">
+                {step === 'success' ? (
+                  <div className="luxury-card p-8 text-center">
+                    <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-[rgba(212,175,55,0.12)] flex items-center justify-center">
+                      <OrbitronLogo size={40} />
+                    </div>
+                    <h2 className="font-serif text-2xl font-semibold text-[#F0EAD6] mb-2">
+                      Добро пожаловать!
+                    </h2>
+                    <p className="text-[#8B7FA8] text-sm">Переходим в личный кабинет...</p>
+                    <div className="mt-6 flex justify-center">
+                      <div className="flex gap-1.5">
+                        <div className="w-2 h-2 rounded-full bg-[#D4AF37] animate-typing-1" />
+                        <div className="w-2 h-2 rounded-full bg-[#D4AF37] animate-typing-2" />
+                        <div className="w-2 h-2 rounded-full bg-[#D4AF37] animate-typing-3" />
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="luxury-card overflow-hidden">
                 <div className="px-7 pt-7 pb-5 border-b border-[rgba(212,175,55,0.08)]">
                   <div className="flex items-center justify-between">
                     <div>
@@ -543,48 +548,48 @@ export default function Landing() {
                 </div>
               </div>
             )}
-          </div>
+              </div>
 
-          {/* Feature pills */}
-          <div className="w-full max-w-lg flex flex-col sm:flex-row gap-3 sm:gap-4 animate-in animate-in-delay-2">
-            <div className="feature-pill sm:flex-1">
-              <div className="w-8 h-8 rounded-lg bg-[rgba(212,175,55,0.12)] flex items-center justify-center shrink-0">
-                <Sparkles className="w-4 h-4 text-[#D4AF37]" />
-              </div>
-              <div>
-                <span className="text-sm font-medium text-[#F0EAD6]">Точная натальная карта</span>
-                <p className="text-xs text-[#8B7FA8] mt-0.5">Профессиональные расчёты по дате, времени и месту рождения</p>
+              {/* Feature pills — vertical column on desktop, right of form */}
+              <div className="w-full sm:w-72 sm:shrink-0 flex flex-col sm:flex-col gap-3 animate-in animate-in-delay-2">
+                <div className="feature-pill">
+                  <div className="w-8 h-8 rounded-lg bg-[rgba(212,175,55,0.12)] flex items-center justify-center shrink-0">
+                    <Sparkles className="w-4 h-4 text-[#D4AF37]" />
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium text-[#F0EAD6]">Точная натальная карта</span>
+                    <p className="text-xs text-[#8B7FA8] mt-0.5">Профессиональные расчёты по дате, времени и месту рождения</p>
+                  </div>
+                </div>
+                <div className="feature-pill">
+                  <div className="w-8 h-8 rounded-lg bg-[rgba(212,175,55,0.12)] flex items-center justify-center shrink-0">
+                    <Star className="w-4 h-4 text-[#D4AF37]" />
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium text-[#F0EAD6]">ИИ-интерпретация</span>
+                    <p className="text-xs text-[#8B7FA8] mt-0.5">Глубокий анализ планет, домов и аспектов вашей карты</p>
+                  </div>
+                </div>
+                <div className="feature-pill">
+                  <div className="w-8 h-8 rounded-lg bg-[rgba(212,175,55,0.12)] flex items-center justify-center shrink-0">
+                    <Shield className="w-4 h-4 text-[#D4AF37]" />
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium text-[#F0EAD6]">Диалог с астрологом</span>
+                    <p className="text-xs text-[#8B7FA8] mt-0.5">Задавайте любые вопросы — ИИ отвечает в контексте вашей карты</p>
+                  </div>
+                </div>
               </div>
             </div>
-            <div className="feature-pill sm:flex-1">
-              <div className="w-8 h-8 rounded-lg bg-[rgba(212,175,55,0.12)] flex items-center justify-center shrink-0">
-                <Star className="w-4 h-4 text-[#D4AF37]" />
-              </div>
-              <div>
-                <span className="text-sm font-medium text-[#F0EAD6]">ИИ-интерпретация</span>
-                <p className="text-xs text-[#8B7FA8] mt-0.5">Глубокий анализ планет, домов и аспектов вашей карты</p>
-              </div>
-            </div>
-            <div className="feature-pill sm:flex-1">
-              <div className="w-8 h-8 rounded-lg bg-[rgba(212,175,55,0.12)] flex items-center justify-center shrink-0">
-                <Shield className="w-4 h-4 text-[#D4AF37]" />
-              </div>
-              <div>
-                <span className="text-sm font-medium text-[#F0EAD6]">Диалог с астрологом</span>
-                <p className="text-xs text-[#8B7FA8] mt-0.5">Задавайте любые вопросы — ИИ отвечает в контексте вашей карты</p>
-              </div>
-            </div>
-          </div>
 
-          {/* Bottom decorative text */}
-          <div className="flex items-center gap-3 animate-in animate-in-delay-3">
-            <div className="gold-divider w-12" />
-            <span className="text-xs text-[#4A3F6A] tracking-widest uppercase font-medium">
-              Ранний доступ · 2026
-            </span>
-          </div>
-        </div>
-      </main>
+            {/* Bottom decorative text */}
+            <div className="flex items-center gap-3 mt-8 animate-in animate-in-delay-3">
+              <div className="gold-divider w-12" />
+              <span className="text-xs text-[#4A3F6A] tracking-widest uppercase font-medium">
+                Orbitron · Ранний доступ · 2026
+              </span>
+            </div>
+          </main>
     </div>
   )
 }
