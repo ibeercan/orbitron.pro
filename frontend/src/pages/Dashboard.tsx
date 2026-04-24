@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { chartsApi, chatApi } from '@/lib/api/client'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { Sidebar } from '@/components/layout/Sidebar'
@@ -142,7 +143,7 @@ function DeleteConfirmDialog({
 }
 
 /* ── Empty state ── */
-function EmptyChartState({ onCreate }: { onCreate: () => void }) {
+function EmptyChartState() {
   return (
     <div className="flex flex-col items-center justify-center h-full text-center px-8 py-12">
       <div className="relative w-28 h-28 mb-6 animate-float">
@@ -173,14 +174,10 @@ function EmptyChartState({ onCreate }: { onCreate: () => void }) {
           <circle cx="56" cy="56" r="3.5" fill="#FFF8DC" opacity="0.6" />
         </svg>
       </div>
-      <h3 className="font-serif text-2xl font-semibold text-[#F0EAD6] mb-2">Нет выбранной карты</h3>
-      <p className="text-sm text-[#8B7FA8] leading-relaxed max-w-xs mb-6">
+      <h3 className="font-serif text-2xl font-semibold text-[#F0EAD6] mb-2">Выберите карту</h3>
+      <p className="text-sm text-[#8B7FA8] leading-relaxed max-w-xs">
         Выберите натальную карту в боковой панели, чтобы её просмотреть и поговорить с ИИ-астрологом
       </p>
-      <button onClick={onCreate} className="btn-gold px-6 py-2.5 text-sm flex items-center gap-2">
-        <Star className="w-4 h-4" />
-        Создать первую карту
-      </button>
     </div>
   )
 }
@@ -326,6 +323,7 @@ function ProfectionInfoPanel({ data }: { data: ProfectionMeta }) {
 }
 
 export default function Dashboard() {
+  const [searchParams, setSearchParams] = useSearchParams()
   const [charts, setCharts] = useState<Chart[]>([])
   const [chartsLoaded, setChartsLoaded] = useState(false)
   const [selectedChart, setSelectedChart] = useState<Chart | null>(null)
@@ -454,6 +452,7 @@ const loadChartSvg = async (chart: Chart) => {
 
   const selectChart = async (chart: Chart) => {
     if (selectedChart?.id === chart.id) return
+    setSearchParams({ chart: String(chart.id) }, { replace: true })
     setSelectedChart(chart)
     setChatSessionId(null)
 
@@ -500,6 +499,18 @@ const loadChartSvg = async (chart: Chart) => {
     }
   }, [chartsLoaded, charts.length])
 
+  const initialChartSelected = useRef(false)
+
+  useEffect(() => {
+    if (!chartsLoaded || initialChartSelected.current) return
+    initialChartSelected.current = true
+    const id = searchParams.get('chart')
+    if (id) {
+      const c = charts.find(c => c.id === Number(id))
+      if (c) selectChart(c)
+    }
+  }, [chartsLoaded])
+
   useEffect(() => {
     if (user && !user.onboarding_completed && !showOnboardingTour) {
       const timer = setTimeout(() => setShowOnboardingTour(true), 800)
@@ -519,6 +530,7 @@ const loadChartSvg = async (chart: Chart) => {
       await chartsApi.delete(chartToDelete.id)
       setCharts((prev) => prev.filter((c) => c.id !== chartToDelete.id))
       if (selectedChart?.id === chartToDelete.id) {
+        setSearchParams({}, { replace: true })
         setSelectedChart(null)
         setSvgContent('')
         setChatSessionId(null)
@@ -594,7 +606,7 @@ const loadChartSvg = async (chart: Chart) => {
 
                 <div className="flex-1 overflow-auto relative">
                   {!selectedChart ? (
-                    <EmptyChartState onCreate={() => setShowCreateModal(true)} />
+                    <EmptyChartState />
                   ) : (selectedChart.chart_type || 'natal') === 'profection' && getProfectionData(selectedChart, profectionData) ? (
                     <ProfectionInfoPanel data={getProfectionData(selectedChart, profectionData)!} />
                   ) : svgLoading ? (
@@ -621,11 +633,13 @@ const loadChartSvg = async (chart: Chart) => {
                   )}
                 </div>
                 {selectedChart && (selectedChart.chart_type || 'natal') === 'transit' && (
-                  <TransitTimeline
-                    natalChartId={selectedChart.id}
-                    parentChartId={selectedChart.parent_chart_id}
-                    isPremium={isPremium}
-                  />
+                  <div className="shrink-0 max-h-[50vh] flex flex-col overflow-hidden border-t border-[rgba(212,175,55,0.08)]">
+                    <TransitTimeline
+                      natalChartId={selectedChart.id}
+                      parentChartId={selectedChart.parent_chart_id}
+                      isPremium={isPremium}
+                    />
+                  </div>
                 )}
                 {selectedChart && (selectedChart.chart_type || 'natal') === 'natal' && selectedChart.id && (
                   <div className="shrink-0 max-h-[50vh] flex flex-col overflow-hidden border-t border-[rgba(212,175,55,0.08)]">
@@ -779,7 +793,7 @@ const loadChartSvg = async (chart: Chart) => {
               {mobilePanelTab === 'chart' ? (
                 <div className="luxury-card h-full flex flex-col overflow-hidden">
                   {!selectedChart ? (
-                    <EmptyChartState onCreate={() => setShowCreateModal(true)} />
+                    <EmptyChartState />
                   ) : (selectedChart.chart_type || 'natal') === 'profection' && getProfectionData(selectedChart, profectionData) ? (
                     <ProfectionInfoPanel data={getProfectionData(selectedChart, profectionData)!} />
                   ) : svgLoading ? (

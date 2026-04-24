@@ -1,23 +1,51 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '@/contexts/auth-context'
+import { chartsApi } from '@/lib/api/client'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { ProfileSlideOver } from '@/components/layout/ProfileSlideOver'
 import { AdminContent } from '@/components/admin/AdminContent'
 import { ArrowLeft, Crown } from 'lucide-react'
 
+interface Chart {
+  id: number
+  name?: string | null
+  chart_type?: string
+  parent_chart_id?: number | null
+  person_id?: number | null
+  native_data: { datetime: string; location: string; [key: string]: unknown }
+  result_data: Record<string, unknown>
+  svg_path?: string | null
+  svg_data?: string | null
+  prompt_text?: string | null
+  created_at: string
+}
+
 export default function AdminPage() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { user } = useAuth()
 
+  const [charts, setCharts] = useState<Chart[]>([])
   const [showProfile, setShowProfile] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [activeMobileNav, setActiveMobileNav] = useState<'charts' | 'profile'>('charts')
 
+  useEffect(() => {
+    chartsApi.list().then(r => setCharts(r.data)).catch(() => {})
+  }, [])
+
   if (!user?.is_admin) {
     navigate('/dashboard', { replace: true })
     return null
+  }
+
+  const selectedChartId = searchParams.get('chart')
+  const selectedChart = selectedChartId ? charts.find(c => c.id === Number(selectedChartId)) ?? null : null
+
+  const handleSelectChart = (chart: Chart) => {
+    navigate(`/dashboard?chart=${chart.id}`)
   }
 
   return (
@@ -26,9 +54,9 @@ export default function AdminPage() {
         <Sidebar
           onProfileClick={() => setShowProfile(true)}
           onCreateChart={() => navigate('/dashboard')}
-          charts={[]}
-          selectedChart={null}
-          onSelectChart={() => navigate('/dashboard')}
+          charts={charts}
+          selectedChart={selectedChart}
+          onSelectChart={handleSelectChart}
           onDeleteChart={() => {}}
           collapsed={sidebarCollapsed}
           onToggleCollapse={() => setSidebarCollapsed(v => !v)}

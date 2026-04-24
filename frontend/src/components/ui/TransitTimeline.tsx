@@ -318,7 +318,7 @@ export function TransitTimeline({ natalChartId, parentChartId, isPremium }: Tran
 
   if (!isPremium) {
     return (
-      <div className="luxury-card p-5 mt-3">
+      <div className="p-5">
         <div className="flex items-center gap-3 mb-3">
           <div className="w-9 h-9 rounded-xl bg-[rgba(212,175,55,0.1)] border border-[rgba(212,175,55,0.2)] flex items-center justify-center">
             <Clock className="w-4 h-4 text-[#D4AF37]" />
@@ -338,7 +338,7 @@ export function TransitTimeline({ natalChartId, parentChartId, isPremium }: Tran
   }
 
   return (
-    <div className="luxury-card mt-3 overflow-hidden">
+    <div className="flex flex-col overflow-hidden">
       <button
         onClick={() => setExpanded((v) => !v)}
         className="w-full flex items-center justify-between px-5 py-4 hover:bg-[rgba(212,175,55,0.03)] transition-colors"

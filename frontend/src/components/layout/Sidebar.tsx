@@ -304,12 +304,8 @@ export function Sidebar({
                         <Sparkles className="w-5 h-5 text-[#4A3F6A]" />
                       </div>
                       <p className="text-xs text-[#4A3F6A] leading-relaxed">
-                        Нет натальных карт.
-                        <br />Создайте первую карту.
+                        Пока нет карт
                       </p>
-                      <button onClick={onCreateChart} className="mt-3 text-xs text-[#D4AF37] hover:text-[#F0C842] font-medium transition-colors">
-                        + Создать карту
-                      </button>
                     </div>
                   ) : (
                     charts.map((chart) => {
