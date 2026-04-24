@@ -23,9 +23,9 @@ class RequestLog(Base, TimestampMixin):
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     chart_id: Mapped[int | None] = mapped_column(
-        ForeignKey("charts.id"), index=True, default=None
+        ForeignKey("charts.id"), default=None
     )
-    endpoint: Mapped[str] = mapped_column(String(255), index=True)
+    endpoint: Mapped[str] = mapped_column(String(255))
     method: Mapped[str] = mapped_column(String(10), default="GET")

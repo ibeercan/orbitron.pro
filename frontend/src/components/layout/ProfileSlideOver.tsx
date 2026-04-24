@@ -9,8 +9,12 @@ interface ProfileSlideOverProps {
 
 const PREMIUM_FEATURES = [
   { text: 'Безлимитные запросы к ИИ-астрологу' },
-  { text: 'Приоритетная обработка карт' },
-  { text: 'Эксклюзивные интерпретации' },
+  { text: 'Безлимит натальных карт' },
+  { text: 'Синастрия с AI-анализом совместимости' },
+  { text: 'Транзиты на любую дату + таймлайн' },
+  { text: 'Солярный и лунарный возврат' },
+  { text: 'Профекции (управитель года)' },
+  { text: 'PDF-отчёты с вложенной картой' },
 ]
 
 export function ProfileSlideOver({ isOpen, onClose }: ProfileSlideOverProps) {

@@ -71,8 +71,9 @@ export const subscriptionApi = {
 }
 
 export const chartsApi = {
-  list: async () => {
-    return api.get('/charts/')
+  list: async (chartType?: string) => {
+    const params = chartType ? { chart_type: chartType } : {}
+    return api.get('/charts/', { params })
   },
 
   get: async (id: number) => {
@@ -94,8 +95,96 @@ export const chartsApi = {
     return api.post('/charts/natal', data)
   },
 
+  createSynastry: async (data: {
+    natal_chart_id: number
+    person_id?: number
+    person2_datetime?: string
+    person2_location?: string
+    person2_name?: string
+    theme?: string
+  }) => {
+    return api.post('/charts/synastry', data)
+  },
+
+  createTransit: async (data: {
+    natal_chart_id: number
+    transit_datetime?: string
+    theme?: string
+  }) => {
+    return api.post('/charts/transit', data)
+  },
+
+  getTransitTimeline: async (natalChartId: number, startDate: string, endDate: string) => {
+    return api.post('/charts/transit-timeline', null, {
+      params: { natal_chart_id: natalChartId, start_date: startDate, end_date: endDate },
+    })
+  },
+
+  createSolarReturn: async (data: {
+    natal_chart_id: number
+    year?: number
+    location_override?: string
+    theme?: string
+  }) => {
+    return api.post('/charts/solar-return', data)
+  },
+
+  createLunarReturn: async (data: {
+    natal_chart_id: number
+    near_date?: string
+    theme?: string
+  }) => {
+    return api.post('/charts/lunar-return', data)
+  },
+
+  createProfection: async (data: {
+    natal_chart_id: number
+    target_date?: string
+    age?: number
+    rulership?: string
+  }) => {
+    return api.post('/charts/profection', data)
+  },
+
+  generateReport: async (chartId: number, preset?: string, title?: string) => {
+    return api.post(`/charts/${chartId}/report`, null, {
+      params: { preset: preset || 'standard', ...(title ? { title } : {}) },
+      responseType: 'blob',
+    })
+  },
+
   delete: async (id: number) => {
     return api.delete(`/charts/${id}`)
+  },
+}
+
+export const personsApi = {
+  list: async () => {
+    return api.get('/persons/')
+  },
+
+  get: async (id: number) => {
+    return api.get(`/persons/${id}`)
+  },
+
+  create: async (data: {
+    name: string
+    datetime: string
+    location: string
+  }) => {
+    return api.post('/persons/', data)
+  },
+
+  update: async (id: number, data: {
+    name?: string
+    datetime?: string
+    location?: string
+  }) => {
+    return api.put(`/persons/${id}`, data)
+  },
+
+  delete: async (id: number) => {
+    return api.delete(`/persons/${id}`)
   },
 }
 

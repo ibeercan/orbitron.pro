@@ -64,13 +64,119 @@ class ChartCreate(BaseModel):
         return v
 
 
+class SynastryCreate(BaseModel):
+    natal_chart_id: int
+    person_id: Optional[int] = None
+    person2_datetime: Optional[str] = None
+    person2_location: Optional[str] = None
+    person2_name: Optional[str] = None
+    theme: Optional[str] = "midnight"
+
+    @field_validator("theme")
+    @classmethod
+    def validate_theme(cls, v: str) -> str:
+        if v not in VALID_THEMES:
+            raise ValueError(f"Theme must be one of: {', '.join(sorted(VALID_THEMES))}")
+        return v
+
+    @field_validator("person2_datetime")
+    @classmethod
+    def validate_datetime(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        try:
+            datetime.fromisoformat(v.replace('Z', '+00:00'))
+        except ValueError:
+            raise ValueError("Datetime must be in ISO format (e.g., 2000-01-01T12:00:00)")
+        return v
+
+
+class TransitCreate(BaseModel):
+    natal_chart_id: int
+    transit_datetime: Optional[str] = None
+    theme: Optional[str] = "midnight"
+
+    @field_validator("theme")
+    @classmethod
+    def validate_theme(cls, v: str) -> str:
+        if v not in VALID_THEMES:
+            raise ValueError(f"Theme must be one of: {', '.join(sorted(VALID_THEMES))}")
+        return v
+
+    @field_validator("transit_datetime")
+    @classmethod
+    def validate_datetime(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        try:
+            datetime.fromisoformat(v.replace('Z', '+00:00'))
+        except ValueError:
+            raise ValueError("Datetime must be in ISO format (e.g., 2000-01-01T12:00:00)")
+        return v
+
+
+class SolarReturnCreate(BaseModel):
+    natal_chart_id: int
+    year: Optional[int] = None
+    location_override: Optional[str] = None
+    theme: Optional[str] = "midnight"
+
+    @field_validator("theme")
+    @classmethod
+    def validate_theme(cls, v: str) -> str:
+        if v not in VALID_THEMES:
+            raise ValueError(f"Theme must be one of: {', '.join(sorted(VALID_THEMES))}")
+        return v
+
+
+class LunarReturnCreate(BaseModel):
+    natal_chart_id: int
+    near_date: Optional[str] = None
+    theme: Optional[str] = "midnight"
+
+    @field_validator("theme")
+    @classmethod
+    def validate_theme(cls, v: str) -> str:
+        if v not in VALID_THEMES:
+            raise ValueError(f"Theme must be one of: {', '.join(sorted(VALID_THEMES))}")
+        return v
+
+    @field_validator("near_date")
+    @classmethod
+    def validate_date(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        try:
+            datetime.fromisoformat(v.replace('Z', '+00:00'))
+        except ValueError:
+            raise ValueError("Date must be in ISO format")
+        return v
+
+
+class ProfectionCreate(BaseModel):
+    natal_chart_id: int
+    target_date: Optional[str] = None
+    age: Optional[int] = None
+    rulership: Optional[str] = "traditional"
+
+    @field_validator("rulership")
+    @classmethod
+    def validate_rulership(cls, v: str) -> str:
+        if v not in ("traditional", "modern"):
+            raise ValueError("rulership must be 'traditional' or 'modern'")
+        return v
+
+
 class Chart(BaseModel):
     id: int
+    chart_type: str = "natal"
+    parent_chart_id: Optional[int] = None
+    person_id: Optional[int] = None
     native_data: dict
     result_data: dict
     svg_data: Optional[str] = None
     svg_path: Optional[str] = None
-    prompt_text: str
+    prompt_text: Optional[str] = None
     created_at: datetime
 
     @field_validator("created_at", mode="before")
@@ -83,3 +189,26 @@ class Chart(BaseModel):
         return v
 
     model_config = {"from_attributes": True}
+
+
+class ProfectionResponse(BaseModel):
+    chart: Chart
+    profected_house: int
+    profected_sign: str
+    ruler: str
+    ruler_house: int | None = None
+    ruler_position: dict | None = None
+    planets_in_house: list[str] = []
+
+
+class TransitTimelineEntry(BaseModel):
+    transit_planet: str
+    natal_planet: str
+    aspect_name: str
+    exact_dates: list[str] = []
+    is_multi_pass: bool = False
+    duration_days: float | None = None
+
+
+class TransitTimelineResponse(BaseModel):
+    entries: list[TransitTimelineEntry]

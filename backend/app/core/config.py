@@ -99,7 +99,8 @@ class Settings(BaseSettings):
     COOKIE_SECURE: bool = True
 
     # Subscription limits
-    FREE_AI_REQUESTS_PER_MONTH: int = 5
+    FREE_AI_REQUESTS_PER_MONTH: int = 3
+    FREE_CHARTS_LIMIT: int = 1
 
     # Logging
     LOG_LEVEL: str = "INFO"

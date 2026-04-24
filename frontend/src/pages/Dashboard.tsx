@@ -5,16 +5,56 @@ import { Sidebar } from '@/components/layout/Sidebar'
 import { ProfileSlideOver } from '@/components/layout/ProfileSlideOver'
 import { AssistantChat } from '@/components/chat/AssistantChat'
 import { CreateChartModal } from '@/components/ui/CreateChartModal'
-import { Loader2, Calendar, MapPin, Sparkles, Star, Trash2, AlertTriangle, Maximize2 } from 'lucide-react'
+import { Loader2, Calendar, MapPin, Sparkles, Star, Trash2, AlertTriangle, Maximize2, Heart, Clock, Sun, Moon, Target, FileText, Lock, Crown } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useAuth } from '@/contexts/auth-context'
+
+const ZODIAC_SIGNS = ['Овен','Телец','Близнецы','Рак','Лев','Дева','Весы','Скорпион','Стрелец','Козерог','Водолей','Рыбы']
+
+const CHART_TYPE_LABELS: Record<string, string> = {
+  natal: 'Натальная карта',
+  synastry: 'Синастрия',
+  transit: 'Транзиты',
+  solar_return: 'Солярный возврат',
+  lunar_return: 'Лунарный возврат',
+  profection: 'Профекция',
+}
+
+function ChartActionButton({ icon: Icon, label, premium, onClick }: {
+  icon: React.ComponentType<{ className?: string }>
+  label: string
+  premium?: boolean
+  onClick: () => void
+}) {
+  const { user } = useAuth()
+  const locked = premium && user?.subscription_type !== 'premium'
+
+  return (
+    <button
+      onClick={locked ? () => alert('Доступно на Premium') : onClick}
+      className={cn(
+        'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap',
+        locked
+          ? 'text-[#4A3F6A] hover:text-[#8B7FA8] cursor-not-allowed'
+          : 'text-[#8B7FA8] hover:text-[#D4AF37] hover:bg-[rgba(212,175,55,0.08)]'
+      )}
+    >
+      {locked ? <Lock className="w-3 h-3" /> : <Icon className="w-3 h-3" />}
+      {label}
+    </button>
+  )
+}
 
 interface Chart {
   id: number
-  native_data: { datetime: string; location: string }
+  chart_type?: string
+  parent_chart_id?: number | null
+  person_id?: number | null
+  native_data: { datetime: string; location: string; [key: string]: unknown }
   result_data: Record<string, unknown>
   svg_path?: string | null
   svg_data?: string | null
-  prompt_text: string
+  prompt_text?: string | null
   created_at: string
 }
 
@@ -141,9 +181,13 @@ function ChartHeader({ chart }: { chart: Chart }) {
   const birthDate = date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })
   const birthTime = date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
   const location = chart.native_data.location.split(',').slice(0, 2).join(', ').trim()
+  const typeLabel = CHART_TYPE_LABELS[chart.chart_type || 'natal'] || 'Натальная карта'
 
   return (
     <div className="flex items-center gap-5 flex-wrap">
+      <span className="text-xs font-medium px-2 py-0.5 rounded-md bg-[rgba(212,175,55,0.1)] border border-[rgba(212,175,55,0.2)] text-[#D4AF37]">
+        {typeLabel}
+      </span>
       <div className="flex items-center gap-2 text-sm">
         <Calendar className="w-3.5 h-3.5 text-[#D4AF37]" />
         <span className="text-[#F0EAD6] font-medium">{birthDate}</span>
@@ -152,6 +196,115 @@ function ChartHeader({ chart }: { chart: Chart }) {
       <div className="flex items-center gap-2 text-sm">
         <MapPin className="w-3.5 h-3.5 text-[#D4AF37]" />
         <span className="text-[#8B7FA8]">{location}</span>
+      </div>
+    </div>
+  )
+}
+
+interface ProfectionMeta {
+  profected_house: number
+  profected_sign: string
+  ruler: string
+  ruler_house: number | null
+  ruler_position?: { sign: string; sign_degree: number; is_retrograde: boolean } | null
+  planets_in_house: string[]
+  monthly?: { profected_house: number; profected_sign: string; ruler: string } | null
+}
+
+function getProfectionData(chart: Chart, fallback: ProfectionMeta | null): ProfectionMeta | null {
+  if (fallback) return fallback
+  const rd = chart.result_data as Record<string, unknown>
+  if (!rd?.profected_house) return null
+  return {
+    profected_house: rd.profected_house as number,
+    profected_sign: rd.profected_sign as string,
+    ruler: rd.ruler as string,
+    ruler_house: (rd.ruler_house as number) ?? null,
+    ruler_position: rd.ruler_position as ProfectionMeta['ruler_position'],
+    planets_in_house: (rd.planets_in_house as string[]) ?? [],
+    monthly: rd.monthly as ProfectionMeta['monthly'],
+  }
+}
+
+/* ── Profection info panel (shown instead of SVG) ── */
+function ProfectionInfoPanel({ data }: { data: ProfectionMeta }) {
+  const houseLabel = `${data.profected_house} дом`
+  const signLabel = ZODIAC_SIGNS[ZODIAC_SIGNS.findIndex((_, i) => {
+    const signs = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces']
+    return signs[i] === data.profected_sign
+  })] || data.profected_sign
+
+  return (
+    <div className="flex flex-col items-center justify-center h-full px-6 py-8">
+      <div className="w-20 h-20 rounded-full bg-[rgba(212,175,55,0.08)] border border-[rgba(212,175,55,0.2)] flex items-center justify-center mb-5">
+        <Target className="w-8 h-8 text-[#D4AF37]" />
+      </div>
+
+      <h3 className="font-serif text-xl font-semibold text-[#F0EAD6] mb-1">Профекция</h3>
+      <p className="text-sm text-[#8B7FA8] mb-6">Годовой прогноз по домам</p>
+
+      <div className="w-full max-w-sm space-y-3">
+        {/* House + Sign */}
+        <div className="luxury-card p-4">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-[rgba(212,175,55,0.1)] flex items-center justify-center shrink-0">
+              <span className="text-sm font-bold text-[#D4AF37]">{data.profected_house}</span>
+            </div>
+            <div>
+              <p className="text-xs text-[#8B7FA8]">Профекционный дом</p>
+              <p className="text-sm font-semibold text-[#F0EAD6]">{houseLabel} — {signLabel}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Ruler */}
+        <div className="luxury-card p-4">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-[rgba(212,175,55,0.1)] flex items-center justify-center shrink-0">
+              <Crown className="w-4 h-4 text-[#D4AF37]" />
+            </div>
+            <div className="flex-1">
+              <p className="text-xs text-[#8B7FA8]">Управитель года</p>
+              <p className="text-sm font-semibold text-[#F0EAD6]">
+                {data.ruler}
+                {data.ruler_house != null ? ` · ${data.ruler_house} дом` : ''}
+              </p>
+              {data.ruler_position && (
+                <p className="text-xs text-[#8B7FA8] mt-0.5">
+                  {ZODIAC_SIGNS[['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'].indexOf(data.ruler_position.sign)] || data.ruler_position.sign} {data.ruler_position.sign_degree.toFixed(1)}°
+                  {data.ruler_position.is_retrograde ? ' R' : ''}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Planets in house */}
+        {data.planets_in_house.length > 0 && (
+          <div className="luxury-card p-4">
+            <p className="text-xs text-[#8B7FA8] mb-2">Планеты в профекционном доме</p>
+            <div className="flex flex-wrap gap-2">
+              {data.planets_in_house.map((p) => (
+                <span key={p} className="px-2.5 py-1 rounded-lg bg-[rgba(212,175,55,0.08)] border border-[rgba(212,175,55,0.15)] text-xs font-medium text-[#D4AF37]">
+                  {p}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Monthly profection */}
+        {data.monthly && (
+          <div className="luxury-card p-4">
+            <p className="text-xs text-[#8B7FA8] mb-2">Месячная профекция</p>
+            <p className="text-sm font-semibold text-[#F0EAD6]">
+              {data.monthly.profected_house} дом — {ZODIAC_SIGNS[['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'].indexOf(data.monthly.profected_sign)] || data.monthly.profected_sign}
+            </p>
+            <p className="text-xs text-[#8B7FA8] mt-0.5">
+              Управитель: {data.monthly.ruler}
+            </p>
+          </div>
+        )}
       </div>
     </div>
   )
@@ -179,6 +332,64 @@ export default function Dashboard() {
 
   /* Astrologer mode — fullscreen chat */
   const [astrologerMode, setAstrologerMode] = useState(false)
+
+  const { user } = useAuth()
+  const isPremium = user?.subscription_type === 'premium'
+
+  const [profectionData, setProfectionData] = useState<ProfectionMeta | null>(null)
+
+  const handleChartAction = async (type: string) => {
+    if (!selectedChart) return
+    try {
+      let res
+      switch (type) {
+        case 'transit':
+          res = await chartsApi.createTransit({ natal_chart_id: selectedChart.id, theme: 'midnight' })
+          break
+        case 'solar_return': {
+          const year = new Date().getFullYear()
+          res = await chartsApi.createSolarReturn({ natal_chart_id: selectedChart.id, year, theme: 'midnight' })
+          break
+        }
+        case 'lunar_return':
+          res = await chartsApi.createLunarReturn({ natal_chart_id: selectedChart.id, theme: 'midnight' })
+          break
+        case 'profection':
+          res = await chartsApi.createProfection({ natal_chart_id: selectedChart.id })
+          break
+        case 'pdf':
+          await chartsApi.generateReport(selectedChart.id)
+          return
+        default:
+          return
+      }
+      if (res?.data) {
+        const newChart = res.data.chart ?? res.data
+        if (res.data.chart) {
+          setProfectionData({
+            profected_house: res.data.profected_house,
+            profected_sign: res.data.profected_sign,
+            ruler: res.data.ruler,
+            ruler_house: res.data.ruler_house ?? null,
+            ruler_position: res.data.ruler_position,
+            planets_in_house: res.data.planets_in_house ?? [],
+            monthly: res.data.monthly,
+          })
+        } else {
+          setProfectionData(null)
+        }
+        setCharts((prev) => [newChart, ...prev])
+        selectChart(newChart)
+      }
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { detail?: string }; status?: number } }
+      if (e.response?.status === 403) {
+        alert('Эта функция доступна только на тарифе Premium')
+      } else {
+        console.error(`Failed to create ${type}:`, err)
+      }
+    }
+  }
 
   useEffect(() => {
     loadCharts()
@@ -231,9 +442,20 @@ const loadChartSvg = async (chart: Chart) => {
     if (selectedChart?.id === chart.id) return
     setSelectedChart(chart)
     setChatSessionId(null)
-    setSvgLoading(true)
-    setSvgContent('')
-    loadChartSvg(chart)
+
+    if ((chart.chart_type || 'natal') === 'profection') {
+      setSvgLoading(false)
+      setSvgContent('')
+      if (!profectionData) {
+        const fromResult = getProfectionData(chart, null)
+        setProfectionData(fromResult)
+      }
+    } else {
+      setProfectionData(null)
+      setSvgLoading(true)
+      setSvgContent('')
+      loadChartSvg(chart)
+    }
 
     try {
       const res = await chatApi.listSessions()
@@ -312,14 +534,29 @@ const loadChartSvg = async (chart: Chart) => {
                 <div className="flex items-center justify-between px-5 py-4 border-b border-[rgba(212,175,55,0.08)] shrink-0">
                   <div className="flex items-center gap-3">
                     <div className="w-2 h-2 rounded-full bg-[#D4AF37] shadow-[0_0_6px_rgba(212,175,55,0.8)]" />
-                    <span className="font-serif text-lg font-semibold text-[#F0EAD6]">Натальная карта</span>
+                    <span className="font-serif text-lg font-semibold text-[#F0EAD6]">
+                      {CHART_TYPE_LABELS[selectedChart?.chart_type || 'natal'] || 'Натальная карта'}
+                    </span>
                   </div>
                   {selectedChart && <ChartHeader chart={selectedChart} />}
                 </div>
 
+                {selectedChart && (selectedChart.chart_type || 'natal') === 'natal' && (
+                  <div className="flex items-center gap-1.5 px-5 py-2 border-b border-[rgba(212,175,55,0.06)] shrink-0 overflow-x-auto">
+                    <ChartActionButton icon={Heart} label="Синастрия" premium onClick={() => isPremium ? alert('Синастрия — скоро!') : alert('Premium')} />
+                    <ChartActionButton icon={Clock} label="Транзиты" onClick={() => handleChartAction('transit')} />
+                    <ChartActionButton icon={Sun} label="Соляр" premium onClick={() => handleChartAction('solar_return')} />
+                    <ChartActionButton icon={Moon} label="Лунар" premium onClick={() => handleChartAction('lunar_return')} />
+                    <ChartActionButton icon={Target} label="Профекция" premium onClick={() => handleChartAction('profection')} />
+                    <ChartActionButton icon={FileText} label="PDF" premium onClick={() => handleChartAction('pdf')} />
+                  </div>
+                )}
+
                 <div className="flex-1 overflow-auto relative">
                   {!selectedChart ? (
                     <EmptyChartState onCreate={() => setShowCreateModal(true)} />
+                  ) : (selectedChart.chart_type || 'natal') === 'profection' && getProfectionData(selectedChart, profectionData) ? (
+                    <ProfectionInfoPanel data={getProfectionData(selectedChart, profectionData)!} />
                   ) : svgLoading ? (
                     <div className="flex flex-col items-center justify-center h-full gap-4">
                       <div className="relative">
@@ -482,6 +719,8 @@ const loadChartSvg = async (chart: Chart) => {
                 <div className="luxury-card h-full flex flex-col overflow-hidden">
                   {!selectedChart ? (
                     <EmptyChartState onCreate={() => setShowCreateModal(true)} />
+                  ) : (selectedChart.chart_type || 'natal') === 'profection' && getProfectionData(selectedChart, profectionData) ? (
+                    <ProfectionInfoPanel data={getProfectionData(selectedChart, profectionData)!} />
                   ) : svgLoading ? (
                     <div className="flex flex-col items-center justify-center h-full gap-3">
                       <Loader2 className="w-6 h-6 text-[#D4AF37] animate-spin" />

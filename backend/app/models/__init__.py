@@ -10,7 +10,8 @@ from app.models.subscription import (
     SubscriptionStatus,
 )
 from app.models.payment import Payment, PaymentStatus, PaymentMethod
-from app.models.chart import Chart
+from app.models.chart import Chart, ChartType
+from app.models.person import Person
 from app.models.chat import ChatSession, ChatMessage, MessageRole
 from app.models.invite_code import InviteCode
 from app.models.request import RequestLog
@@ -34,6 +35,8 @@ __all__ = [
     "PaymentStatus",
     "PaymentMethod",
     "Chart",
+    "ChartType",
+    "Person",
     "ChatSession",
     "ChatMessage",
     "MessageRole",

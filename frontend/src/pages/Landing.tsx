@@ -557,8 +557,8 @@ export default function Landing() {
                     <Sparkles className="w-4 h-4 text-[#D4AF37]" />
                   </div>
                   <div>
-                    <span className="text-sm font-medium text-[#F0EAD6]">Точная натальная карта</span>
-                    <p className="text-xs text-[#8B7FA8] mt-0.5">Профессиональные расчёты по дате, времени и месту рождения</p>
+                    <span className="text-sm font-medium text-[#F0EAD6]">Натальная карта</span>
+                    <p className="text-xs text-[#8B7FA8] mt-0.5">Профессиональные расчёты с ИИ-интерпретацией</p>
                   </div>
                 </div>
                 <div className="feature-pill">
@@ -566,8 +566,8 @@ export default function Landing() {
                     <Star className="w-4 h-4 text-[#D4AF37]" />
                   </div>
                   <div>
-                    <span className="text-sm font-medium text-[#F0EAD6]">ИИ-интерпретация</span>
-                    <p className="text-xs text-[#8B7FA8] mt-0.5">Глубокий анализ планет, домов и аспектов вашей карты</p>
+                    <span className="text-sm font-medium text-[#F0EAD6]">Синастрия и транзиты</span>
+                    <p className="text-xs text-[#8B7FA8] mt-0.5">Совместимость, текущие и будущие влияния планет</p>
                   </div>
                 </div>
                 <div className="feature-pill">
@@ -575,8 +575,8 @@ export default function Landing() {
                     <Shield className="w-4 h-4 text-[#D4AF37]" />
                   </div>
                   <div>
-                    <span className="text-sm font-medium text-[#F0EAD6]">Диалог с астрологом</span>
-                    <p className="text-xs text-[#8B7FA8] mt-0.5">Задавайте любые вопросы — ИИ отвечает в контексте вашей карты</p>
+                    <span className="text-sm font-medium text-[#F0EAD6]">Прогностика</span>
+                    <p className="text-xs text-[#8B7FA8] mt-0.5">Соляры, лунары, профекции — прогнозы по вашей карте</p>
                   </div>
                 </div>
               </div>

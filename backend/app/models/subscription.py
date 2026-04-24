@@ -42,7 +42,7 @@ class Subscription(Base, TimestampMixin, SoftDeleteMixin, AuditMixin):
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     plan: Mapped[str] = mapped_column(
         SQLEnum(SubscriptionPlan, values_callable=_enum_values, name="subscription_plan_enum"),
     )

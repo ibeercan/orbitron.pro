@@ -19,11 +19,14 @@ import {
 /* ── Chart type ── */
 interface Chart {
   id: number
-  native_data: { datetime: string; location: string }
+  chart_type?: string
+  parent_chart_id?: number | null
+  person_id?: number | null
+  native_data: { datetime: string; location: string; [key: string]: unknown }
   result_data: Record<string, unknown>
   svg_path?: string | null
   svg_data?: string | null
-  prompt_text: string
+  prompt_text?: string | null
   created_at: string
 }
 
@@ -305,9 +308,16 @@ export function Sidebar({
                                 <Sparkles className={cn('w-3.5 h-3.5', isActive ? 'text-[#D4AF37]' : 'text-[#4A3F6A]')} />
                               </div>
                               <div className="flex-1 min-w-0">
-                                <p className={cn('text-xs font-semibold leading-tight truncate', isActive ? 'text-[#D4AF37]' : 'text-[#F0EAD6]')}>
-                                  {formatChartDate(chart.native_data.datetime)}
-                                </p>
+                                <div className="flex items-center gap-1.5">
+                                  <p className={cn('text-xs font-semibold leading-tight truncate', isActive ? 'text-[#D4AF37]' : 'text-[#F0EAD6]')}>
+                                    {formatChartDate(chart.native_data.datetime)}
+                                  </p>
+                                  {chart.chart_type && chart.chart_type !== 'natal' && (
+                                    <span className="text-[9px] px-1 py-px rounded bg-[rgba(212,175,55,0.1)] text-[#D4AF37] shrink-0">
+                                      {chart.chart_type === 'synastry' ? '♔' : chart.chart_type === 'transit' ? '↻' : chart.chart_type === 'solar_return' ? '☀' : chart.chart_type === 'lunar_return' ? '☽' : chart.chart_type === 'profection' ? '◈' : ''}
+                                    </span>
+                                  )}
+                                </div>
                                 <div className="flex items-center gap-1 mt-0.5">
                                   <MapPin className="w-2.5 h-2.5 text-[#4A3F6A] shrink-0" />
                                   <span className="text-[11px] text-[#8B7FA8] truncate">
