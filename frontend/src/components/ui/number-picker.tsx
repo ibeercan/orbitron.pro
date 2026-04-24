@@ -32,15 +32,19 @@ export function NumberPicker({
   useEffect(() => { valueRef.current = value })
 
   const increment = useCallback(() => {
-    const current = valueRef.current ?? min
-    if (current < max) {
+    const current = valueRef.current
+    if (current === null) {
+      onChangeRef.current(min)
+    } else if (current < max) {
       onChangeRef.current(current + step)
     }
   }, [min, max, step])
 
   const decrement = useCallback(() => {
-    const current = valueRef.current ?? min
-    if (current > min) {
+    const current = valueRef.current
+    if (current === null) {
+      onChangeRef.current(min)
+    } else if (current > min) {
       onChangeRef.current(current - step)
     }
   }, [min, step])
@@ -65,20 +69,18 @@ export function NumberPicker({
   }, [])
 
   return (
-    <div className={cn('relative', className)}>
+    <div className={cn('relative min-w-0 w-full', className)}>
       {label && (
         <label className="block text-[10px] font-semibold text-[#8B7FA8] uppercase tracking-[0.12em] mb-1.5">
           {label}
         </label>
       )}
-      <div className={cn('flex items-center h-11 rounded-xl border luxury-input', focused && 'focused')}>
+      <div className={cn('flex items-center h-11 w-full rounded-xl border luxury-input', focused && 'focused')}>
         <input
           type="text"
           inputMode="numeric"
           pattern="[0-9]*"
           autoComplete="off"
-          min={min}
-          max={max}
           value={value ?? ''}
           onChange={(e) => {
             if (e.target.value === '') {
@@ -95,9 +97,9 @@ export function NumberPicker({
             else if (e.key === 'ArrowDown') { e.preventDefault(); decrement() }
           }}
           placeholder={placeholder}
-          className="flex-1 bg-transparent text-center text-sm text-[#F0EAD6] placeholder:text-[#8B7FA8] placeholder:opacity-50 outline-none"
+          className="flex-1 min-w-0 bg-transparent text-center text-sm text-[#F0EAD6] placeholder:text-[#8B7FA8] placeholder:opacity-50 outline-none"
         />
-        <div className="flex flex-col border-l border-[rgba(212,175,55,0.14)]">
+        <div className="flex flex-col shrink-0 border-l border-[rgba(212,175,55,0.14)]">
           <button
             type="button"
             aria-label="Увеличить"
