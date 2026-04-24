@@ -1,6 +1,7 @@
 """Authentication schemas."""
 
 import re
+from datetime import datetime
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
@@ -46,5 +47,6 @@ class User(BaseModel):
     is_active: bool
     is_admin: bool = False
     onboarding_completed: bool = False
+    created_at: datetime
 
     model_config = {"from_attributes": True}

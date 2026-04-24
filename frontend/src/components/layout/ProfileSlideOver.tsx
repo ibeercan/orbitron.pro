@@ -246,15 +246,17 @@ export function ProfileSlideOver({ isOpen, onClose }: ProfileSlideOverProps) {
                   </span>
                 </div>
 
-                {user?.subscription_end && (
+                {isPremium && (
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-[#8B7FA8]">Premium до</span>
                     <span className="text-[#D4AF37] font-medium">
-                      {new Date(user.subscription_end).toLocaleDateString('ru-RU', {
-                        day: 'numeric',
-                        month: 'long',
-                        year: 'numeric',
-                      })}
+                      {user?.subscription_end
+                        ? new Date(user.subscription_end).toLocaleDateString('ru-RU', {
+                            day: 'numeric',
+                            month: 'long',
+                            year: 'numeric',
+                          })
+                        : '∞'}
                     </span>
                   </div>
                 )}
