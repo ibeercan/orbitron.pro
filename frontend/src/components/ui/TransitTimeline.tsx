@@ -31,7 +31,8 @@ const PLANET_RU: Record<string, string> = {
   Uranus: 'Уран',
   Neptune: 'Нептун',
   Pluto: 'Плутон',
-  'North Node': 'Rahu',
+  'North Node': 'Раху',
+  'True Node': 'Раху',
   Chiron: 'Хирон',
   Sun: 'Солнце',
   Moon: 'Луна',
@@ -49,6 +50,7 @@ const PLANET_GLYPH: Record<string, string> = {
   Neptune: '♆',
   Pluto: '♇',
   'North Node': '☊',
+  'True Node': '☊',
   Chiron: '⚷',
 }
 
@@ -397,8 +399,14 @@ export function TransitTimeline({ natalChartId, parentChartId, isPremium }: Tran
             <>
               <div className="overflow-y-auto overflow-x-hidden" style={{ maxHeight: 400 }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr' }}>
-                  <div />
-                  <div className="relative h-6 flex items-end">
+                  <div
+                    className="sticky top-0 z-20 bg-[rgba(16,11,30,0.98)]"
+                    style={{ backdropFilter: 'blur(12px)' }}
+                  />
+                  <div
+                    className="relative h-6 flex items-end sticky top-0 z-20 bg-[rgba(16,11,30,0.98)] border-b border-[rgba(212,175,55,0.08)]"
+                    style={{ backdropFilter: 'blur(12px)' }}
+                  >
                     {months.map((m, i) => (
                       <span
                         key={i}
