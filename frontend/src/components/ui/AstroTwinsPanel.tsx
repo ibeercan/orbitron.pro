@@ -256,8 +256,8 @@ export function AstroTwinsPanel({ natalChartId, isPremium }: AstroTwinsPanelProp
 
   if (!isPremium) {
     return (
-      <div className="luxury-card p-5 mt-3">
-        <div className="flex items-center gap-3 mb-3">
+    <div className="p-5">
+      <div className="flex items-center gap-3 mb-3">
           <div className="w-9 h-9 rounded-xl bg-[rgba(212,175,55,0.1)] border border-[rgba(212,175,55,0.2)] flex items-center justify-center">
             <Sparkles className="w-4 h-4 text-[#D4AF37]" />
           </div>
@@ -276,10 +276,10 @@ export function AstroTwinsPanel({ natalChartId, isPremium }: AstroTwinsPanelProp
   }
 
   return (
-    <div className="luxury-card mt-3 overflow-hidden">
+    <div className="flex flex-col overflow-hidden">
       <button
         onClick={() => setExpanded((v) => !v)}
-        className="w-full flex items-center justify-between px-5 py-4 hover:bg-[rgba(212,175,55,0.03)] transition-colors"
+        className="w-full shrink-0 flex items-center justify-between px-5 py-4 hover:bg-[rgba(212,175,55,0.03)] transition-colors"
       >
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-[rgba(212,175,55,0.1)] border border-[rgba(212,175,55,0.2)] flex items-center justify-center">
@@ -300,8 +300,8 @@ export function AstroTwinsPanel({ natalChartId, isPremium }: AstroTwinsPanelProp
       </button>
 
       {expanded && (
-        <div className="border-t border-[rgba(212,175,55,0.08)]">
-          <div className="flex items-center gap-1 px-5 py-2 border-b border-[rgba(212,175,55,0.06)]">
+        <div className="flex flex-col flex-1 overflow-hidden border-t border-[rgba(212,175,55,0.08)]">
+          <div className="shrink-0 flex items-center gap-1 px-5 py-2 border-b border-[rgba(212,175,55,0.06)]">
             <button
               onClick={() => setTab('twins')}
               className={cn(
@@ -329,7 +329,7 @@ export function AstroTwinsPanel({ natalChartId, isPremium }: AstroTwinsPanelProp
           </div>
 
           {tab === 'twins' && (
-            <div className="p-4">
+            <div className="flex-1 overflow-y-auto p-4">
               {twinsPoll.fetchStatus === 'computing' && (
                 <div className="flex flex-col items-center justify-center py-12 gap-3">
                   <Loader2 className="w-6 h-6 text-[#D4AF37] animate-spin" />
@@ -353,7 +353,7 @@ export function AstroTwinsPanel({ natalChartId, isPremium }: AstroTwinsPanelProp
 
               {twinsPoll.fetchStatus === 'done' && twins.length > 0 && (
                 <>
-                  <div className="grid grid-cols-2 grid-rows-5 grid-flow-col gap-2">
+                  <div className="space-y-2">
                     {twins.map((twin, i) => (
                       <AstroTwinCard key={twin.name} twin={twin} rank={i + 1} />
                     ))}
@@ -384,7 +384,7 @@ export function AstroTwinsPanel({ natalChartId, isPremium }: AstroTwinsPanelProp
           )}
 
           {tab === 'parallels' && (
-            <div className="p-4">
+            <div className="flex-1 overflow-y-auto p-4">
               {parallelsPoll.fetchStatus === 'computing' && (
                 <div className="flex flex-col items-center justify-center py-12 gap-3">
                   <Loader2 className="w-6 h-6 text-[#A78BFA] animate-spin" />

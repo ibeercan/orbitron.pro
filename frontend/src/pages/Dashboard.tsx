@@ -628,11 +628,13 @@ const loadChartSvg = async (chart: Chart) => {
                   />
                 )}
                 {selectedChart && (selectedChart.chart_type || 'natal') === 'natal' && selectedChart.id && (
-                  <AstroTwinsPanel
-                    key={selectedChart.id}
-                    natalChartId={selectedChart.id}
-                    isPremium={isPremium}
-                  />
+                  <div className="shrink-0 max-h-[50vh] flex flex-col overflow-hidden border-t border-[rgba(212,175,55,0.08)]">
+                    <AstroTwinsPanel
+                      key={selectedChart.id}
+                      natalChartId={selectedChart.id}
+                      isPremium={isPremium}
+                    />
+                  </div>
                 )}
               </div>
             </div>

@@ -84,6 +84,7 @@ PLANET_RU: dict[str, str] = {
     "Vertex": "Вертекс", "Part of Fortune": "Колесо Фортуны",
     "East Point": "Точка Востока", "South Point": "Южная точка",
     "Descendant": "Десцендент", "Imum Coeli": "IC",
+    "ASC": "Асцендент", "DSC": "Десцендент", "MC": "МС", "IC": "IC",
 }
 
 _ASPECT_RU_CI: dict[str, str] = {
