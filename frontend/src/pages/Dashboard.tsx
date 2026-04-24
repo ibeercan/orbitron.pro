@@ -629,6 +629,7 @@ const loadChartSvg = async (chart: Chart) => {
                 )}
                 {selectedChart && (selectedChart.chart_type || 'natal') === 'natal' && selectedChart.id && (
                   <AstroTwinsPanel
+                    key={selectedChart.id}
                     natalChartId={selectedChart.id}
                     isPremium={isPremium}
                   />

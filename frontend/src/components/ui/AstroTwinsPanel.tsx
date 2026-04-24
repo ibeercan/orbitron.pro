@@ -244,6 +244,16 @@ export function AstroTwinsPanel({ natalChartId, isPremium }: AstroTwinsPanelProp
     useCallback((error) => setParallelsError(error), []),
   )
 
+  useEffect(() => {
+    if (!expanded) return
+    if (tab === 'twins' && twinsPoll.fetchStatus === 'idle') {
+      twinsPoll.start()
+    }
+    if (tab === 'parallels' && parallelsPoll.fetchStatus === 'idle') {
+      parallelsPoll.start()
+    }
+  }, [expanded, tab])
+
   if (!isPremium) {
     return (
       <div className="luxury-card p-5 mt-3">
@@ -320,20 +330,6 @@ export function AstroTwinsPanel({ natalChartId, isPremium }: AstroTwinsPanelProp
 
           {tab === 'twins' && (
             <div className="p-4">
-              {twinsPoll.fetchStatus === 'idle' && twins.length === 0 && (
-                <div className="flex flex-col items-center gap-3 py-8">
-                  <p className="text-sm text-[#8B7FA8]">Найди своих звёздных двойников</p>
-                  <button
-                    onClick={() => twinsPoll.start()}
-                    className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[rgba(212,175,55,0.1)] border border-[rgba(212,175,55,0.2)] text-[#D4AF37] text-sm font-medium hover:bg-[rgba(212,175,55,0.15)] transition-all"
-                  >
-                    <Sparkles className="w-4 h-4" />
-                    Найти двойников
-                  </button>
-                  <p className="text-[10px] text-[#4A3F6A]">Первый расчёт может занять около минуты</p>
-                </div>
-              )}
-
               {twinsPoll.fetchStatus === 'computing' && (
                 <div className="flex flex-col items-center justify-center py-12 gap-3">
                   <Loader2 className="w-6 h-6 text-[#D4AF37] animate-spin" />
@@ -357,7 +353,7 @@ export function AstroTwinsPanel({ natalChartId, isPremium }: AstroTwinsPanelProp
 
               {twinsPoll.fetchStatus === 'done' && twins.length > 0 && (
                 <>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-2 grid-rows-5 grid-flow-col gap-2">
                     {twins.map((twin, i) => (
                       <AstroTwinCard key={twin.name} twin={twin} rank={i + 1} />
                     ))}
@@ -389,22 +385,6 @@ export function AstroTwinsPanel({ natalChartId, isPremium }: AstroTwinsPanelProp
 
           {tab === 'parallels' && (
             <div className="p-4">
-              {parallelsPoll.fetchStatus === 'idle' && parallels.length === 0 && (
-                <div className="flex flex-col items-center gap-3 py-8">
-                  <p className="text-sm text-[#8B7FA8]">Исторические параллели</p>
-                  <p className="text-[10px] text-[#8B7FA8] text-center max-w-[240px]">
-                    Узнайте, какие исторические события резонируют с вашей натальной картой
-                  </p>
-                  <button
-                    onClick={() => parallelsPoll.start()}
-                    className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[rgba(139,92,246,0.1)] border border-[rgba(139,92,246,0.2)] text-[#A78BFA] text-sm font-medium hover:bg-[rgba(139,92,246,0.15)] transition-all"
-                  >
-                    <History className="w-4 h-4" />
-                    Найти параллели
-                  </button>
-                </div>
-              )}
-
               {parallelsPoll.fetchStatus === 'computing' && (
                 <div className="flex flex-col items-center justify-center py-12 gap-3">
                   <Loader2 className="w-6 h-6 text-[#A78BFA] animate-spin" />
