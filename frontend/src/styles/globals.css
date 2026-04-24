@@ -110,6 +110,14 @@
     background: rgba(212, 175, 55, 0.4);
   }
 
+  .scrollbar-none {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+
   /* Selection */
   ::selection {
     background: rgba(212, 175, 55, 0.25);
