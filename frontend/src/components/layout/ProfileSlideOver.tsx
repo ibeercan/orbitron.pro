@@ -451,9 +451,9 @@ export function ProfileSlideOver({ isOpen, onClose }: ProfileSlideOverProps) {
                   <div>
                     <label className="block text-[10px] font-semibold text-[#8B7FA8] uppercase tracking-[0.12em] mb-1.5">Дата рождения</label>
                     <div className="grid grid-cols-3 gap-2">
-                      <NumberPicker value={personDay} onChange={setPersonDay} min={1} max={31} placeholder="День" />
-                      <NumberPicker value={personMonth} onChange={setPersonMonth} min={1} max={12} placeholder="Мес." />
-                      <NumberPicker value={personYear} onChange={setPersonYear} min={1900} max={currentYear} placeholder="Год" />
+                      <NumberPicker value={personDay} onChange={(v) => setPersonDay(v ?? 1)} min={1} max={31} placeholder="День" />
+                      <NumberPicker value={personMonth} onChange={(v) => setPersonMonth(v ?? 1)} min={1} max={12} placeholder="Мес." />
+                      <NumberPicker value={personYear} onChange={(v) => setPersonYear(v ?? currentYear)} min={1900} max={currentYear} placeholder="Год" />
                     </div>
                   </div>
 

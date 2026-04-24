@@ -410,8 +410,8 @@ export function CreateChartModal({ open, onClose, onCreated }: CreateChartModalP
                     control={control}
                     render={({ field }) => (
                       <NumberPicker
-                        value={field.value ? Number(field.value) : 0}
-                        onChange={(v) => field.onChange(String(v))}
+                        value={field.value ? Number(field.value) : null}
+                        onChange={(v) => field.onChange(v !== null ? String(v) : '')}
                         min={1}
                         max={31}
                         placeholder="День"
@@ -423,8 +423,8 @@ export function CreateChartModal({ open, onClose, onCreated }: CreateChartModalP
                     control={control}
                     render={({ field }) => (
                       <NumberPicker
-                        value={field.value ? Number(field.value) : 0}
-                        onChange={(v) => field.onChange(String(v))}
+                        value={field.value ? Number(field.value) : null}
+                        onChange={(v) => field.onChange(v !== null ? String(v) : '')}
                         min={1}
                         max={12}
                         placeholder="Мес."
@@ -436,8 +436,8 @@ export function CreateChartModal({ open, onClose, onCreated }: CreateChartModalP
                     control={control}
                     render={({ field }) => (
                       <NumberPicker
-                        value={field.value ? Number(field.value) : 0}
-                        onChange={(v) => field.onChange(String(v))}
+                        value={field.value ? Number(field.value) : null}
+                        onChange={(v) => field.onChange(v !== null ? String(v) : '')}
                         min={1900}
                         max={currentYear}
                         placeholder="Год"

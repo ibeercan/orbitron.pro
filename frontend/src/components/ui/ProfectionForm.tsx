@@ -109,15 +109,15 @@ export function ProfectionForm({ natalChartId, onSubmit, onCancel }: ProfectionF
         <div>
           <FieldLabel required>Дата расчёта</FieldLabel>
           <div className="grid grid-cols-3 gap-2.5">
-            <NumberPicker value={day} onChange={setDay} min={1} max={31} placeholder="День" />
-            <NumberPicker value={month} onChange={setMonth} min={1} max={12} placeholder="Мес." />
-            <NumberPicker value={year} onChange={setYear} min={1900} max={currentYear + 1} placeholder="Год" />
+            <NumberPicker value={day} onChange={(v) => setDay(v ?? 1)} min={1} max={31} placeholder="День" />
+            <NumberPicker value={month} onChange={(v) => setMonth(v ?? 1)} min={1} max={12} placeholder="Мес." />
+            <NumberPicker value={year} onChange={(v) => setYear(v ?? currentYear)} min={1900} max={currentYear + 1} placeholder="Год" />
           </div>
         </div>
       ) : (
         <div>
           <FieldLabel required>Возраст</FieldLabel>
-          <NumberPicker value={age} onChange={setAge} min={0} max={120} placeholder="Возраст" className="w-32" />
+          <NumberPicker value={age} onChange={(v) => setAge(v ?? 0)} min={0} max={120} placeholder="Возраст" className="w-32" />
           <p className="text-[11px] text-[#4A3F6A] mt-1">0 = первый год жизни (1-й дом)</p>
         </div>
       )}

@@ -50,7 +50,7 @@ export function SolarReturnForm({ natalChartId, onSubmit, onCancel }: SolarRetur
     <form onSubmit={handleSubmit} className="space-y-5">
       <div>
         <FieldLabel required>Год возврата</FieldLabel>
-        <NumberPicker value={year} onChange={setYear} min={1900} max={currentYear + 1} placeholder="Год" className="w-40" />
+        <NumberPicker value={year} onChange={(v) => setYear(v ?? currentYear)} min={1900} max={currentYear + 1} placeholder="Год" className="w-40" />
         <p className="text-[11px] text-[#4A3F6A] mt-1">
           По умолчанию — текущий год ({currentYear})
         </p>
