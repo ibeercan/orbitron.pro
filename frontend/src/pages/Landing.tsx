@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form'
 import { subscriptionApi, authApi } from '@/lib/api/client'
 import { useAuth } from '@/contexts/auth-context'
 import { cn } from '@/lib/utils'
-import { ArrowRight, Star, Sparkles, Shield, Loader2, ChevronLeft } from 'lucide-react'
+import { ArrowRight, Star, Sparkles, Shield, Loader2, ChevronLeft, Users } from 'lucide-react'
 
 interface SubscribeFormData {
   email: string
@@ -577,6 +577,40 @@ export default function Landing() {
                   <div>
                     <span className="text-sm font-medium text-[#F0EAD6]">Прогностика</span>
                     <p className="text-xs text-[#8B7FA8] mt-0.5">Соляры, лунары, профекции — прогнозы по вашей карте</p>
+                  </div>
+                </div>
+                <div
+                  className="feature-pill py-4 relative overflow-hidden"
+                  style={{
+                    borderColor: 'rgba(139,92,246,0.3)',
+                    background: 'linear-gradient(135deg, rgba(139,92,246,0.08) 0%, rgba(16,11,30,0.95) 50%, rgba(212,175,55,0.04) 100%)',
+                    boxShadow: '0 0 20px rgba(139,92,246,0.12), 0 0 40px rgba(139,92,246,0.06)',
+                  }}
+                >
+                  <div className="absolute inset-0 pointer-events-none opacity-30">
+                    <div
+                      className="absolute -top-4 -right-4 w-24 h-24 rounded-full"
+                      style={{ background: 'radial-gradient(circle, rgba(139,92,246,0.2) 0%, transparent 70%)' }}
+                    />
+                  </div>
+                  <div className="w-8 h-8 rounded-lg bg-[rgba(139,92,246,0.15)] flex items-center justify-center shrink-0 relative">
+                    <Users className="w-4 h-4 text-[#A78BFA]" />
+                  </div>
+                  <div className="relative">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold text-[#C4B5FD]">Звёздный двойник</span>
+                      <span
+                        className="text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full"
+                        style={{
+                          background: 'linear-gradient(135deg, rgba(139,92,246,0.2), rgba(212,175,55,0.15))',
+                          border: '1px solid rgba(139,92,246,0.3)',
+                          color: '#C4B5FD',
+                        }}
+                      >
+                        New
+                      </span>
+                    </div>
+                    <p className="text-xs text-[#8B7FA8] mt-0.5">Найди знаменитостей с похожей натальной картой</p>
                   </div>
                 </div>
               </div>
