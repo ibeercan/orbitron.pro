@@ -31,8 +31,11 @@ const PLANET_RU: Record<string, string> = {
   Uranus: 'Уран',
   Neptune: 'Нептун',
   Pluto: 'Плутон',
-  'North Node': 'Раху',
-  'True Node': 'Раху',
+  'North Node': 'Восходящий узел',
+  'True Node': 'Восходящий узел',
+  'Mean Node': 'Восходящий узел',
+  'South Node': 'Нисходящий узел',
+  'Mean Apogee': 'Чёрная Луна',
   Chiron: 'Хирон',
   Sun: 'Солнце',
   Moon: 'Луна',
@@ -51,6 +54,9 @@ const PLANET_GLYPH: Record<string, string> = {
   Pluto: '♇',
   'North Node': '☊',
   'True Node': '☊',
+  'Mean Node': '☊',
+  'South Node': '☋',
+  'Mean Apogee': '⚸',
   Chiron: '⚷',
 }
 
