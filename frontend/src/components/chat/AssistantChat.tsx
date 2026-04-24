@@ -579,6 +579,7 @@ export function AssistantChat({
           <NoChartState />
         ) : (
           <OrbitronRuntimeProvider
+            key={chartId}
             baseUrl={baseUrl}
             sessionId={sessionId}
             chartId={chartId}

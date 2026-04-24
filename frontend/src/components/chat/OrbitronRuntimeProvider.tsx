@@ -64,6 +64,18 @@ function useOrbitronChatRuntime({
   const [sessionId, setSessionId] = useState<number | null>(initialSessionId);
   const abortControllerRef = useRef<AbortController | null>(null);
   const loadedSessionRef = useRef<number | null>(null);
+  const sessionIdRef = useRef(sessionId);
+  const chartIdRef = useRef(chartId);
+
+  sessionIdRef.current = sessionId;
+  chartIdRef.current = chartId;
+
+  useEffect(() => {
+    setMessages([]);
+    setSessionId(initialSessionId);
+    loadedSessionRef.current = initialSessionId ? null : null;
+    abortControllerRef.current?.abort();
+  }, [chartId]);
 
   useEffect(() => {
     if (initialSessionId === sessionId) return;
@@ -111,7 +123,8 @@ function useOrbitronChatRuntime({
   }, [sessionId, baseApiUrl]);
 
   const handleNewMessage = useCallback(async (message: AppendMessage) => {
-    if (!chartId) return;
+    const currentChartId = chartIdRef.current;
+    if (!currentChartId) return;
 
     const textContent = message.content[0];
     if (!textContent || textContent.type !== 'text') {
@@ -140,10 +153,10 @@ function useOrbitronChatRuntime({
     abortControllerRef.current = new AbortController();
 
     try {
-      let activeSessionId = sessionId;
+      let activeSessionId = sessionIdRef.current;
 
       if (!activeSessionId) {
-        const startRes = await fetch(`${baseApiUrl}/chat/chart/${chartId}/start`, {
+        const startRes = await fetch(`${baseApiUrl}/chat/chart/${currentChartId}/start`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ title: 'New Chat' }),
@@ -153,6 +166,7 @@ function useOrbitronChatRuntime({
         const sessionData = await startRes.json();
         activeSessionId = sessionData.id;
         setSessionId(activeSessionId);
+        sessionIdRef.current = activeSessionId;
 
         const existing: ChatMessage[] = (sessionData.messages ?? []).map(toChatMessage);
         if (existing.length > 0) {
@@ -230,7 +244,7 @@ function useOrbitronChatRuntime({
     } finally {
       setIsRunning(false);
     }
-  }, [chartId, sessionId, baseApiUrl]);
+  }, [baseApiUrl]);
 
   const handleCancel = useCallback(async () => {
     abortControllerRef.current?.abort();
