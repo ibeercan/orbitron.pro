@@ -230,6 +230,7 @@ class AstroTwinResult(BaseModel):
 class AstroTwinsResponse(BaseModel):
     status: str
     results: list[AstroTwinResult] = []
+    error: Optional[str] = None
 
 
 class HistoricalParallelResult(BaseModel):
@@ -243,6 +244,7 @@ class HistoricalParallelResult(BaseModel):
 class HistoricalParallelsResponse(BaseModel):
     status: str
     results: list[HistoricalParallelResult] = []
+    error: Optional[str] = None
 
 
 class NotableEventInfo(BaseModel):

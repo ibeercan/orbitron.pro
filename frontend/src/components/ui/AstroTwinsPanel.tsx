@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react'
-import { Sparkles, Loader2, Lock, ChevronDown, ChevronUp, Clock, History } from 'lucide-react'
+import { useState, useCallback, useRef, useEffect } from 'react'
+import { Sparkles, Loader2, Lock, ChevronDown, ChevronUp, Clock, History, AlertCircle } from 'lucide-react'
 import { notablesApi } from '@/lib/api/client'
 import { cn } from '@/lib/utils'
 
@@ -171,38 +171,78 @@ function ParallelCard({ parallel }: { parallel: HistoricalParallelResult }) {
   )
 }
 
+type FetchStatus = 'idle' | 'computing' | 'done' | 'error'
+
+function useInsightPolling<T>(
+  fetcher: () => Promise<{ data: { status: string; results: T[]; error?: string } }>,
+  onResults: (results: T[]) => void,
+  onError: (error: string) => void,
+) {
+  const [fetchStatus, setFetchStatus] = useState<FetchStatus>('idle')
+  const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const stopPolling = useCallback(() => {
+    if (pollRef.current) {
+      clearTimeout(pollRef.current)
+      pollRef.current = null
+    }
+  }, [])
+
+  useEffect(() => stopPolling, [stopPolling])
+
+  const start = useCallback(async () => {
+    setFetchStatus('computing')
+    stopPolling()
+
+    const poll = async () => {
+      try {
+        const res = await fetcher()
+        const { status, results, error } = res.data
+        if (status === 'computing') {
+          pollRef.current = setTimeout(poll, 2000)
+        } else if (status === 'done') {
+          setFetchStatus('done')
+          onResults(results || [])
+        } else if (status === 'error') {
+          setFetchStatus('error')
+          onError(error || 'Ошибка расчёта')
+        }
+      } catch {
+        setFetchStatus('error')
+        onError('Ошибка сети')
+      }
+    }
+
+    await poll()
+  }, [fetcher, onResults, onError, stopPolling])
+
+  const reset = useCallback(() => {
+    stopPolling()
+    setFetchStatus('idle')
+  }, [stopPolling])
+
+  return { fetchStatus, start, reset }
+}
+
 export function AstroTwinsPanel({ natalChartId, isPremium }: AstroTwinsPanelProps) {
   const [expanded, setExpanded] = useState(false)
   const [tab, setTab] = useState<Tab>('twins')
   const [twins, setTwins] = useState<AstroTwinResult[]>([])
   const [parallels, setParallels] = useState<HistoricalParallelResult[]>([])
-  const [loading, setLoading] = useState(false)
+  const [twinsError, setTwinsError] = useState<string | null>(null)
+  const [parallelsError, setParallelsError] = useState<string | null>(null)
 
-  const fetchTwins = useCallback(async () => {
-    setLoading(true)
-    try {
-      const res = await notablesApi.astroTwins(natalChartId)
-      const data = res.data as { status: string; results: AstroTwinResult[] }
-      setTwins(data.results || [])
-    } catch {
-      setTwins([])
-    } finally {
-      setLoading(false)
-    }
-  }, [natalChartId])
+  const twinsPoll = useInsightPolling<AstroTwinResult>(
+    useCallback(() => notablesApi.astroTwins(natalChartId), [natalChartId]),
+    useCallback((results) => { setTwins(results); setTwinsError(null) }, []),
+    useCallback((error) => setTwinsError(error), []),
+  )
 
-  const fetchParallels = useCallback(async () => {
-    setLoading(true)
-    try {
-      const res = await notablesApi.historicalParallels(natalChartId)
-      const data = res.data as { status: string; results: HistoricalParallelResult[] }
-      setParallels(data.results || [])
-    } catch {
-      setParallels([])
-    } finally {
-      setLoading(false)
-    }
-  }, [natalChartId])
+  const parallelsPoll = useInsightPolling<HistoricalParallelResult>(
+    useCallback(() => notablesApi.historicalParallels(natalChartId), [natalChartId]),
+    useCallback((results) => { setParallels(results); setParallelsError(null) }, []),
+    useCallback((error) => setParallelsError(error), []),
+  )
 
   if (!isPremium) {
     return (
@@ -280,11 +320,11 @@ export function AstroTwinsPanel({ natalChartId, isPremium }: AstroTwinsPanelProp
 
           {tab === 'twins' && (
             <div className="p-4">
-              {twins.length === 0 && !loading && (
+              {twinsPoll.fetchStatus === 'idle' && twins.length === 0 && (
                 <div className="flex flex-col items-center gap-3 py-8">
                   <p className="text-sm text-[#8B7FA8]">Найди своих звёздных двойников</p>
                   <button
-                    onClick={fetchTwins}
+                    onClick={() => twinsPoll.start()}
                     className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[rgba(212,175,55,0.1)] border border-[rgba(212,175,55,0.2)] text-[#D4AF37] text-sm font-medium hover:bg-[rgba(212,175,55,0.15)] transition-all"
                   >
                     <Sparkles className="w-4 h-4" />
@@ -294,15 +334,28 @@ export function AstroTwinsPanel({ natalChartId, isPremium }: AstroTwinsPanelProp
                 </div>
               )}
 
-              {loading && (
+              {twinsPoll.fetchStatus === 'computing' && (
                 <div className="flex flex-col items-center justify-center py-12 gap-3">
                   <Loader2 className="w-6 h-6 text-[#D4AF37] animate-spin" />
-                  <p className="text-sm text-[#8B7FA8]">Анализируем 176 знаменитостей…</p>
-                  <p className="text-[10px] text-[#4A3F6A]">При первом запросе это может занять около минуты</p>
+                  <p className="text-sm text-[#8B7FA8]">Ищем ваших звёздных двойников…</p>
+                  <p className="text-[10px] text-[#4A3F6A]">Анализируем 176 знаменитостей, это может занять около минуты</p>
                 </div>
               )}
 
-              {!loading && twins.length > 0 && (
+              {twinsPoll.fetchStatus === 'error' && (
+                <div className="flex flex-col items-center justify-center py-8 gap-3">
+                  <AlertCircle className="w-5 h-5 text-red-400" />
+                  <p className="text-sm text-[#8B7FA8]">{twinsError || 'Ошибка расчёта'}</p>
+                  <button
+                    onClick={() => twinsPoll.start()}
+                    className="text-[10px] px-3 py-1.5 rounded-lg bg-[rgba(212,175,55,0.1)] border border-[rgba(212,175,55,0.2)] text-[#D4AF37] hover:bg-[rgba(212,175,55,0.15)] transition-all"
+                  >
+                    Попробовать снова
+                  </button>
+                </div>
+              )}
+
+              {twinsPoll.fetchStatus === 'done' && twins.length > 0 && (
                 <>
                   <div className="grid grid-cols-2 gap-2">
                     {twins.map((twin, i) => (
@@ -311,7 +364,7 @@ export function AstroTwinsPanel({ natalChartId, isPremium }: AstroTwinsPanelProp
                   </div>
                   <div className="flex justify-center mt-3">
                     <button
-                      onClick={fetchTwins}
+                      onClick={() => twinsPoll.start()}
                       className="text-[10px] text-[#4A3F6A] hover:text-[#8B7FA8] transition-colors"
                     >
                       Обновить
@@ -319,19 +372,31 @@ export function AstroTwinsPanel({ natalChartId, isPremium }: AstroTwinsPanelProp
                   </div>
                 </>
               )}
+
+              {twinsPoll.fetchStatus === 'done' && twins.length === 0 && (
+                <div className="flex flex-col items-center gap-3 py-8">
+                  <p className="text-sm text-[#8B7FA8]">Результаты не найдены</p>
+                  <button
+                    onClick={() => twinsPoll.start()}
+                    className="text-[10px] px-3 py-1.5 rounded-lg bg-[rgba(212,175,55,0.1)] border border-[rgba(212,175,55,0.2)] text-[#D4AF37] hover:bg-[rgba(212,175,55,0.15)] transition-all"
+                  >
+                    Попробовать снова
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
           {tab === 'parallels' && (
             <div className="p-4">
-              {parallels.length === 0 && !loading && (
+              {parallelsPoll.fetchStatus === 'idle' && parallels.length === 0 && (
                 <div className="flex flex-col items-center gap-3 py-8">
                   <p className="text-sm text-[#8B7FA8]">Исторические параллели</p>
                   <p className="text-[10px] text-[#8B7FA8] text-center max-w-[240px]">
                     Узнайте, какие исторические события резонируют с вашей натальной картой
                   </p>
                   <button
-                    onClick={fetchParallels}
+                    onClick={() => parallelsPoll.start()}
                     className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[rgba(139,92,246,0.1)] border border-[rgba(139,92,246,0.2)] text-[#A78BFA] text-sm font-medium hover:bg-[rgba(139,92,246,0.15)] transition-all"
                   >
                     <History className="w-4 h-4" />
@@ -340,14 +405,27 @@ export function AstroTwinsPanel({ natalChartId, isPremium }: AstroTwinsPanelProp
                 </div>
               )}
 
-              {loading && (
+              {parallelsPoll.fetchStatus === 'computing' && (
                 <div className="flex flex-col items-center justify-center py-12 gap-3">
                   <Loader2 className="w-6 h-6 text-[#A78BFA] animate-spin" />
-                  <p className="text-sm text-[#8B7FA8]">Анализируем исторические события…</p>
+                  <p className="text-sm text-[#8B7FA8]">Ищем исторические параллели…</p>
                 </div>
               )}
 
-              {!loading && parallels.length > 0 && (
+              {parallelsPoll.fetchStatus === 'error' && (
+                <div className="flex flex-col items-center justify-center py-8 gap-3">
+                  <AlertCircle className="w-5 h-5 text-red-400" />
+                  <p className="text-sm text-[#8B7FA8]">{parallelsError || 'Ошибка расчёта'}</p>
+                  <button
+                    onClick={() => parallelsPoll.start()}
+                    className="text-[10px] px-3 py-1.5 rounded-lg bg-[rgba(139,92,246,0.1)] border border-[rgba(139,92,246,0.2)] text-[#A78BFA] hover:bg-[rgba(139,92,246,0.15)] transition-all"
+                  >
+                    Попробовать снова
+                  </button>
+                </div>
+              )}
+
+              {parallelsPoll.fetchStatus === 'done' && parallels.length > 0 && (
                 <>
                   <div className="space-y-2">
                     {parallels.map((p) => (
@@ -356,13 +434,25 @@ export function AstroTwinsPanel({ natalChartId, isPremium }: AstroTwinsPanelProp
                   </div>
                   <div className="flex justify-center mt-3">
                     <button
-                      onClick={fetchParallels}
+                      onClick={() => parallelsPoll.start()}
                       className="text-[10px] text-[#4A3F6A] hover:text-[#8B7FA8] transition-colors"
                     >
                       Обновить
                     </button>
                   </div>
                 </>
+              )}
+
+              {parallelsPoll.fetchStatus === 'done' && parallels.length === 0 && (
+                <div className="flex flex-col items-center gap-3 py-8">
+                  <p className="text-sm text-[#8B7FA8]">Результаты не найдены</p>
+                  <button
+                    onClick={() => parallelsPoll.start()}
+                    className="text-[10px] px-3 py-1.5 rounded-lg bg-[rgba(139,92,246,0.1)] border border-[rgba(139,92,246,0.2)] text-[#A78BFA] hover:bg-[rgba(139,92,246,0.15)] transition-all"
+                  >
+                    Попробовать снова
+                  </button>
+                </div>
               )}
             </div>
           )}

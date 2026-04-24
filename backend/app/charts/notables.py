@@ -73,11 +73,42 @@ CATEGORY_RU: dict[str, str] = {
     "writer": "Писатель",
 }
 
+PLANET_RU: dict[str, str] = {
+    "Sun": "Солнце", "Moon": "Луна", "Mercury": "Меркурий",
+    "Venus": "Венера", "Mars": "Марс", "Jupiter": "Юпитер",
+    "Saturn": "Сатурн", "Uranus": "Уран", "Neptune": "Нептун",
+    "Pluto": "Плутон", "True Node": "Восходящий узел",
+    "Mean Node": "Восходящий узел", "North Node": "Восходящий узел",
+    "South Node": "Нисходящий узел", "Mean Apogee": "Чёрная Луна",
+    "Chiron": "Хирон", "Ascendant": "Асцендент", "Midheaven": "МС",
+    "Vertex": "Вертекс", "Part of Fortune": "Колесо Фортуны",
+    "East Point": "Точка Востока", "South Point": "Южная точка",
+    "Descendant": "Десцендент", "Imum Coeli": "IC",
+}
+
+_ASPECT_RU_CI: dict[str, str] = {
+    k.lower(): v for k, v in {
+        "conjunction": "Соединение", "square": "Квадратура",
+        "opposition": "Оппозиция", "trine": "Трин", "sextile": "Секстиль",
+        "quincunx": "Квинконс", "semisextile": "Полусекстиль",
+        "semisquare": "Полуквадрат", "sesquiquadrate": "Сесквиквадрат",
+        "parallel": "Параллель", "contraparallel": "Контрапараллель",
+    }.items()
+}
+
+ASPECT_RU = _ASPECT_RU_CI
+
+def _format_aspect(asp) -> str:
+    p1 = PLANET_RU.get(asp.object1.name, asp.object1.name)
+    p2 = PLANET_RU.get(asp.object2.name, asp.object2.name)
+    asp_name = _ASPECT_RU_CI.get(asp.aspect_name.lower(), asp.aspect_name)
+    return f"{p1} {asp_name} {p2}"
+
+
 _notable_charts: dict[str, tuple[Notable, CalculatedChart]] = {}
+_event_charts: dict[str, CalculatedChart] = {}
 _events_data: list[Notable] = []
 _charts_loaded = False
-_results_cache: dict[int, dict[str, Any]] = {}
-_parallels_cache: dict[int, dict[str, Any]] = {}
 
 
 def _sign_from_longitude(longitude: float) -> str:
@@ -113,9 +144,19 @@ def _build_all_notable_charts() -> None:
 
     for n in reg.get_events():
         _events_data.append(n)
+        try:
+            chart = (
+                ChartBuilder.from_native(n)
+                .with_house_systems([PlacidusHouses()])
+                .with_aspects()
+                .calculate()
+            )
+            _event_charts[n.name] = chart
+        except Exception as e:
+            logger.warning("Failed to build event chart", name=n.name, error=str(e))
 
     _charts_loaded = True
-    logger.info("Notable charts loaded", births=len(_notable_charts), events=len(_events_data))
+    logger.info("Notable charts loaded", births=len(_notable_charts), events=len(_events_data), event_charts=len(_event_charts))
 
 
 async def ensure_notable_charts() -> None:
@@ -152,8 +193,9 @@ def _compute_astro_twins_sync(user_chart: CalculatedChart) -> list[dict[str, Any
                 shared.append(f"Луна в {user_moon}")
 
             key_aspects: list[str] = []
-            for asp in multi.get_all_cross_aspects()[:5]:
-                key_aspects.append(f"{asp.object1.name} {asp.aspect_name} {asp.object2.name}")
+            sorted_aspects = sorted(multi.get_all_cross_aspects(), key=lambda a: a.orb)
+            for asp in sorted_aspects[:5]:
+                key_aspects.append(_format_aspect(asp))
 
             results.append({
                 "name": notable.name,
@@ -176,17 +218,10 @@ async def compute_astro_twins(
     user_chart: CalculatedChart,
     natal_chart_id: int,
 ) -> dict[str, Any]:
-    if natal_chart_id in _results_cache:
-        return _results_cache[natal_chart_id]
-
     await ensure_notable_charts()
-
     loop = asyncio.get_event_loop()
     results = await loop.run_in_executor(None, _compute_astro_twins_sync, user_chart)
-
-    cached: dict[str, Any] = {"status": "done", "results": results}
-    _results_cache[natal_chart_id] = cached
-    return cached
+    return {"status": "done", "results": results}
 
 
 def _compute_historical_parallels_sync(user_chart: CalculatedChart) -> list[dict[str, Any]]:
@@ -194,12 +229,15 @@ def _compute_historical_parallels_sync(user_chart: CalculatedChart) -> list[dict
 
     for event in _events_data:
         try:
-            event_chart = (
-                ChartBuilder.from_native(event)
-                .with_house_systems([PlacidusHouses()])
-                .with_aspects()
-                .calculate()
-            )
+            event_chart = _event_charts.get(event.name)
+            if event_chart is None:
+                event_chart = (
+                    ChartBuilder.from_native(event)
+                    .with_house_systems([PlacidusHouses()])
+                    .with_aspects()
+                    .calculate()
+                )
+                _event_charts[event.name] = event_chart
             multi = (
                 MultiChartBuilder.synastry(
                     user_chart, event_chart,
@@ -211,8 +249,9 @@ def _compute_historical_parallels_sync(user_chart: CalculatedChart) -> list[dict
             score = multi.calculate_compatibility_score()
 
             key_aspects: list[str] = []
-            for asp in multi.get_all_cross_aspects()[:3]:
-                key_aspects.append(f"{asp.object1.name} {asp.aspect_name} {asp.object2.name}")
+            sorted_aspects = sorted(multi.get_all_cross_aspects(), key=lambda a: a.orb)
+            for asp in sorted_aspects[:3]:
+                key_aspects.append(_format_aspect(asp))
 
             results.append({
                 "name": event.name,
@@ -232,20 +271,28 @@ async def compute_historical_parallels(
     user_chart: CalculatedChart,
     natal_chart_id: int,
 ) -> dict[str, Any]:
-    if natal_chart_id in _parallels_cache:
-        return _parallels_cache[natal_chart_id]
-
     await ensure_notable_charts()
-
     loop = asyncio.get_event_loop()
     results = await loop.run_in_executor(None, _compute_historical_parallels_sync, user_chart)
-
-    cached: dict[str, Any] = {"status": "done", "results": results}
-    _parallels_cache[natal_chart_id] = cached
-    return cached
+    return {"status": "done", "results": results}
 
 
 def list_notable_events() -> list[dict[str, Any]]:
+    if _charts_loaded and _events_data:
+        events: list[dict[str, Any]] = []
+        for e in _events_data:
+            try:
+                events.append({
+                    "name": e.name,
+                    "year": e.datetime.utc_datetime.year,
+                    "subcategories": e.subcategories or [],
+                    "notable_for": e.notable_for or "",
+                    "location_name": e.location.name,
+                })
+            except Exception:
+                pass
+        return events
+
     reg = get_notable_registry()
     events: list[dict[str, Any]] = []
     for e in reg.get_events():
@@ -260,3 +307,33 @@ def list_notable_events() -> list[dict[str, Any]]:
         except Exception:
             pass
     return events
+
+
+async def bg_compute_and_persist(
+    insight_id: int,
+    insight_type: str,
+    user_chart: CalculatedChart,
+) -> None:
+    from app.db.session import AsyncSessionLocal
+    from app.insights.crud import insight_crud
+
+    async with AsyncSessionLocal() as db:
+        try:
+            await ensure_notable_charts()
+            loop = asyncio.get_event_loop()
+
+            if insight_type == "astro_twins":
+                results = await loop.run_in_executor(None, _compute_astro_twins_sync, user_chart)
+            else:
+                results = await loop.run_in_executor(None, _compute_historical_parallels_sync, user_chart)
+
+            await insight_crud.mark_done(db, id=insight_id, result_data={"results": results})
+            await db.commit()
+            logger.info("Insight computation done", insight_id=insight_id, insight_type=insight_type)
+        except Exception as e:
+            try:
+                await insight_crud.mark_error(db, id=insight_id, error_message=str(e))
+                await db.commit()
+            except Exception:
+                await db.rollback()
+            logger.error("Insight computation failed", insight_id=insight_id, insight_type=insight_type, error=str(e))

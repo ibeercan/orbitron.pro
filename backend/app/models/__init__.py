@@ -16,6 +16,7 @@ from app.models.chat import ChatSession, ChatMessage, MessageRole
 from app.models.invite_code import InviteCode
 from app.models.request import RequestLog
 from app.models.early_subscriber import EarlySubscriber
+from app.models.insight_cache import InsightCache, InsightType, InsightStatus
 from app.ai.token_usage import TokenUsage
 
 __all__ = [
@@ -43,5 +44,8 @@ __all__ = [
     "InviteCode",
     "RequestLog",
     "EarlySubscriber",
+    "InsightCache",
+    "InsightType",
+    "InsightStatus",
     "TokenUsage",
 ]

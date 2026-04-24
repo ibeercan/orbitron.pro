@@ -17,6 +17,11 @@ from app.models.user import User, SubscriptionType
 
 
 async def create_admin(email: str, password: str, premium: bool = False) -> None:
+    from app.models.base import Base
+    from app.db.session import engine
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
     async with AsyncSessionLocal() as db:
         result = await db.execute(select(User).where(User.email == email))
         existing = result.scalars().first()

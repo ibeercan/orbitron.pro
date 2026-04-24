@@ -1,3 +1,4 @@
+import asyncio
 import base64
 from datetime import datetime as dt, timezone
 from io import BytesIO
@@ -13,6 +14,7 @@ from app.auth.deps import get_current_active_user
 from app.auth.premium import require_premium
 from app.models.user import User
 from app.models.chart import ChartType
+from app.models.insight_cache import InsightStatus
 from app.charts.schemas import (
     ChartCreate,
     SynastryCreate,
@@ -34,6 +36,7 @@ from app.charts.schemas import (
 from app.charts.service import chart_service, _build_natal
 from app.charts import notables
 from app.charts.crud import chart as chart_crud
+from app.insights.crud import insight_crud
 from app.persons.crud import person as person_crud
 from app.core.logging import logger
 
@@ -402,16 +405,35 @@ async def get_astro_twins(
 ) -> Any:
     require_premium(current_user, "astro_twins")
     native_data, _ = await _get_native_data(db, natal_chart_id, current_user.id)
+
+    cached = await insight_crud.get_by_chart_and_type(
+        db, natal_chart_id=natal_chart_id, insight_type="astro_twins",
+    )
+
+    if cached:
+        if cached.status == InsightStatus.DONE.value and cached.result_data:
+            results = [AstroTwinResult(**r) for r in cached.result_data.get("results", [])]
+            return AstroTwinsResponse(status="done", results=results)
+        if cached.status == InsightStatus.COMPUTING.value:
+            is_stale = await insight_crud.reset_stale(
+                db, natal_chart_id=natal_chart_id, insight_type="astro_twins",
+            )
+            if not is_stale:
+                return AstroTwinsResponse(status="computing", results=[])
+            await db.commit()
+        if cached.status == InsightStatus.ERROR.value:
+            await db.delete(cached)
+            await db.flush()
+
     user_chart = _build_natal(native_data["datetime"], native_data["location"])
-    try:
-        result = await notables.compute_astro_twins(user_chart, natal_chart_id)
-        return AstroTwinsResponse(
-            status=result["status"],
-            results=[AstroTwinResult(**r) for r in result["results"]],
-        )
-    except Exception as e:
-        logger.error("API: Failed to compute astro twins", error=str(e))
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    row = await insight_crud.create_pending(
+        db, natal_chart_id=natal_chart_id, insight_type="astro_twins",
+    )
+    await db.commit()
+
+    asyncio.create_task(notables.bg_compute_and_persist(row.id, "astro_twins", user_chart))
+
+    return AstroTwinsResponse(status="computing", results=[])
 
 
 @router.post("/historical-parallels", response_model=HistoricalParallelsResponse)
@@ -423,16 +445,35 @@ async def get_historical_parallels(
 ) -> Any:
     require_premium(current_user, "historical_parallels")
     native_data, _ = await _get_native_data(db, natal_chart_id, current_user.id)
+
+    cached = await insight_crud.get_by_chart_and_type(
+        db, natal_chart_id=natal_chart_id, insight_type="historical_parallels",
+    )
+
+    if cached:
+        if cached.status == InsightStatus.DONE.value and cached.result_data:
+            results = [HistoricalParallelResult(**r) for r in cached.result_data.get("results", [])]
+            return HistoricalParallelsResponse(status="done", results=results)
+        if cached.status == InsightStatus.COMPUTING.value:
+            is_stale = await insight_crud.reset_stale(
+                db, natal_chart_id=natal_chart_id, insight_type="historical_parallels",
+            )
+            if not is_stale:
+                return HistoricalParallelsResponse(status="computing", results=[])
+            await db.commit()
+        if cached.status == InsightStatus.ERROR.value:
+            await db.delete(cached)
+            await db.flush()
+
     user_chart = _build_natal(native_data["datetime"], native_data["location"])
-    try:
-        result = await notables.compute_historical_parallels(user_chart, natal_chart_id)
-        return HistoricalParallelsResponse(
-            status=result["status"],
-            results=[HistoricalParallelResult(**r) for r in result["results"]],
-        )
-    except Exception as e:
-        logger.error("API: Failed to compute historical parallels", error=str(e))
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    row = await insight_crud.create_pending(
+        db, natal_chart_id=natal_chart_id, insight_type="historical_parallels",
+    )
+    await db.commit()
+
+    asyncio.create_task(notables.bg_compute_and_persist(row.id, "historical_parallels", user_chart))
+
+    return HistoricalParallelsResponse(status="computing", results=[])
 
 
 @router.get("/notable-events", response_model=NotableEventsResponse)
