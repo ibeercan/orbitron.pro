@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@/contexts/auth-context'
 import { cn } from '@/lib/utils'
 import {
@@ -135,6 +135,7 @@ export function Sidebar({
   onMobileTabChange,
 }: SidebarProps) {
   const navigate = useNavigate()
+  const location = useLocation()
   const { user, logout } = useAuth()
 
   const handleLogout = async () => {
@@ -398,6 +399,18 @@ export function Sidebar({
                 >
                   <Settings className="w-4 h-4" />
                 </button>
+                {user?.is_admin && (
+                  <button
+                    onClick={() => navigate('/admin')}
+                    title="Управление"
+                    className={cn(
+                      'w-9 h-9 rounded-xl flex items-center justify-center transition-all',
+                      location.pathname === '/admin' ? 'text-[#9D50E0] bg-[rgba(123,47,190,0.1)]' : 'text-[#4A3F6A] hover:text-[#9D50E0] hover:bg-[rgba(123,47,190,0.08)]'
+                    )}
+                  >
+                    <Crown className="w-4 h-4" />
+                  </button>
+                )}
                 <button
                   onClick={handleLogout}
                   title="Выйти"
@@ -414,7 +427,7 @@ export function Sidebar({
                   <span>Профиль</span>
                 </button>
                 {user?.is_admin && (
-                  <button className="nav-item">
+                  <button onClick={() => navigate('/admin')} className={cn('nav-item', location.pathname === '/admin' && 'nav-item-active')}>
                     <Crown className="w-4 h-4" />
                     <span>Управление</span>
                   </button>

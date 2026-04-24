@@ -248,3 +248,36 @@ export const notablesApi = {
     return api.get('/charts/notable-events')
   },
 }
+
+export const adminApi = {
+  getStats: async () => {
+    return api.get('/admin/stats')
+  },
+  listUsers: async (params?: { subscription?: string; is_admin?: boolean; is_active?: boolean; skip?: number; limit?: number }) => {
+    return api.get('/admin/users', { params })
+  },
+  updateUser: async (id: number, data: { subscription_type?: string; is_admin?: boolean; is_active?: boolean }) => {
+    return api.patch(`/admin/users/${id}`, data)
+  },
+  deleteUser: async (id: number) => {
+    return api.delete(`/admin/users/${id}`)
+  },
+  listInvites: async () => {
+    return api.get('/admin/invites')
+  },
+  generateInvites: async (count: number = 1) => {
+    return api.post('/admin/invites/generate', null, { params: { count } })
+  },
+  listEarlySubscribers: async (params?: { skip?: number; limit?: number }) => {
+    return api.get('/admin/early-subscribers', { params })
+  },
+  inviteSubscriber: async (id: number) => {
+    return api.post(`/admin/early-subscribers/${id}/invite`)
+  },
+  listAuditLogs: async (params?: { entity_type?: string; action?: string; user_id?: number; skip?: number; limit?: number }) => {
+    return api.get('/admin/audit-logs', { params })
+  },
+  listTokenUsage: async (params?: { skip?: number; limit?: number }) => {
+    return api.get('/admin/token-usage', { params })
+  },
+}

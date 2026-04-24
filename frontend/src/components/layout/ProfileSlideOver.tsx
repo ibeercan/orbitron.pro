@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/auth-context'
 import { personsApi, geocodingApi } from '@/lib/api/client'
 import { NumberPicker } from '@/components/ui/number-picker'
@@ -36,6 +37,7 @@ const PREMIUM_FEATURES = [
 ]
 
 export function ProfileSlideOver({ isOpen, onClose }: ProfileSlideOverProps) {
+  const navigate = useNavigate()
   const { user } = useAuth()
 
   const isPremium = user?.subscription_type === 'premium'
@@ -350,8 +352,8 @@ export function ProfileSlideOver({ isOpen, onClose }: ProfileSlideOverProps) {
                   <h3 className="font-semibold text-[#F0EAD6] text-sm">Управление</h3>
                 </div>
 
-                <button className="w-full h-10 rounded-xl bg-[rgba(123,47,190,0.1)] border border-[rgba(123,47,190,0.2)] text-[#9D50E0] text-sm font-medium hover:bg-[rgba(123,47,190,0.18)] transition-colors">
-                  Создать инвайт-код
+                <button onClick={() => { onClose(); navigate('/admin') }} className="w-full h-10 rounded-xl bg-[rgba(123,47,190,0.1)] border border-[rgba(123,47,190,0.2)] text-[#9D50E0] text-sm font-medium hover:bg-[rgba(123,47,190,0.18)] transition-colors">
+                  Открыть панель
                 </button>
               </div>
             )}

@@ -17,5 +17,8 @@ class InviteCodeResponse(BaseModel):
         from_attributes = True
 
 
+InviteCodeOut = InviteCodeResponse
+
+
 class InviteCodeListResponse(BaseModel):
     codes: list[InviteCodeResponse]
