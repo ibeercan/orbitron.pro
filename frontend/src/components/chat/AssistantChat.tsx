@@ -245,6 +245,7 @@ function ChatContent({ showWelcome, onWelcomeDismiss, chartType }: { showWelcome
 
   const messages = threadState.messages ?? [];
   const isRunning = threadState.isRunning ?? false;
+  const isLoading = threadState.isLoading ?? false;
 
   /* iOS keyboard fix via visualViewport:
      When soft keyboard opens, visualViewport shrinks but window.innerHeight doesn't.
@@ -324,7 +325,29 @@ function ChatContent({ showWelcome, onWelcomeDismiss, chartType }: { showWelcome
         'flex-1 overflow-y-auto py-4 space-y-4 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-[rgba(212,175,55,0.15)]',
         'px-4'
       )}>
-        {messages.length === 0 ? (
+        {isLoading && messages.length === 0 ? (
+          <div className="flex flex-col h-full justify-center gap-4 px-2">
+            <div className="flex justify-start">
+              <div className="w-7 h-7 rounded-xl shrink-0 mr-2.5 mt-1 bg-[rgba(212,175,55,0.06)] animate-pulse" />
+              <div className="max-w-[88%] space-y-2 px-4 py-3 rounded-2xl rounded-tl-sm bg-[rgba(212,175,55,0.04)] border border-[rgba(212,175,55,0.08)]">
+                <div className="h-3 w-3/4 rounded bg-[rgba(212,175,55,0.08)] animate-pulse" />
+                <div className="h-3 w-1/2 rounded bg-[rgba(212,175,55,0.08)] animate-pulse" />
+              </div>
+            </div>
+            <div className="flex justify-end">
+              <div className="max-w-[60%] space-y-2 px-4 py-3 rounded-2xl rounded-tr-sm bg-[rgba(74,63,106,0.3)] border border-[rgba(212,175,55,0.1)]">
+                <div className="h-3 w-2/3 rounded bg-[rgba(139,127,168,0.12)] animate-pulse" />
+              </div>
+            </div>
+            <div className="flex justify-start">
+              <div className="w-7 h-7 rounded-xl shrink-0 mr-2.5 mt-1 bg-[rgba(212,175,55,0.06)] animate-pulse" />
+              <div className="max-w-[88%] space-y-2 px-4 py-3 rounded-2xl rounded-tl-sm bg-[rgba(212,175,55,0.04)] border border-[rgba(212,175,55,0.08)]">
+                <div className="h-3 w-4/5 rounded bg-[rgba(212,175,55,0.08)] animate-pulse" />
+                <div className="h-3 w-2/3 rounded bg-[rgba(212,175,55,0.08)] animate-pulse" />
+              </div>
+            </div>
+          </div>
+        ) : messages.length === 0 ? (
           <div className="flex flex-col h-full justify-center">
             {showWelcome && onWelcomeDismiss && (
               <div className="mb-4">
