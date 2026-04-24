@@ -156,15 +156,13 @@ function useOrbitronChatRuntime({
 
         const existing: ChatMessage[] = (sessionData.messages ?? []).map(toChatMessage);
         if (existing.length > 0) {
-          // Merge: keep the user + assistant placeholders at the end,
-          // prepend loaded history, deduplicate by id
           setMessages((prev) => {
             const existingIds = new Set(existing.map((m) => m.id));
             const newOnly = prev.filter((m) => !existingIds.has(m.id));
             return [...existing, ...newOnly];
           });
-          loadedSessionRef.current = activeSessionId;
         }
+        loadedSessionRef.current = activeSessionId;
       }
 
       const response = await fetch(`${baseApiUrl}/chat/${activeSessionId}/stream`, {

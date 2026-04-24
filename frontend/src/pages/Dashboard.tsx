@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { chartsApi, chatApi } from '@/lib/api/client'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { Sidebar } from '@/components/layout/Sidebar'
@@ -333,6 +333,7 @@ export default function Dashboard() {
   const [showProfile, setShowProfile] = useState(false)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [chatSessionId, setChatSessionId] = useState<number | null>(null)
+  const handleSessionCreated = useCallback((id: number) => setChatSessionId(id), [])
 
   /* Sidebar collapsed state */
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
@@ -644,7 +645,7 @@ const loadChartSvg = async (chart: Chart) => {
                 <AssistantChat
                   chartId={selectedChart ? String(selectedChart.id) : ''}
                   sessionId={chatSessionId}
-                  onSessionCreated={(id) => setChatSessionId(id)}
+                  onSessionCreated={handleSessionCreated}
                   showWelcome={showWelcomeMessage}
                   onWelcomeDismiss={() => setShowWelcomeMessage(false)}
                   chartType={selectedChart?.chart_type || 'natal'}
@@ -672,7 +673,7 @@ const loadChartSvg = async (chart: Chart) => {
                   <AssistantChat
                     chartId={String(selectedChart.id)}
                     sessionId={chatSessionId}
-                    onSessionCreated={(id) => setChatSessionId(id)}
+                    onSessionCreated={handleSessionCreated}
                     fullscreen
                     onExitFullscreen={() => setAstrologerMode(false)}
                     chartType={selectedChart?.chart_type || 'natal'}
@@ -697,7 +698,7 @@ const loadChartSvg = async (chart: Chart) => {
                     <AssistantChat
                       chartId={String(selectedChart.id)}
                       sessionId={chatSessionId}
-                      onSessionCreated={(id) => setChatSessionId(id)}
+                      onSessionCreated={handleSessionCreated}
                       fullscreen
                       onExitFullscreen={() => setAstrologerMode(false)}
                       chartType={selectedChart?.chart_type || 'natal'}
@@ -795,7 +796,7 @@ const loadChartSvg = async (chart: Chart) => {
                   <AssistantChat
                     chartId={selectedChart ? String(selectedChart.id) : ''}
                     sessionId={chatSessionId}
-                    onSessionCreated={(id) => setChatSessionId(id)}
+                    onSessionCreated={handleSessionCreated}
                     showWelcome={showWelcomeMessage}
                     onWelcomeDismiss={() => setShowWelcomeMessage(false)}
                     chartType={selectedChart?.chart_type || 'natal'}
