@@ -43,6 +43,7 @@ class User(Base, TimestampMixin, SoftDeleteMixin, AuditMixin):
     )
     subscription_end: Mapped[datetime | None] = mapped_column(default=None)
     is_active: Mapped[bool] = mapped_column(default=True)
+    onboarding_completed: Mapped[bool] = mapped_column(default=False)
 
     subscriptions = relationship(
         "Subscription",

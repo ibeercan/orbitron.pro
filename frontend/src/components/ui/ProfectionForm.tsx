@@ -128,7 +128,7 @@ export function ProfectionForm({ natalChartId, onSubmit, onCancel }: ProfectionF
           <SelectTrigger className="luxury-select-trigger">
             <SelectValue />
           </SelectTrigger>
-          <SelectContent className="luxury-select-content">
+          <SelectContent className="luxury-select-content" position="popper" sideOffset={4}>
             <SelectItem value="traditional">Традиционная</SelectItem>
             <SelectItem value="modern">Современная</SelectItem>
           </SelectContent>

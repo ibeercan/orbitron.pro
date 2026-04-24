@@ -45,5 +45,6 @@ class User(BaseModel):
     subscription_end: str | None
     is_active: bool
     is_admin: bool = False
+    onboarding_completed: bool = False
 
     model_config = {"from_attributes": True}

@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react'
 import { authApi } from '@/lib/api/client'
 
 interface User {
@@ -8,6 +8,7 @@ interface User {
   subscription_end: string | null
   is_active: boolean
   is_admin: boolean
+  onboarding_completed: boolean
   created_at: string
 }
 
@@ -18,6 +19,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>
   register: (email: string, password: string) => Promise<void>
   logout: () => Promise<void>
+  completeOnboarding: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | null>(null)
@@ -53,6 +55,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  const completeOnboarding = useCallback(async () => {
+    await authApi.completeOnboarding()
+    setUser((prev) => prev ? { ...prev, onboarding_completed: true } : prev)
+  }, [])
+
   return (
     <AuthContext.Provider
       value={{
@@ -62,6 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         login,
         register,
         logout,
+        completeOnboarding,
       }}
     >
       {children}

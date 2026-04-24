@@ -386,6 +386,7 @@ function ManualEntry({
           value={person2Name}
           onChange={(e) => setPerson2Name(e.target.value)}
           placeholder="Имя партнёра"
+          autoComplete="name"
           className="luxury-input w-full h-11 px-4 text-sm"
         />
       </div>
@@ -410,6 +411,8 @@ function ManualEntry({
           }}
           placeholder="12:00"
           maxLength={5}
+          inputMode="numeric"
+          autoComplete="off"
           className="luxury-input h-11 px-4 text-sm w-36"
         />
       </div>
@@ -435,8 +438,12 @@ function ManualEntry({
         </div>
 
         {suggestionsOpen && suggestions.length > 0 && (
-          <div className="absolute z-[60] mt-1.5 w-full max-w-[360px] rounded-xl border border-[rgba(212,175,55,0.15)] overflow-hidden"
+          <div className="fixed z-[70] mt-1.5 rounded-xl border border-[rgba(212,175,55,0.15)] overflow-hidden"
             style={{
+              left: containerRef.current ? containerRef.current.getBoundingClientRect().left : 0,
+              top: containerRef.current ? containerRef.current.getBoundingClientRect().bottom + 6 : 0,
+              width: containerRef.current ? containerRef.current.offsetWidth : 360,
+              maxWidth: 360,
               background: 'linear-gradient(145deg, rgba(22,15,40,0.98) 0%, rgba(13,9,32,0.99) 100%)',
               boxShadow: '0 16px 48px rgba(0,0,0,0.6), 0 0 0 1px rgba(212,175,55,0.06)',
             }}

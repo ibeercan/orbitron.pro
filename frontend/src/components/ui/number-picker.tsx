@@ -73,7 +73,10 @@ export function NumberPicker({
       )}
       <div className={cn('flex items-center h-11 rounded-xl border luxury-input', focused && 'focused')}>
         <input
-          type="number"
+          type="text"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          autoComplete="off"
           min={min}
           max={max}
           value={value ?? ''}
@@ -92,7 +95,7 @@ export function NumberPicker({
             else if (e.key === 'ArrowDown') { e.preventDefault(); decrement() }
           }}
           placeholder={placeholder}
-          className="flex-1 bg-transparent text-center text-sm text-[#F0EAD6] placeholder:text-[#8B7FA8] placeholder:opacity-50 outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:m-0 [&::-webkit-inner-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+          className="flex-1 bg-transparent text-center text-sm text-[#F0EAD6] placeholder:text-[#8B7FA8] placeholder:opacity-50 outline-none"
         />
         <div className="flex flex-col border-l border-[rgba(212,175,55,0.14)]">
           <button

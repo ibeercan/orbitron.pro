@@ -173,8 +173,12 @@ function LocationAutocomplete({
 
       {/* Dropdown suggestions */}
       {isOpen && suggestions.length > 0 && (
-        <div className="absolute z-[60] mt-1.5 w-full rounded-xl border border-[rgba(212,175,55,0.15)] overflow-hidden"
+        <div className="fixed z-[70] mt-1.5 rounded-xl border border-[rgba(212,175,55,0.15)] overflow-hidden"
           style={{
+            left: containerRef.current ? containerRef.current.getBoundingClientRect().left : 0,
+            top: containerRef.current ? containerRef.current.getBoundingClientRect().bottom + 6 : 0,
+            width: containerRef.current ? containerRef.current.offsetWidth : 360,
+            maxWidth: 360,
             background: 'linear-gradient(145deg, rgba(22,15,40,0.98) 0%, rgba(13,9,32,0.99) 100%)',
             boxShadow: '0 16px 48px rgba(0,0,0,0.6), 0 0 0 1px rgba(212,175,55,0.06)',
           }}
@@ -241,7 +245,7 @@ function AdvancedSettings({
                   <SelectTrigger className="luxury-select-trigger">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="luxury-select-content">
+                  <SelectContent className="luxury-select-content" position="popper" sideOffset={4}>
                     <SelectItem value="midnight">Полночь (тёмная)</SelectItem>
                     <SelectItem value="celestial">Небесная</SelectItem>
                     <SelectItem value="dark">Тёмная</SelectItem>
@@ -265,7 +269,7 @@ function AdvancedSettings({
                   <SelectTrigger className="luxury-select-trigger">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="luxury-select-content">
+                  <SelectContent className="luxury-select-content" position="popper" sideOffset={4}>
                     <SelectItem value="placidus">Плацидус</SelectItem>
                     <SelectItem value="whole_sign">Целые знаки</SelectItem>
                   </SelectContent>
@@ -284,7 +288,7 @@ function AdvancedSettings({
                   <SelectTrigger className="luxury-select-trigger">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="luxury-select-content">
+                  <SelectContent className="luxury-select-content" position="popper" sideOffset={4}>
                     <SelectItem value="minimal">Минимальная</SelectItem>
                     <SelectItem value="standard">Стандартная</SelectItem>
                     <SelectItem value="detailed">Подробная</SelectItem>
@@ -391,14 +395,14 @@ export function CreateChartModal({ open, onClose, onCreated }: CreateChartModalP
             </div>
             <button
               onClick={onClose}
-              className="w-8 h-8 rounded-xl flex items-center justify-center text-[#8B7FA8] hover:text-[#F0EAD6] hover:bg-[rgba(212,175,55,0.08)] transition-all"
+              className="w-9 h-9 rounded-xl flex items-center justify-center text-[#8B7FA8] hover:text-[#F0EAD6] hover:bg-[rgba(212,175,55,0.08)] transition-all"
             >
               <X className="w-4 h-4" />
             </button>
           </div>
 
           {/* Form body */}
-          <div className="px-6 py-6 max-h-[70vh] overflow-y-auto">
+          <div className="px-6 py-6 max-h-[65dvh] overflow-y-auto overscroll-contain">
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
 
               {/* ── Date fields ── */}
@@ -461,6 +465,8 @@ export function CreateChartModal({ open, onClose, onCreated }: CreateChartModalP
                   {...register('time')}
                   placeholder="12:00"
                   maxLength={5}
+                  inputMode="numeric"
+                  autoComplete="off"
                   className={cn('luxury-input h-11 px-4 text-sm w-36', errors.time && 'error')}
                   onChange={(e) => {
                     let val = e.target.value.replace(/[^\d:]/g, '')

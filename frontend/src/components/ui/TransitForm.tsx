@@ -95,6 +95,8 @@ export function TransitForm({ natalChartId, isPremium, onSubmit, onCancel }: Tra
               }}
               placeholder="12:00"
               maxLength={5}
+              inputMode="numeric"
+              autoComplete="off"
               className="luxury-input h-11 px-4 text-sm w-36"
             />
           </div>

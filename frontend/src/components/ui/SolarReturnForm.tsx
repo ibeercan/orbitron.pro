@@ -64,6 +64,8 @@ export function SolarReturnForm({ natalChartId, onSubmit, onCancel }: SolarRetur
             value={locationOverride}
             onChange={(e) => setLocationOverride(e.target.value)}
             placeholder="55.75, 37.62"
+            inputMode="decimal"
+            autoComplete="off"
             className="luxury-input w-full h-11 pl-10 text-sm"
           />
         </div>

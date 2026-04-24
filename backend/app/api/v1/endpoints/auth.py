@@ -120,6 +120,19 @@ async def read_users_me(
     return current_user
 
 
+@router.post("/onboarding-complete", response_model=User)
+async def complete_onboarding(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
+) -> User:
+    """Mark onboarding as completed for the current user."""
+    if not current_user.onboarding_completed:
+        current_user.onboarding_completed = True
+        await db.commit()
+        await db.refresh(current_user)
+    return current_user
+
+
 @router.post("/logout")
 async def logout(response: Response) -> dict:
     """Logout user by clearing the cookie."""

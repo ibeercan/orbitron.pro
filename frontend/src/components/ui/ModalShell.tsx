@@ -37,13 +37,13 @@ export function ModalShell({ open, onClose, icon, title, description, children }
             </div>
             <button
               onClick={onClose}
-              className="w-8 h-8 rounded-xl flex items-center justify-center text-[#8B7FA8] hover:text-[#F0EAD6] hover:bg-[rgba(212,175,55,0.08)] transition-all"
+              className="w-9 h-9 rounded-xl flex items-center justify-center text-[#8B7FA8] hover:text-[#F0EAD6] hover:bg-[rgba(212,175,55,0.08)] transition-all"
             >
               <X className="w-4 h-4" />
             </button>
           </div>
 
-          <div className="px-6 py-6 max-h-[70vh] overflow-y-auto">
+          <div className="px-6 py-6 max-h-[65dvh] overflow-y-auto overscroll-contain">
             {children}
           </div>
         </div>

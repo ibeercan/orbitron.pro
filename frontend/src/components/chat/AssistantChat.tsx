@@ -4,6 +4,7 @@ import remarkGfm from 'remark-gfm';
 import { Send, Square, Copy, Check, Star, Sparkles, X } from 'lucide-react';
 import { useThread, useComposerRuntime, type ThreadMessage } from '@assistant-ui/react';
 import { OrbitronRuntimeProvider } from './OrbitronRuntimeProvider';
+import { WelcomeMessage } from '@/components/ui/WelcomeMessage';
 import { cn } from '@/lib/utils';
 
 interface AssistantChatProps {
@@ -14,6 +15,10 @@ interface AssistantChatProps {
   fullscreen?: boolean;
   /** Called when user requests to exit fullscreen */
   onExitFullscreen?: () => void;
+  /** Show welcome message for onboarding */
+  showWelcome?: boolean;
+  /** Called when welcome message is dismissed */
+  onWelcomeDismiss?: () => void;
 }
 
 /* ── Mini animated orb logo ── */
@@ -181,7 +186,7 @@ const SUGGESTIONS = [
 ];
 
 /* ── Chat content (inside runtime) ── */
-function ChatContent() {
+function ChatContent({ showWelcome, onWelcomeDismiss }: { showWelcome?: boolean; onWelcomeDismiss?: () => void }) {
   const threadState = useThread();
   const composer = useComposerRuntime({ optional: true });
   const [input, setInput] = useState('');
@@ -273,6 +278,11 @@ function ChatContent() {
       )}>
         {messages.length === 0 ? (
           <div className="flex flex-col h-full justify-center">
+            {showWelcome && onWelcomeDismiss && (
+              <div className="mb-4">
+                <WelcomeMessage onDismiss={onWelcomeDismiss} />
+              </div>
+            )}
             <div className="text-center mb-6">
               <div className="w-12 h-12 rounded-2xl bg-[rgba(212,175,55,0.08)] border border-[rgba(212,175,55,0.12)] flex items-center justify-center mx-auto mb-3">
                 <Sparkles className="w-5 h-5 text-[#D4AF37]" />
@@ -447,6 +457,8 @@ export function AssistantChat({
   onSessionCreated,
   fullscreen = false,
   onExitFullscreen,
+  showWelcome = false,
+  onWelcomeDismiss,
 }: AssistantChatProps) {
   const baseUrl = import.meta.env.VITE_API_URL || 'https://api.orbitron.pro/api/v1';
 
@@ -500,7 +512,7 @@ export function AssistantChat({
             chartId={chartId}
             onSessionCreated={onSessionCreated}
           >
-            <ChatContent />
+            <ChatContent showWelcome={showWelcome} onWelcomeDismiss={onWelcomeDismiss} />
           </OrbitronRuntimeProvider>
         )}
       </div>

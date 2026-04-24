@@ -46,6 +46,10 @@ export const authApi = {
   me: async () => {
     return api.get('/auth/me')
   },
+
+  completeOnboarding: async () => {
+    return api.post('/auth/onboarding-complete')
+  },
 }
 
 export const subscriptionApi = {

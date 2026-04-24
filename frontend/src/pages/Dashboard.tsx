@@ -11,7 +11,9 @@ import { SynastryForm } from '@/components/ui/SynastryForm'
 import { SolarReturnForm } from '@/components/ui/SolarReturnForm'
 import { LunarReturnForm } from '@/components/ui/LunarReturnForm'
 import { ProfectionForm } from '@/components/ui/ProfectionForm'
-import { Loader2, Calendar, MapPin, Sparkles, Star, Trash2, AlertTriangle, Maximize2, Heart, Clock, Sun, Moon, Target, FileText, Lock, Crown } from 'lucide-react'
+import { TransitTimeline } from '@/components/ui/TransitTimeline'
+import { OnboardingTour } from '@/components/ui/OnboardingTour'
+import { Loader2, Calendar, MapPin, Sparkles, Star, Trash2, AlertTriangle, Maximize2, Heart, Clock, Sun, Moon, Target, FileText, Lock, Crown, ArrowLeft } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/contexts/auth-context'
 
@@ -346,7 +348,15 @@ export default function Dashboard() {
 
   const [activeModal, setActiveModal] = useState<string | null>(null)
 
+  const [showOnboardingTour, setShowOnboardingTour] = useState(false)
+  const [showWelcomeMessage, setShowWelcomeMessage] = useState(false)
+
   const closeModal = () => setActiveModal(null)
+
+  const handleOnboardingComplete = () => {
+    setShowOnboardingTour(false)
+    setShowWelcomeMessage(true)
+  }
 
   const onChartCreatedFromModal = (newChart: Record<string, unknown>) => {
     const chart = newChart as unknown as Chart
@@ -467,6 +477,25 @@ const loadChartSvg = async (chart: Chart) => {
     selectChart(newChart)
   }
 
+  const backToNatalChart = () => {
+    if (!selectedChart?.parent_chart_id) return
+    const parent = charts.find((c) => c.id === selectedChart.parent_chart_id)
+    if (parent) selectChart(parent)
+  }
+
+  useEffect(() => {
+    if (charts.length === 0 && !svgLoading) {
+      setShowCreateModal(true)
+    }
+  }, [charts.length])
+
+  useEffect(() => {
+    if (user && !user.onboarding_completed && !showOnboardingTour) {
+      const timer = setTimeout(() => setShowOnboardingTour(true), 800)
+      return () => clearTimeout(timer)
+    }
+  }, [user?.onboarding_completed])
+
   /* ── Delete handlers ── */
   const requestDeleteChart = (chart: Chart) => {
     setChartToDelete(chart)
@@ -511,6 +540,7 @@ const loadChartSvg = async (chart: Chart) => {
             setActiveMobileNav(tab)
             if (tab === 'profile') setShowProfile(true)
           }}
+          data-onboarding="sidebar"
         />
 
         {/* ── Main content ── */}
@@ -526,7 +556,13 @@ const loadChartSvg = async (chart: Chart) => {
               <div className="luxury-card flex flex-col h-full overflow-hidden">
                 <div className="flex items-center justify-between px-5 py-4 border-b border-[rgba(212,175,55,0.08)] shrink-0">
                   <div className="flex items-center gap-3">
-                    <div className="w-2 h-2 rounded-full bg-[#D4AF37] shadow-[0_0_6px_rgba(212,175,55,0.8)]" />
+                    {selectedChart?.parent_chart_id ? (
+                      <button onClick={backToNatalChart} className="flex items-center gap-1.5 text-xs text-[#8B7FA8] hover:text-[#D4AF37] transition-colors shrink-0" title="Назад к натальной карте">
+                        <ArrowLeft className="w-3.5 h-3.5" />
+                      </button>
+                    ) : (
+                      <div className="w-2 h-2 rounded-full bg-[#D4AF37] shadow-[0_0_6px_rgba(212,175,55,0.8)]" />
+                    )}
                     <span className="font-serif text-lg font-semibold text-[#F0EAD6]">
                       {CHART_TYPE_LABELS[selectedChart?.chart_type || 'natal'] || 'Натальная карта'}
                     </span>
@@ -535,7 +571,7 @@ const loadChartSvg = async (chart: Chart) => {
                 </div>
 
                 {selectedChart && (selectedChart.chart_type || 'natal') === 'natal' && (
-                  <div className="flex items-center gap-1.5 px-5 py-2 border-b border-[rgba(212,175,55,0.06)] shrink-0 overflow-x-auto">
+                  <div className="flex items-center gap-1.5 px-5 py-2 border-b border-[rgba(212,175,55,0.06)] shrink-0 overflow-x-auto" data-onboarding="actions">
                     <ChartActionButton icon={Heart} label="Синастрия" premium onClick={() => setActiveModal('synastry')} />
                     <ChartActionButton icon={Clock} label="Транзиты" onClick={() => setActiveModal('transit')} />
                     <ChartActionButton icon={Sun} label="Соляр" premium onClick={() => setActiveModal('solar_return')} />
@@ -573,11 +609,18 @@ const loadChartSvg = async (chart: Chart) => {
                     </div>
                   )}
                 </div>
+                {selectedChart && (selectedChart.chart_type || 'natal') === 'transit' && (
+                  <TransitTimeline
+                    natalChartId={selectedChart.id}
+                    parentChartId={selectedChart.parent_chart_id}
+                    isPremium={isPremium}
+                  />
+                )}
               </div>
             </div>
 
             {/* Chat panel */}
-            <div className="w-[340px] xl:w-[380px] 2xl:w-[420px] shrink-0 flex flex-col overflow-hidden p-4 pl-2">
+            <div className="w-[340px] xl:w-[380px] 2xl:w-[420px] shrink-0 flex flex-col overflow-hidden p-4 pl-2" data-onboarding="chat">
               <div className="luxury-card flex flex-col h-full overflow-hidden relative">
                 {/* Astrologer mode button */}
                 {selectedChart && (
@@ -593,6 +636,8 @@ const loadChartSvg = async (chart: Chart) => {
                   chartId={selectedChart ? String(selectedChart.id) : ''}
                   sessionId={chatSessionId}
                   onSessionCreated={(id) => setChatSessionId(id)}
+                  showWelcome={showWelcomeMessage}
+                  onWelcomeDismiss={() => setShowWelcomeMessage(false)}
                 />
               </div>
             </div>
@@ -739,6 +784,8 @@ const loadChartSvg = async (chart: Chart) => {
                     chartId={selectedChart ? String(selectedChart.id) : ''}
                     sessionId={chatSessionId}
                     onSessionCreated={(id) => setChatSessionId(id)}
+                    showWelcome={showWelcomeMessage}
+                    onWelcomeDismiss={() => setShowWelcomeMessage(false)}
                   />
                 </div>
               )}
@@ -747,7 +794,7 @@ const loadChartSvg = async (chart: Chart) => {
         </main>
 
         {/* Profile slide-over */}
-        <ProfileSlideOver isOpen={showProfile} onClose={() => setShowProfile(false)} />
+        <ProfileSlideOver isOpen={showProfile} onClose={() => setShowProfile(false)} data-onboarding="profile" />
 
         {/* Create chart modal */}
         <CreateChartModal
@@ -850,6 +897,11 @@ const loadChartSvg = async (chart: Chart) => {
             onCancel={() => setChartToDelete(null)}
             isDeleting={isDeleting}
           />
+        )}
+
+        {/* Onboarding tour */}
+        {showOnboardingTour && (
+          <OnboardingTour onComplete={handleOnboardingComplete} />
         )}
       </div>
     </AppLayout>

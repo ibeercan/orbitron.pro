@@ -444,6 +444,7 @@ export function ProfileSlideOver({ isOpen, onClose }: ProfileSlideOverProps) {
                       value={personName}
                       onChange={(e) => setPersonName(e.target.value)}
                       placeholder="Имя человека"
+                      autoComplete="name"
                       className="luxury-input w-full h-10 px-3.5 text-sm"
                     />
                   </div>
@@ -468,6 +469,8 @@ export function ProfileSlideOver({ isOpen, onClose }: ProfileSlideOverProps) {
                       }}
                       placeholder="12:00"
                       maxLength={5}
+                      inputMode="numeric"
+                      autoComplete="off"
                       className="luxury-input h-10 px-3.5 text-sm w-32"
                     />
                   </div>
@@ -493,8 +496,12 @@ export function ProfileSlideOver({ isOpen, onClose }: ProfileSlideOverProps) {
                     </div>
 
                     {personSuggestionsOpen && personSuggestions.length > 0 && (
-                      <div className="absolute z-[60] mt-1.5 w-full max-w-[360px] rounded-xl border border-[rgba(212,175,55,0.15)] overflow-hidden"
+                      <div className="fixed z-[70] mt-1.5 rounded-xl border border-[rgba(212,175,55,0.15)] overflow-hidden"
                         style={{
+                          left: locContainerRef.current ? locContainerRef.current.getBoundingClientRect().left : 0,
+                          top: locContainerRef.current ? locContainerRef.current.getBoundingClientRect().bottom + 6 : 0,
+                          width: locContainerRef.current ? locContainerRef.current.offsetWidth : 360,
+                          maxWidth: 360,
                           background: 'linear-gradient(145deg, rgba(22,15,40,0.98) 0%, rgba(13,9,32,0.99) 100%)',
                           boxShadow: '0 16px 48px rgba(0,0,0,0.6), 0 0 0 1px rgba(212,175,55,0.06)',
                         }}
@@ -557,7 +564,7 @@ export function ProfileSlideOver({ isOpen, onClose }: ProfileSlideOverProps) {
           </div>
 
           {/* ── Footer ── */}
-          <div className="px-6 pb-6 pt-2 border-t border-[rgba(212,175,55,0.06)] shrink-0">
+          <div className="px-6 pb-6 pt-2 border-t border-[rgba(212,175,55,0.06)] shrink-0" style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))' }}>
             <p className="text-xs text-center text-[#2E2548]">
               Orbitron · ИИ-астрология нового поколения
             </p>

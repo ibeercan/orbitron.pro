@@ -17,7 +17,7 @@ from tenacity import (
     retry_if_exception_type,
 )
 
-from app.core.config import settings, AIProviderConfig
+from app.core.config import settings, AIProviderConfig, CHART_TYPE_PROMPT_HINTS
 from app.core.logging import logger
 from app.models.request import RequestLog
 from app.models.user import SubscriptionType
@@ -160,15 +160,20 @@ class AIService:
         await db.commit()
         logger.info("ai_request_logged", user_id=user_id, endpoint=endpoint, chart_id=chart_id)
 
-    def _build_prompt(self, prompt_text: str, question: str) -> str:
+    def _build_prompt(self, prompt_text: str, question: str, chart_type: str = "natal") -> str:
         user_question = question.strip() or "Дай общую интерпретацию этой натальной карты"
-        return (
-            f"ДАННЫЕ НАТАЛЬНОЙ КАРТЫ:\n{prompt_text}\n\n"
+        hint = CHART_TYPE_PROMPT_HINTS.get(chart_type, "")
+        chart_label = {"natal": "НАТАЛЬНОЙ КАРТЫ", "synastry": "СИНАСТРИИ", "transit": "ТРАНЗИТОВ", "solar_return": "СОЛЯРНОГО ВОЗВРАТА", "lunar_return": "ЛУНАРНОГО ВОЗВРАТА", "profection": "ПРОФЕКЦИИ"}.get(chart_type, "НАТАЛЬНОЙ КАРТЫ")
+        prompt = (
+            f"ДАННЫЕ {chart_label}:\n{prompt_text}\n\n"
             f"ВОПРОС ПОЛЬЗОВАТЕЛЯ: {user_question}\n\n"
             "Дай профессиональную астрологическую интерпретацию, опираясь на данные карты выше. "
             "Отвечай на том же языке, что и вопрос пользователя. "
             "Сразу начинай с ответа — без вступительных фраз и без показа рассуждений."
         )
+        if hint:
+            prompt += f"\n\nКОНТЕКСТ: {hint}"
+        return prompt
 
     async def _log_token_usage(
         self,
@@ -272,11 +277,12 @@ class AIService:
         prompt_text: str,
         question: str = "",
         chart_id: int = None,
+        chart_type: str = "natal",
     ) -> AsyncGenerator[str, None]:
-        logger.info("ai_streaming_requested", user_id=user_id, chart_id=chart_id)
+        logger.info("ai_streaming_requested", user_id=user_id, chart_id=chart_id, chart_type=chart_type)
         await self._check_and_log_request(db, user_id, subscription_type, "/chat/stream", chart_id=chart_id)
 
-        full_prompt = self._build_prompt(prompt_text, question)
+        full_prompt = self._build_prompt(prompt_text, question, chart_type)
 
         if chart_id:
             cached_response = await self._get_cached_response(chart_id, prompt_text, question)

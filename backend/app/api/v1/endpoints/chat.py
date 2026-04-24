@@ -92,6 +92,7 @@ async def generate_sse(
     subscription_type: str,
     chart_prompt_text: str,
     chart_id: int,
+    chart_type: str = "natal",
 ) -> AsyncGenerator[str, None]:
     """Generate SSE stream for AI response."""
     full_response = ""
@@ -107,7 +108,7 @@ async def generate_sse(
         await asyncio.sleep(0.01)
 
         async for chunk in ai_service.stream_interpret_chart(
-            db, user_id, subscription_type, chart_prompt_text, user_message_content, chart_id
+            db, user_id, subscription_type, chart_prompt_text, user_message_content, chart_id, chart_type
         ):
             full_response += chunk
             yield f"data: {json.dumps({'type': 'content', 'content': chunk})}\n\n"
@@ -164,6 +165,7 @@ async def stream_chat_message(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Chart not found")
 
     prompt_text: str = chart.prompt_text or ""
+    chart_type: str = chart.chart_type or "natal"
 
     return StreamingResponse(
         generate_sse(
@@ -174,6 +176,7 @@ async def stream_chat_message(
             subscription_type=subscription_type,
             chart_prompt_text=prompt_text,
             chart_id=chart_id,
+            chart_type=chart_type,
         ),
         media_type="text/event-stream",
         headers={
