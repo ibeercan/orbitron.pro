@@ -34,6 +34,7 @@ class Chart(Base, TimestampMixin, SoftDeleteMixin):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    name: Mapped[str | None] = mapped_column(String(255), default=None)
     chart_type: Mapped[str] = mapped_column(
         SQLEnum(ChartType, values_callable=_enum_values, name="chart_type_enum"),
         default=ChartType.NATAL.value,
@@ -64,6 +65,7 @@ class Chart(Base, TimestampMixin, SoftDeleteMixin):
         result = {
             "id": self.id,
             "user_id": self.user_id,
+            "name": self.name,
             "chart_type": self.chart_type,
             "parent_chart_id": self.parent_chart_id,
             "person_id": self.person_id,

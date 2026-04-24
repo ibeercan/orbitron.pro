@@ -91,6 +91,7 @@ export const chartsApi = {
   create: async (data: {
     datetime: string
     location: string
+    name?: string
     theme?: string
     house_system?: string
     preset?: string

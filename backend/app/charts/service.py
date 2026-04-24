@@ -119,12 +119,14 @@ class ChartService:
         house_system: str = "placidus",
         preset: str = "detailed",
         zodiac_palette: str = "auto",
+        name: str | None = None,
     ) -> Dict[str, Any]:
         logger.info("Creating natal chart", datetime=datetime_str, location=location, theme=theme)
         chart = _build_natal(datetime_str, location, house_system)
         svg_bytes = _render_svg(chart, theme, zodiac_palette)
         svg_b64 = _svg_to_b64(svg_bytes)
         return {
+            "name": name,
             "chart_type": "natal",
             "native_data": {"datetime": datetime_str, "location": location},
             "result_data": chart.to_dict(),
@@ -143,6 +145,7 @@ class ChartService:
         zodiac_palette: str = "auto",
         person_id: int | None = None,
         natal_chart_id: int | None = None,
+        natal_chart_name: str | None = None,
     ) -> Dict[str, Any]:
         logger.info("Creating synastry chart", person2_datetime=person2_datetime)
         dt1 = natal_chart_data["datetime"]
@@ -187,6 +190,7 @@ class ChartService:
             pass
 
         return {
+            "name": f"{person1_name} & {person2_name}",
             "chart_type": "synastry",
             "parent_chart_id": natal_chart_id,
             "person_id": person_id,
@@ -208,6 +212,7 @@ class ChartService:
         theme: str = "midnight",
         zodiac_palette: str = "auto",
         natal_chart_id: int | None = None,
+        natal_chart_name: str | None = None,
     ) -> Dict[str, Any]:
         dt_str = natal_chart_data["datetime"]
         loc = natal_chart_data["location"]
@@ -248,6 +253,7 @@ class ChartService:
             )
 
         return {
+            "name": f"Транзиты" + (f" · {natal_chart_name}" if natal_chart_name else ""),
             "chart_type": "transit",
             "parent_chart_id": natal_chart_id,
             "native_data": {
@@ -296,6 +302,7 @@ class ChartService:
         theme: str = "midnight",
         zodiac_palette: str = "auto",
         natal_chart_id: int | None = None,
+        natal_chart_name: str | None = None,
     ) -> Dict[str, Any]:
         from stellium import ReturnBuilder
 
@@ -316,6 +323,7 @@ class ChartService:
         svg_b64 = _svg_to_b64(svg_bytes)
 
         return {
+            "name": f"Соляр {year}" + (f" · {natal_chart_name}" if natal_chart_name else ""),
             "chart_type": "solar_return",
             "parent_chart_id": natal_chart_id,
             "native_data": {
@@ -336,6 +344,7 @@ class ChartService:
         theme: str = "midnight",
         zodiac_palette: str = "auto",
         natal_chart_id: int | None = None,
+        natal_chart_name: str | None = None,
     ) -> Dict[str, Any]:
         from stellium import ReturnBuilder
 
@@ -353,6 +362,7 @@ class ChartService:
         svg_b64 = _svg_to_b64(svg_bytes)
 
         return {
+            "name": f"Лунар" + (f" · {natal_chart_name}" if natal_chart_name else ""),
             "chart_type": "lunar_return",
             "parent_chart_id": natal_chart_id,
             "native_data": {
@@ -372,6 +382,7 @@ class ChartService:
         age: int | None = None,
         rulership: str = "traditional",
         natal_chart_id: int | None = None,
+        natal_chart_name: str | None = None,
     ) -> Dict[str, Any]:
         from stellium import ProfectionEngine
 
@@ -433,6 +444,7 @@ class ChartService:
             }
 
         return {
+            "name": f"Профекция" + (f" · {natal_chart_name}" if natal_chart_name else ""),
             "chart_type": "profection",
             "parent_chart_id": natal_chart_id,
             "native_data": {

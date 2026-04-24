@@ -55,6 +55,7 @@ function ChartActionButton({ icon: Icon, label, premium, onClick }: {
 
 interface Chart {
   id: number
+  name?: string | null
   chart_type?: string
   parent_chart_id?: number | null
   person_id?: number | null
@@ -193,6 +194,11 @@ function ChartHeader({ chart }: { chart: Chart }) {
 
   return (
     <div className="flex items-center gap-5 flex-wrap">
+      {chart.name && (
+        <span className="text-xs font-medium px-2 py-0.5 rounded-md bg-[rgba(212,175,55,0.08)] border border-[rgba(212,175,55,0.15)] text-[#F0EAD6]">
+          {chart.name}
+        </span>
+      )}
       <span className="text-xs font-medium px-2 py-0.5 rounded-md bg-[rgba(212,175,55,0.1)] border border-[rgba(212,175,55,0.2)] text-[#D4AF37]">
         {typeLabel}
       </span>
@@ -320,6 +326,7 @@ function ProfectionInfoPanel({ data }: { data: ProfectionMeta }) {
 
 export default function Dashboard() {
   const [charts, setCharts] = useState<Chart[]>([])
+  const [chartsLoaded, setChartsLoaded] = useState(false)
   const [selectedChart, setSelectedChart] = useState<Chart | null>(null)
   const [svgContent, setSvgContent] = useState<string>('')
   const [svgLoading, setSvgLoading] = useState(false)
@@ -404,6 +411,8 @@ export default function Dashboard() {
       setCharts(res.data)
     } catch (err) {
       console.error('Failed to load charts:', err)
+    } finally {
+      setChartsLoaded(true)
     }
   }
 
@@ -484,10 +493,10 @@ const loadChartSvg = async (chart: Chart) => {
   }
 
   useEffect(() => {
-    if (charts.length === 0 && !svgLoading) {
+    if (chartsLoaded && charts.length === 0) {
       setShowCreateModal(true)
     }
-  }, [charts.length])
+  }, [chartsLoaded, charts.length])
 
   useEffect(() => {
     if (user && !user.onboarding_completed && !showOnboardingTour) {
@@ -564,7 +573,7 @@ const loadChartSvg = async (chart: Chart) => {
                       <div className="w-2 h-2 rounded-full bg-[#D4AF37] shadow-[0_0_6px_rgba(212,175,55,0.8)]" />
                     )}
                     <span className="font-serif text-lg font-semibold text-[#F0EAD6]">
-                      {CHART_TYPE_LABELS[selectedChart?.chart_type || 'natal'] || 'Натальная карта'}
+                      {selectedChart?.name || CHART_TYPE_LABELS[selectedChart?.chart_type || 'natal'] || 'Натальная карта'}
                     </span>
                   </div>
                   {selectedChart && <ChartHeader chart={selectedChart} />}
@@ -638,6 +647,7 @@ const loadChartSvg = async (chart: Chart) => {
                   onSessionCreated={(id) => setChatSessionId(id)}
                   showWelcome={showWelcomeMessage}
                   onWelcomeDismiss={() => setShowWelcomeMessage(false)}
+                  chartType={selectedChart?.chart_type || 'natal'}
                 />
               </div>
             </div>
@@ -665,6 +675,7 @@ const loadChartSvg = async (chart: Chart) => {
                     onSessionCreated={(id) => setChatSessionId(id)}
                     fullscreen
                     onExitFullscreen={() => setAstrologerMode(false)}
+                    chartType={selectedChart?.chart_type || 'natal'}
                   />
                 </div>
               </div>
@@ -689,6 +700,7 @@ const loadChartSvg = async (chart: Chart) => {
                       onSessionCreated={(id) => setChatSessionId(id)}
                       fullscreen
                       onExitFullscreen={() => setAstrologerMode(false)}
+                      chartType={selectedChart?.chart_type || 'natal'}
                     />
                   </div>
                 </div>
@@ -786,6 +798,7 @@ const loadChartSvg = async (chart: Chart) => {
                     onSessionCreated={(id) => setChatSessionId(id)}
                     showWelcome={showWelcomeMessage}
                     onWelcomeDismiss={() => setShowWelcomeMessage(false)}
+                    chartType={selectedChart?.chart_type || 'natal'}
                   />
                 </div>
               )}

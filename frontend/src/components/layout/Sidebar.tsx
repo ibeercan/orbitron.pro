@@ -5,7 +5,6 @@ import {
   LogOut,
   User,
   Plus,
-  MapPin,
   Crown,
   Sparkles,
   LayoutDashboard,
@@ -14,11 +13,36 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Maximize2,
+  Star,
+  Heart,
+  Clock,
+  Sun,
+  Moon,
+  Target,
 } from 'lucide-react'
+
+const CHART_TYPE_LABELS: Record<string, string> = {
+  natal: 'Натальная',
+  synastry: 'Синастрия',
+  transit: 'Транзиты',
+  solar_return: 'Соляр',
+  lunar_return: 'Лунар',
+  profection: 'Профекция',
+}
+
+const CHART_TYPE_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+  natal: Star,
+  synastry: Heart,
+  transit: Clock,
+  solar_return: Sun,
+  lunar_return: Moon,
+  profection: Target,
+}
 
 /* ── Chart type ── */
 interface Chart {
   id: number
+  name?: string | null
   chart_type?: string
   parent_chart_id?: number | null
   person_id?: number | null
@@ -91,11 +115,6 @@ function SidebarLogo({ collapsed }: { collapsed?: boolean }) {
 function formatChartDate(datetime: string) {
   return new Date(datetime).toLocaleDateString('ru-RU', {
     day: 'numeric', month: 'long', year: 'numeric',
-  })
-}
-function formatShortDate(datetime: string) {
-  return new Date(datetime).toLocaleDateString('ru-RU', {
-    day: 'numeric', month: 'short', year: '2-digit',
   })
 }
 function formatLocation(location: string) {
@@ -238,11 +257,17 @@ export function Sidebar({
 
                 {charts.map((chart) => {
                   const isActive = selectedChart?.id === chart.id
+                  const typeKey = chart.chart_type || 'natal'
+                  const Icon = CHART_TYPE_ICONS[typeKey] || Star
+                  const typeLabel = CHART_TYPE_LABELS[typeKey] || 'Натальная'
+                  const collapsedTitle = chart.name
+                    ? `${chart.name} · ${typeLabel}`
+                    : `${typeLabel} · ${formatChartDate(chart.native_data.datetime)}`
                   return (
                     <button
                       key={chart.id}
                       onClick={() => onSelectChart?.(chart)}
-                      title={formatChartDate(chart.native_data.datetime)}
+                      title={collapsedTitle}
                       className={cn(
                         'w-9 h-9 rounded-xl flex items-center justify-center transition-all',
                         isActive
@@ -250,7 +275,7 @@ export function Sidebar({
                           : 'bg-[rgba(212,175,55,0.04)] border border-transparent hover:border-[rgba(212,175,55,0.2)]'
                       )}
                     >
-                      <Sparkles className={cn('w-4 h-4', isActive ? 'text-[#D4AF37]' : 'text-[#4A3F6A]')} />
+                      <Icon className={cn('w-4 h-4', isActive ? 'text-[#D4AF37]' : 'text-[#4A3F6A]')} />
                     </button>
                   )
                 })}
@@ -288,6 +313,10 @@ export function Sidebar({
                   ) : (
                     charts.map((chart) => {
                       const isActive = selectedChart?.id === chart.id
+                      const typeKey = chart.chart_type || 'natal'
+                      const Icon = CHART_TYPE_ICONS[typeKey] || Star
+                      const typeLabel = CHART_TYPE_LABELS[typeKey] || 'Натальная'
+                      const displayName = chart.name || typeLabel
                       return (
                         <div
                           key={chart.id}
@@ -305,27 +334,14 @@ export function Sidebar({
                                 'w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5',
                                 isActive ? 'bg-[rgba(212,175,55,0.2)]' : 'bg-[rgba(212,175,55,0.07)]'
                               )}>
-                                <Sparkles className={cn('w-3.5 h-3.5', isActive ? 'text-[#D4AF37]' : 'text-[#4A3F6A]')} />
+                                <Icon className={cn('w-3.5 h-3.5', isActive ? 'text-[#D4AF37]' : 'text-[#4A3F6A]')} />
                               </div>
                               <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-1.5">
-                                  <p className={cn('text-xs font-semibold leading-tight truncate', isActive ? 'text-[#D4AF37]' : 'text-[#F0EAD6]')}>
-                                    {formatChartDate(chart.native_data.datetime)}
-                                  </p>
-                                  {chart.chart_type && chart.chart_type !== 'natal' && (
-                                    <span className="text-[9px] px-1 py-px rounded bg-[rgba(212,175,55,0.1)] text-[#D4AF37] shrink-0">
-                                      {chart.chart_type === 'synastry' ? '♔' : chart.chart_type === 'transit' ? '↻' : chart.chart_type === 'solar_return' ? '☀' : chart.chart_type === 'lunar_return' ? '☽' : chart.chart_type === 'profection' ? '◈' : ''}
-                                    </span>
-                                  )}
-                                </div>
-                                <div className="flex items-center gap-1 mt-0.5">
-                                  <MapPin className="w-2.5 h-2.5 text-[#4A3F6A] shrink-0" />
-                                  <span className="text-[11px] text-[#8B7FA8] truncate">
-                                    {formatLocation(chart.native_data.location)}
-                                  </span>
-                                </div>
-                                <p className="text-[10px] text-[#4A3F6A] mt-0.5">
-                                  {formatShortDate(chart.created_at)}
+                                <p className={cn('text-xs font-semibold leading-tight truncate', isActive ? 'text-[#D4AF37]' : 'text-[#F0EAD6]')}>
+                                  {displayName}
+                                </p>
+                                <p className="text-[11px] text-[#8B7FA8] truncate mt-0.5">
+                                  {chart.name ? `${typeLabel} · ` : ''}{formatChartDate(chart.native_data.datetime)} · {formatLocation(chart.native_data.location)}
                                 </p>
                               </div>
                               {isActive && (

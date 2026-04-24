@@ -65,6 +65,7 @@ async def create_natal_chart(
             chart_in.house_system,
             chart_in.preset,
             chart_in.zodiac_palette,
+            chart_in.name,
         )
         chart = await chart_crud.create(db, obj_in=chart_data, user_id=user_id)
         await db.commit()
@@ -89,6 +90,7 @@ async def create_synastry_chart(
     person2_datetime = chart_in.person2_datetime
     person2_location = chart_in.person2_location
     person2_name = chart_in.person2_name or "Partner"
+    person1_name = natal_chart.name or "You"
     person_id = chart_in.person_id
 
     if person_id:
@@ -111,9 +113,11 @@ async def create_synastry_chart(
             person2_datetime=person2_datetime,
             person2_location=person2_location,
             person2_name=person2_name,
+            person1_name=person1_name,
             theme=chart_in.theme,
             person_id=person_id,
             natal_chart_id=chart_in.natal_chart_id,
+            natal_chart_name=natal_chart.name,
         )
         chart = await chart_crud.create(db, obj_in=chart_data, user_id=user_id)
         await db.commit()
@@ -132,7 +136,7 @@ async def create_transit_chart(
     chart_in: TransitCreate,
 ) -> Any:
     user_id = current_user.id
-    native_data, _ = await _get_native_data(db, chart_in.natal_chart_id, user_id)
+    native_data, natal_chart = await _get_native_data(db, chart_in.natal_chart_id, user_id)
 
     if chart_in.transit_datetime:
         require_premium(current_user, "transit_custom_date")
@@ -143,6 +147,7 @@ async def create_transit_chart(
             transit_datetime=chart_in.transit_datetime,
             theme=chart_in.theme,
             natal_chart_id=chart_in.natal_chart_id,
+            natal_chart_name=natal_chart.name,
         )
         chart = await chart_crud.create(db, obj_in=chart_data, user_id=user_id)
         await db.commit()
@@ -180,7 +185,7 @@ async def create_solar_return(
     chart_in: SolarReturnCreate,
 ) -> Any:
     require_premium(current_user, "solar_return")
-    native_data, _ = await _get_native_data(db, chart_in.natal_chart_id, current_user.id)
+    native_data, natal_chart = await _get_native_data(db, chart_in.natal_chart_id, current_user.id)
     loc_override = None
     if chart_in.location_override:
         parts = chart_in.location_override.split(",")
@@ -196,6 +201,7 @@ async def create_solar_return(
             location_override=loc_override,
             theme=chart_in.theme,
             natal_chart_id=chart_in.natal_chart_id,
+            natal_chart_name=natal_chart.name,
         )
         chart = await chart_crud.create(db, obj_in=chart_data, user_id=current_user.id)
         await db.commit()
@@ -214,13 +220,14 @@ async def create_lunar_return(
     chart_in: LunarReturnCreate,
 ) -> Any:
     require_premium(current_user, "lunar_return")
-    native_data, _ = await _get_native_data(db, chart_in.natal_chart_id, current_user.id)
+    native_data, natal_chart = await _get_native_data(db, chart_in.natal_chart_id, current_user.id)
     try:
         chart_data = await chart_service.create_lunar_return(
             natal_chart_data=native_data,
             near_date=chart_in.near_date,
             theme=chart_in.theme,
             natal_chart_id=chart_in.natal_chart_id,
+            natal_chart_name=natal_chart.name,
         )
         chart = await chart_crud.create(db, obj_in=chart_data, user_id=current_user.id)
         await db.commit()
@@ -247,6 +254,7 @@ async def create_profection(
             age=chart_in.age,
             rulership=chart_in.rulership,
             natal_chart_id=chart_in.natal_chart_id,
+            natal_chart_name=natal_chart.name,
         )
         profection_data = result["result_data"]
         chart_obj = await chart_crud.create(db, obj_in=result, user_id=current_user.id)

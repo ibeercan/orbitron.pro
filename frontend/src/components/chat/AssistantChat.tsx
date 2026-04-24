@@ -11,14 +11,11 @@ interface AssistantChatProps {
   chartId: string;
   sessionId: number | null;
   onSessionCreated: (sessionId: number) => void;
-  /** When true, fills the entire viewport (astrologer mode) */
   fullscreen?: boolean;
-  /** Called when user requests to exit fullscreen */
   onExitFullscreen?: () => void;
-  /** Show welcome message for onboarding */
   showWelcome?: boolean;
-  /** Called when welcome message is dismissed */
   onWelcomeDismiss?: () => void;
+  chartType?: string;
 }
 
 /* ── Mini animated orb logo ── */
@@ -176,17 +173,68 @@ function MessageContent({ message }: { message: ThreadMessage }) {
   );
 }
 
-/* ── Prompt suggestions ── */
-const SUGGESTIONS = [
-  'Расскажи о моём солнечном знаке',
-  'Какие сильные стороны у моей карты?',
-  'Что означает мой асцендент?',
-  'Расскажи о натальной Луне',
-  'Какие планеты в моей карте наиболее сильны?',
-];
+const CHART_SUGGESTIONS: Record<string, { title: string; subtitle: string; questions: string[] }> = {
+  natal: {
+    title: 'Задайте вопрос астрологу',
+    subtitle: 'Я отвечу в контексте вашей натальной карты',
+    questions: [
+      'Расскажи о моём солнечном знаке',
+      'Какие сильные стороны у моей карты?',
+      'Что означает мой асцендент?',
+      'Расскажи о натальной Луне',
+    ],
+  },
+  synastry: {
+    title: 'Совместимость пары',
+    subtitle: 'Я проанализирую взаимодействие ваших карт',
+    questions: [
+      'Насколько мы совместимы?',
+      'Где зоны напряжения в нашей паре?',
+      'В чём наша эмоциональная связь?',
+      'Какие советы для гармонии?',
+    ],
+  },
+  transit: {
+    title: 'Текущие влияния',
+    subtitle: 'Я объясню, какие энергии сейчас активны',
+    questions: [
+      'Какие темы сейчас активированы?',
+      'Когда влияние усилится?',
+      'На что обратить внимание сейчас?',
+      'Какой период длится дольше всего?',
+    ],
+  },
+  solar_return: {
+    title: 'Годовой прогноз',
+    subtitle: 'Я выделю ключевые темы вашего года',
+    questions: [
+      'Какие темы будут ключевыми в этом году?',
+      'Где фокус событий?',
+      'Что принесёт управитель года?',
+    ],
+  },
+  lunar_return: {
+    title: 'Месячный прогноз',
+    subtitle: 'Я расскажу об эмоциональных темах месяца',
+    questions: [
+      'Какие эмоциональные темы этого месяца?',
+      'На чём сосредоточиться в быту?',
+      'Как протекает внутрисемейная динамика?',
+    ],
+  },
+  profection: {
+    title: 'Профекция года',
+    subtitle: 'Я интерпретирую управителя и темы года',
+    questions: [
+      'Какие темы активирует профекционный дом?',
+      'Что означает управитель года в моём гороскопе?',
+      'Дай практические советы на этот год',
+    ],
+  },
+}
 
 /* ── Chat content (inside runtime) ── */
-function ChatContent({ showWelcome, onWelcomeDismiss }: { showWelcome?: boolean; onWelcomeDismiss?: () => void }) {
+function ChatContent({ showWelcome, onWelcomeDismiss, chartType }: { showWelcome?: boolean; onWelcomeDismiss?: () => void; chartType?: string }) {
   const threadState = useThread();
   const composer = useComposerRuntime({ optional: true });
   const [input, setInput] = useState('');
@@ -287,11 +335,11 @@ function ChatContent({ showWelcome, onWelcomeDismiss }: { showWelcome?: boolean;
               <div className="w-12 h-12 rounded-2xl bg-[rgba(212,175,55,0.08)] border border-[rgba(212,175,55,0.12)] flex items-center justify-center mx-auto mb-3">
                 <Sparkles className="w-5 h-5 text-[#D4AF37]" />
               </div>
-              <p className="text-sm font-medium text-[#F0EAD6] mb-1">Задайте вопрос астрологу</p>
-              <p className="text-xs text-[#8B7FA8]">Я отвечу в контексте вашей натальной карты</p>
+              <p className="text-sm font-medium text-[#F0EAD6] mb-1">{(CHART_SUGGESTIONS[chartType || 'natal'] ?? CHART_SUGGESTIONS.natal).title}</p>
+              <p className="text-xs text-[#8B7FA8]">{(CHART_SUGGESTIONS[chartType || 'natal'] ?? CHART_SUGGESTIONS.natal).subtitle}</p>
             </div>
             <div className="space-y-2">
-              {SUGGESTIONS.map((s) => (
+              {(CHART_SUGGESTIONS[chartType || 'natal'] ?? CHART_SUGGESTIONS.natal).questions.map((s) => (
                 <button
                   key={s}
                   onClick={() => sendMessage(s)}
@@ -459,6 +507,7 @@ export function AssistantChat({
   onExitFullscreen,
   showWelcome = false,
   onWelcomeDismiss,
+  chartType,
 }: AssistantChatProps) {
   const baseUrl = import.meta.env.VITE_API_URL || 'https://api.orbitron.pro/api/v1';
 
@@ -512,7 +561,7 @@ export function AssistantChat({
             chartId={chartId}
             onSessionCreated={onSessionCreated}
           >
-            <ChatContent showWelcome={showWelcome} onWelcomeDismiss={onWelcomeDismiss} />
+            <ChatContent showWelcome={showWelcome} onWelcomeDismiss={onWelcomeDismiss} chartType={chartType} />
           </OrbitronRuntimeProvider>
         )}
       </div>

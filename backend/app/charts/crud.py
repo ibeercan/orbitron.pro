@@ -19,6 +19,7 @@ class CRUDChart:
     ) -> ChartModel:
         db_obj = ChartModel(
             user_id=user_id,
+            name=obj_in.get("name"),
             chart_type=obj_in.get("chart_type", ChartType.NATAL.value),
             parent_chart_id=obj_in.get("parent_chart_id"),
             person_id=obj_in.get("person_id"),

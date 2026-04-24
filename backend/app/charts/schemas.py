@@ -21,6 +21,7 @@ VALID_HOUSE_SYSTEMS = {"placidus", "whole_sign"}
 class ChartCreate(BaseModel):
     datetime: str
     location: str
+    name: Optional[str] = None
     theme: Optional[str] = "midnight"
     house_system: Optional[str] = "placidus"
     preset: Optional[str] = "detailed"
@@ -169,6 +170,7 @@ class ProfectionCreate(BaseModel):
 
 class Chart(BaseModel):
     id: int
+    name: Optional[str] = None
     chart_type: str = "natal"
     parent_chart_id: Optional[int] = None
     person_id: Optional[int] = None

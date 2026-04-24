@@ -30,6 +30,7 @@ const currentYear = new Date().getFullYear()
 
 const schema = z
   .object({
+    name: z.string().optional(),
     day: z
       .string()
       .min(1, 'Введите день')
@@ -310,6 +311,7 @@ export function CreateChartModal({ open, onClose, onCreated }: CreateChartModalP
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
+      name: '',
       day: '',
       month: '',
       year: '',
@@ -335,6 +337,7 @@ export function CreateChartModal({ open, onClose, onCreated }: CreateChartModalP
       const res = await chartsApi.create({
         datetime,
         location: data.location,
+        name: data.name || undefined,
         theme: data.theme,
         house_system: data.house_system,
         preset: data.preset,
@@ -389,6 +392,20 @@ export function CreateChartModal({ open, onClose, onCreated }: CreateChartModalP
           {/* Form body */}
           <div className="px-6 py-6 max-h-[65dvh] overflow-y-auto overscroll-contain">
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+
+              {/* ── Name field ── */}
+              <div>
+                <FieldLabel>Имя</FieldLabel>
+                <input
+                  {...register('name')}
+                  placeholder="Иванов Иван"
+                  autoComplete="name"
+                  className="luxury-input w-full h-11 px-4 text-sm"
+                />
+                <p className="text-[11px] text-[#4A3F6A] mt-1">
+                  Необязательно. Поможет найти карту позже
+                </p>
+              </div>
 
               {/* ── Date fields ── */}
               <div>
