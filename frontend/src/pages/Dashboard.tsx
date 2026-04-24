@@ -5,6 +5,12 @@ import { Sidebar } from '@/components/layout/Sidebar'
 import { ProfileSlideOver } from '@/components/layout/ProfileSlideOver'
 import { AssistantChat } from '@/components/chat/AssistantChat'
 import { CreateChartModal } from '@/components/ui/CreateChartModal'
+import { ModalShell } from '@/components/ui/ModalShell'
+import { TransitForm } from '@/components/ui/TransitForm'
+import { SynastryForm } from '@/components/ui/SynastryForm'
+import { SolarReturnForm } from '@/components/ui/SolarReturnForm'
+import { LunarReturnForm } from '@/components/ui/LunarReturnForm'
+import { ProfectionForm } from '@/components/ui/ProfectionForm'
 import { Loader2, Calendar, MapPin, Sparkles, Star, Trash2, AlertTriangle, Maximize2, Heart, Clock, Sun, Moon, Target, FileText, Lock, Crown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/contexts/auth-context'
@@ -338,55 +344,42 @@ export default function Dashboard() {
 
   const [profectionData, setProfectionData] = useState<ProfectionMeta | null>(null)
 
-  const handleChartAction = async (type: string) => {
+  const [activeModal, setActiveModal] = useState<string | null>(null)
+
+  const closeModal = () => setActiveModal(null)
+
+  const onChartCreatedFromModal = (newChart: Record<string, unknown>) => {
+    const chart = newChart as unknown as Chart
+    setCharts((prev) => [chart, ...prev])
+    selectChart(chart)
+    closeModal()
+  }
+
+  const onProfectionCreated = (newChart: Record<string, unknown>, meta: Record<string, unknown>) => {
+    const chart = newChart as unknown as Chart
+    setProfectionData(meta as unknown as ProfectionMeta)
+    setCharts((prev) => [chart, ...prev])
+    selectChart(chart)
+    closeModal()
+  }
+
+  const handlePdfDownload = async () => {
     if (!selectedChart) return
     try {
-      let res
-      switch (type) {
-        case 'transit':
-          res = await chartsApi.createTransit({ natal_chart_id: selectedChart.id, theme: 'midnight' })
-          break
-        case 'solar_return': {
-          const year = new Date().getFullYear()
-          res = await chartsApi.createSolarReturn({ natal_chart_id: selectedChart.id, year, theme: 'midnight' })
-          break
-        }
-        case 'lunar_return':
-          res = await chartsApi.createLunarReturn({ natal_chart_id: selectedChart.id, theme: 'midnight' })
-          break
-        case 'profection':
-          res = await chartsApi.createProfection({ natal_chart_id: selectedChart.id })
-          break
-        case 'pdf':
-          await chartsApi.generateReport(selectedChart.id)
-          return
-        default:
-          return
-      }
-      if (res?.data) {
-        const newChart = res.data.chart ?? res.data
-        if (res.data.chart) {
-          setProfectionData({
-            profected_house: res.data.profected_house,
-            profected_sign: res.data.profected_sign,
-            ruler: res.data.ruler,
-            ruler_house: res.data.ruler_house ?? null,
-            ruler_position: res.data.ruler_position,
-            planets_in_house: res.data.planets_in_house ?? [],
-            monthly: res.data.monthly,
-          })
-        } else {
-          setProfectionData(null)
-        }
-        setCharts((prev) => [newChart, ...prev])
-        selectChart(newChart)
-      }
+      const res = await chartsApi.generateReport(selectedChart.id)
+      const blob = new Blob([res.data], { type: 'application/pdf' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `orbitron_report_${selectedChart.id}.pdf`
+      a.click()
+      URL.revokeObjectURL(url)
     } catch (err: unknown) {
       const e = err as { response?: { data?: { detail?: string }; status?: number } }
       if (e.response?.status === 403) {
         alert('Эта функция доступна только на тарифе Premium')
       } else {
-        console.error(`Failed to create ${type}:`, err)
+        alert('Не удалось сгенерировать PDF отчёт')
       }
     }
   }
@@ -543,12 +536,12 @@ const loadChartSvg = async (chart: Chart) => {
 
                 {selectedChart && (selectedChart.chart_type || 'natal') === 'natal' && (
                   <div className="flex items-center gap-1.5 px-5 py-2 border-b border-[rgba(212,175,55,0.06)] shrink-0 overflow-x-auto">
-                    <ChartActionButton icon={Heart} label="Синастрия" premium onClick={() => isPremium ? alert('Синастрия — скоро!') : alert('Premium')} />
-                    <ChartActionButton icon={Clock} label="Транзиты" onClick={() => handleChartAction('transit')} />
-                    <ChartActionButton icon={Sun} label="Соляр" premium onClick={() => handleChartAction('solar_return')} />
-                    <ChartActionButton icon={Moon} label="Лунар" premium onClick={() => handleChartAction('lunar_return')} />
-                    <ChartActionButton icon={Target} label="Профекция" premium onClick={() => handleChartAction('profection')} />
-                    <ChartActionButton icon={FileText} label="PDF" premium onClick={() => handleChartAction('pdf')} />
+                    <ChartActionButton icon={Heart} label="Синастрия" premium onClick={() => setActiveModal('synastry')} />
+                    <ChartActionButton icon={Clock} label="Транзиты" onClick={() => setActiveModal('transit')} />
+                    <ChartActionButton icon={Sun} label="Соляр" premium onClick={() => setActiveModal('solar_return')} />
+                    <ChartActionButton icon={Moon} label="Лунар" premium onClick={() => setActiveModal('lunar_return')} />
+                    <ChartActionButton icon={Target} label="Профекция" premium onClick={() => setActiveModal('profection')} />
+                    <ChartActionButton icon={FileText} label="PDF" premium onClick={handlePdfDownload} />
                   </div>
                 )}
 
@@ -762,6 +755,92 @@ const loadChartSvg = async (chart: Chart) => {
           onClose={() => setShowCreateModal(false)}
           onCreated={handleChartCreated}
         />
+
+        {/* Synastry modal */}
+        {selectedChart && (
+          <ModalShell
+            open={activeModal === 'synastry'}
+            onClose={closeModal}
+            icon={<Heart className="w-4 h-4 text-[#D4AF37]" style={{ width: 16, height: 16 }} />}
+            title="Синастрия"
+            description="Совместимость двух натальных карт"
+          >
+            <SynastryForm
+              natalChartId={selectedChart.id}
+              onSubmit={onChartCreatedFromModal}
+              onCancel={closeModal}
+            />
+          </ModalShell>
+        )}
+
+        {/* Transit modal */}
+        {selectedChart && (
+          <ModalShell
+            open={activeModal === 'transit'}
+            onClose={closeModal}
+            icon={<Clock className="w-4 h-4 text-[#D4AF37]" style={{ width: 16, height: 16 }} />}
+            title="Транзиты"
+            description="Текущие планетные влияния"
+          >
+            <TransitForm
+              natalChartId={selectedChart.id}
+              isPremium={isPremium}
+              onSubmit={onChartCreatedFromModal}
+              onCancel={closeModal}
+            />
+          </ModalShell>
+        )}
+
+        {/* Solar return modal */}
+        {selectedChart && (
+          <ModalShell
+            open={activeModal === 'solar_return'}
+            onClose={closeModal}
+            icon={<Sun className="w-4 h-4 text-[#D4AF37]" style={{ width: 16, height: 16 }} />}
+            title="Солярный возврат"
+            description="Годовой прогноз по возвращению Солнца"
+          >
+            <SolarReturnForm
+              natalChartId={selectedChart.id}
+              onSubmit={onChartCreatedFromModal}
+              onCancel={closeModal}
+            />
+          </ModalShell>
+        )}
+
+        {/* Lunar return modal */}
+        {selectedChart && (
+          <ModalShell
+            open={activeModal === 'lunar_return'}
+            onClose={closeModal}
+            icon={<Moon className="w-4 h-4 text-[#D4AF37]" style={{ width: 16, height: 16 }} />}
+            title="Лунарный возврат"
+            description="Месячный прогноз по возвращению Луны"
+          >
+            <LunarReturnForm
+              natalChartId={selectedChart.id}
+              onSubmit={onChartCreatedFromModal}
+              onCancel={closeModal}
+            />
+          </ModalShell>
+        )}
+
+        {/* Profection modal */}
+        {selectedChart && (
+          <ModalShell
+            open={activeModal === 'profection'}
+            onClose={closeModal}
+            icon={<Target className="w-4 h-4 text-[#D4AF37]" style={{ width: 16, height: 16 }} />}
+            title="Профекция"
+            description="Годовой прогноз по домам"
+          >
+            <ProfectionForm
+              natalChartId={selectedChart.id}
+              onSubmit={onProfectionCreated}
+              onCancel={closeModal}
+            />
+          </ModalShell>
+        )}
 
         {/* Delete confirmation dialog */}
         {chartToDelete && (

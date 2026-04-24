@@ -4,12 +4,12 @@ from sqlalchemy import ForeignKey, Index, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
-from app.models.mixins import TimestampMixin
+from app.models.mixins import SoftDeleteMixin, TimestampMixin
 
 __all__ = ["Person"]
 
 
-class Person(Base, TimestampMixin):
+class Person(Base, TimestampMixin, SoftDeleteMixin):
     __tablename__ = "persons"
     __table_args__ = (
         Index("ix_person_user", "user_id"),

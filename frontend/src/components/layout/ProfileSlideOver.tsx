@@ -1,10 +1,27 @@
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useAuth } from '@/contexts/auth-context'
+import { personsApi, geocodingApi } from '@/lib/api/client'
+import { NumberPicker } from '@/components/ui/number-picker'
 import { cn } from '@/lib/utils'
-import { X, Crown, Shield, Check } from 'lucide-react'
+import { X, Crown, Shield, Check, Users, Trash2, Plus, MapPin, Loader2 } from 'lucide-react'
 
 interface ProfileSlideOverProps {
   isOpen: boolean
   onClose: () => void
+}
+
+interface Person {
+  id: number
+  name: string
+  datetime: string
+  location: string
+}
+
+interface GeoSuggestion {
+  place_id: number
+  display_name: string
+  lat: string
+  lon: string
 }
 
 const PREMIUM_FEATURES = [
@@ -24,6 +41,129 @@ export function ProfileSlideOver({ isOpen, onClose }: ProfileSlideOverProps) {
   const isAdmin   = user?.is_admin
 
   const initials = user?.email?.[0]?.toUpperCase() || 'U'
+
+  /* ── Person profiles ── */
+  const [persons, setPersons] = useState<Person[]>([])
+  const [personsLoading, setPersonsLoading] = useState(false)
+  const [showAddPerson, setShowAddPerson] = useState(false)
+  const [personName, setPersonName] = useState('')
+  const [personDay, setPersonDay] = useState(1)
+  const [personMonth, setPersonMonth] = useState(1)
+  const [personYear, setPersonYear] = useState(1990)
+  const [personTime, setPersonTime] = useState('12:00')
+  const [personLocQuery, setPersonLocQuery] = useState('')
+  const [personLocValue, setPersonLocValue] = useState('')
+  const [personSuggestions, setPersonSuggestions] = useState<GeoSuggestion[]>([])
+  const [personSuggestionsOpen, setPersonSuggestionsOpen] = useState(false)
+  const [personLocSearching, setPersonLocSearching] = useState(false)
+  const [personSaving, setPersonSaving] = useState(false)
+  const [personError, setPersonError] = useState<string | null>(null)
+  const locContainerRef = useRef<HTMLDivElement>(null)
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const currentYear = new Date().getFullYear()
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (locContainerRef.current && !locContainerRef.current.contains(e.target as Node)) {
+        setPersonSuggestionsOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  useEffect(() => {
+    if (isOpen) loadPersons()
+  }, [isOpen])
+
+  const loadPersons = async () => {
+    setPersonsLoading(true)
+    try {
+      const res = await personsApi.list()
+      setPersons(res.data || [])
+    } catch {
+      // ignore
+    } finally {
+      setPersonsLoading(false)
+    }
+  }
+
+  const handleDeletePerson = async (personId: number) => {
+    try {
+      await personsApi.delete(personId)
+      setPersons((prev) => prev.filter((p) => p.id !== personId))
+    } catch {
+      // ignore
+    }
+  }
+
+  const searchLocation = useCallback(async (q: string) => {
+    if (q.trim().length < 2) {
+      setPersonSuggestions([])
+      setPersonSuggestionsOpen(false)
+      return
+    }
+    setPersonLocSearching(true)
+    try {
+      const results = await geocodingApi.search(q)
+      setPersonSuggestions(results.slice(0, 5))
+      setPersonSuggestionsOpen(results.length > 0)
+    } catch {
+      setPersonSuggestions([])
+    } finally {
+      setPersonLocSearching(false)
+    }
+  }, [])
+
+  const handleLocInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value
+    setPersonLocQuery(val)
+    setPersonLocValue('')
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => searchLocation(val), 400)
+  }
+
+  const handleSelectSuggestion = (s: GeoSuggestion) => {
+    const shortName = s.display_name.split(',').slice(0, 3).join(',')
+    setPersonLocQuery(shortName)
+    setPersonLocValue(shortName)
+    setPersonSuggestions([])
+    setPersonSuggestionsOpen(false)
+  }
+
+  const handleSavePerson = async () => {
+    setPersonError(null)
+    if (!personName.trim()) {
+      setPersonError('Введите имя')
+      return
+    }
+    if (!personLocValue) {
+      setPersonError('Выберите место рождения из подсказок')
+      return
+    }
+
+    const d = String(personDay).padStart(2, '0')
+    const m = String(personMonth).padStart(2, '0')
+    const datetime = `${personYear}-${m}-${d}T${personTime}:00`
+
+    setPersonSaving(true)
+    try {
+      const res = await personsApi.create({
+        name: personName.trim(),
+        datetime,
+        location: personLocValue,
+      })
+      setPersons((prev) => [res.data, ...prev])
+      setShowAddPerson(false)
+      setPersonName('')
+      setPersonLocQuery('')
+      setPersonLocValue('')
+    } catch {
+      setPersonError('Не удалось сохранить профиль')
+    } finally {
+      setPersonSaving(false)
+    }
+  }
 
   return (
     <>
@@ -225,6 +365,195 @@ export function ProfileSlideOver({ isOpen, onClose }: ProfileSlideOverProps) {
                 </button>
               </div>
             )}
+
+            {/* ════════════════════════════════════════
+                Person Profiles section
+                ════════════════════════════════════════ */}
+            <div className="luxury-card p-5">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-[rgba(212,175,55,0.1)] border border-[rgba(212,175,55,0.2)] flex items-center justify-center">
+                    <Users className="w-4 h-4 text-[#D4AF37]" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-[#F0EAD6] text-sm">Профили людей</h3>
+                    <p className="text-xs text-[#8B7FA8]">Для синастрии и совместимости</p>
+                  </div>
+                </div>
+                {!showAddPerson && (
+                  <button
+                    onClick={() => setShowAddPerson(true)}
+                    className="w-7 h-7 rounded-lg flex items-center justify-center text-[#8B7FA8] hover:text-[#D4AF37] hover:bg-[rgba(212,175,55,0.08)] transition-all"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+
+              {/* Person list */}
+              {personsLoading ? (
+                <div className="flex items-center justify-center py-4">
+                  <Loader2 className="w-5 h-5 text-[#D4AF37] animate-spin" />
+                </div>
+              ) : persons.length === 0 && !showAddPerson ? (
+                <div className="text-center py-4">
+                  <p className="text-xs text-[#4A3F6A]">Нет сохранённых профилей</p>
+                  <button
+                    onClick={() => setShowAddPerson(true)}
+                    className="mt-2 text-xs text-[#D4AF37] hover:text-[#F0C842] font-medium transition-colors flex items-center gap-1 mx-auto"
+                  >
+                    <Plus className="w-3 h-3" />
+                    Добавить
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-1.5">
+                  {persons.map((p) => (
+                    <div
+                      key={p.id}
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-[rgba(212,175,55,0.06)]"
+                    >
+                      <div className="w-7 h-7 rounded-lg bg-[rgba(212,175,55,0.07)] flex items-center justify-center shrink-0">
+                        <Users className="w-3.5 h-3.5 text-[#4A3F6A]" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-[#F0EAD6] truncate">{p.name}</p>
+                        <p className="text-[11px] text-[#8B7FA8] truncate">
+                          {new Date(p.datetime).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          {' · '}
+                          {p.location.split(',')[0]}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => handleDeletePerson(p.id)}
+                        className="shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-[#4A3F6A] hover:text-red-400 hover:bg-red-400/10 transition-all"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Add person inline form */}
+              {showAddPerson && (
+                <div className="mt-3 pt-3 border-t border-[rgba(212,175,55,0.08)] space-y-3">
+                  <div>
+                    <label className="block text-[10px] font-semibold text-[#8B7FA8] uppercase tracking-[0.12em] mb-1.5">Имя</label>
+                    <input
+                      value={personName}
+                      onChange={(e) => setPersonName(e.target.value)}
+                      placeholder="Имя человека"
+                      className="luxury-input w-full h-10 px-3.5 text-sm"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-semibold text-[#8B7FA8] uppercase tracking-[0.12em] mb-1.5">Дата рождения</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      <NumberPicker value={personDay} onChange={setPersonDay} min={1} max={31} placeholder="День" />
+                      <NumberPicker value={personMonth} onChange={setPersonMonth} min={1} max={12} placeholder="Мес." />
+                      <NumberPicker value={personYear} onChange={setPersonYear} min={1900} max={currentYear} placeholder="Год" />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-semibold text-[#8B7FA8] uppercase tracking-[0.12em] mb-1.5">Время рождения</label>
+                    <input
+                      value={personTime}
+                      onChange={(e) => {
+                        let val = e.target.value.replace(/[^\d:]/g, '')
+                        if (val.length === 2 && !val.includes(':')) val += ':'
+                        setPersonTime(val)
+                      }}
+                      placeholder="12:00"
+                      maxLength={5}
+                      className="luxury-input h-10 px-3.5 text-sm w-32"
+                    />
+                  </div>
+
+                  <div ref={locContainerRef}>
+                    <label className="block text-[10px] font-semibold text-[#8B7FA8] uppercase tracking-[0.12em] mb-1.5">Место рождения</label>
+                    <div className="relative">
+                      <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#4A3F6A] pointer-events-none" />
+                      <input
+                        value={personLocQuery}
+                        onChange={handleLocInput}
+                        onFocus={() => personSuggestions.length > 0 && setPersonSuggestionsOpen(true)}
+                        placeholder="Москва, Россия"
+                        autoComplete="off"
+                        className={cn(
+                          'luxury-input w-full h-10 pl-10 pr-10 text-sm',
+                          !personLocValue && personLocQuery && 'error'
+                        )}
+                      />
+                      {personLocSearching && (
+                        <Loader2 className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#D4AF37] animate-spin" />
+                      )}
+                    </div>
+
+                    {personSuggestionsOpen && personSuggestions.length > 0 && (
+                      <div className="absolute z-[60] mt-1.5 w-full max-w-[360px] rounded-xl border border-[rgba(212,175,55,0.15)] overflow-hidden"
+                        style={{
+                          background: 'linear-gradient(145deg, rgba(22,15,40,0.98) 0%, rgba(13,9,32,0.99) 100%)',
+                          boxShadow: '0 16px 48px rgba(0,0,0,0.6), 0 0 0 1px rgba(212,175,55,0.06)',
+                        }}
+                      >
+                        {personSuggestions.map((s) => {
+                          const parts = s.display_name.split(',')
+                          const city = parts[0]
+                          const rest = parts.slice(1, 3).join(', ')
+                          return (
+                            <button
+                              key={s.place_id}
+                              type="button"
+                              onMouseDown={(e) => e.preventDefault()}
+                              onClick={() => handleSelectSuggestion(s)}
+                              className="w-full flex items-start gap-3 px-4 py-3 text-left hover:bg-[rgba(212,175,55,0.05)] transition-colors border-b border-[rgba(212,175,55,0.06)] last:border-0"
+                            >
+                              <MapPin className="w-3.5 h-3.5 text-[#D4AF37] mt-0.5 shrink-0" />
+                              <div className="min-w-0">
+                                <p className="text-sm text-[#F0EAD6] font-medium truncate">{city}</p>
+                                <p className="text-xs text-[#8B7FA8] truncate mt-0.5">{rest}</p>
+                              </div>
+                            </button>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  {personError && (
+                    <p className="text-[11px] text-red-400">{personError}</p>
+                  )}
+
+                  <div className="flex gap-2 pt-1">
+                    <button
+                      onClick={() => {
+                        setShowAddPerson(false)
+                        setPersonError(null)
+                      }}
+                      disabled={personSaving}
+                      className="btn-ghost flex-1 h-9 text-xs font-medium"
+                    >
+                      Отмена
+                    </button>
+                    <button
+                      onClick={handleSavePerson}
+                      disabled={personSaving}
+                      className="btn-gold flex-1 h-9 text-xs flex items-center justify-center gap-1.5"
+                    >
+                      {personSaving ? (
+                        <><Loader2 className="w-3.5 h-3.5 animate-spin" />Сохраняем…</>
+                      ) : (
+                        <><Plus className="w-3.5 h-3.5" />Сохранить</>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
           </div>
 
           {/* ── Footer ── */}

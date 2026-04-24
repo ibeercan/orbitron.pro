@@ -153,7 +153,7 @@ class ChartService:
             MultiChartBuilder.synastry(
                 person1, person2, label1=person1_name, label2=person2_name
             )
-            .with_cross_aspects(mode="all")
+            .with_cross_aspects(pairs="all")
             .with_house_overlays()
             .calculate()
         )

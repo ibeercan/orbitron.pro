@@ -68,7 +68,12 @@ class User(Base, TimestampMixin, SoftDeleteMixin, AuditMixin):
         primaryjoin="and_(User.id == ChatSession.user_id, ChatSession.deleted_at.is_(None))",
         viewonly=True,
     )
-    persons = relationship("Person", back_populates="user")
+    persons = relationship(
+        "Person",
+        back_populates="user",
+        primaryjoin="and_(User.id == Person.user_id, Person.deleted_at.is_(None))",
+        viewonly=True,
+    )
 
     @property
     def is_premium(self) -> bool:

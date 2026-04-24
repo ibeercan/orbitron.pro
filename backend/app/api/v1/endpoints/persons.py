@@ -75,7 +75,7 @@ async def delete_person(
     current_user: User = Depends(get_current_active_user),
     person_id: int,
 ) -> None:
-    deleted = await person_crud.delete(db, id=person_id, user_id=current_user.id)
+    deleted = await person_crud.soft_delete(db, id=person_id, user_id=current_user.id)
     if not deleted:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Person not found")
     await db.commit()

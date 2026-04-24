@@ -32,6 +32,7 @@ class CRUDPerson:
             select(PersonModel).where(
                 PersonModel.id == id,
                 PersonModel.user_id == user_id,
+                PersonModel.deleted_at.is_(None),
             )
         )
         return result.scalars().first()
@@ -41,7 +42,7 @@ class CRUDPerson:
     ) -> List[PersonModel]:
         result = await db.execute(
             select(PersonModel)
-            .where(PersonModel.user_id == user_id)
+            .where(PersonModel.user_id == user_id, PersonModel.deleted_at.is_(None))
             .order_by(PersonModel.created_at.desc())
             .offset(skip)
             .limit(limit)
@@ -58,13 +59,13 @@ class CRUDPerson:
         await db.refresh(db_obj)
         return db_obj
 
-    async def delete(
+    async def soft_delete(
         self, db: AsyncSession, *, id: int, user_id: int
     ) -> bool:
         person = await self.get_by_id_and_user(db, id=id, user_id=user_id)
         if not person:
             return False
-        await db.delete(person)
+        person.deleted_at = __import__("datetime").datetime.utcnow()
         await db.flush()
         return True
 
