@@ -190,7 +190,7 @@ class ChartService:
             pass
 
         return {
-            "name": f"{person1_name} & {person2_name}",
+            "name": f"{person1_name} и {person2_name}",
             "chart_type": "synastry",
             "parent_chart_id": natal_chart_id,
             "person_id": person_id,
