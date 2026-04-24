@@ -6,6 +6,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog'
+import { isGeocodingDropdownClick } from '@/hooks/useFixedDropdown'
 
 interface ModalShellProps {
   open: boolean
@@ -19,7 +20,14 @@ interface ModalShellProps {
 export function ModalShell({ open, onClose, icon, title, description, children }: ModalShellProps) {
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="p-0 border-0 bg-transparent shadow-none max-w-md w-full">
+      <DialogContent
+        className="p-0 border-0 bg-transparent shadow-none max-w-md w-full"
+        onPointerDownOutside={(e) => {
+          if (isGeocodingDropdownClick(e.detail.originalEvent as PointerEvent)) {
+            e.preventDefault()
+          }
+        }}
+      >
         <div className="luxury-card overflow-hidden">
           <div className="flex items-center justify-between px-6 pt-6 pb-5 border-b border-[rgba(212,175,55,0.08)]">
             <div className="flex items-center gap-3">

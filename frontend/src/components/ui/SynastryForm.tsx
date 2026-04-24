@@ -3,6 +3,7 @@ import { Loader2, Heart, MapPin, UserPlus, Trash2 } from 'lucide-react'
 import { NumberPicker } from '@/components/ui/number-picker'
 import { chartsApi, personsApi, geocodingApi } from '@/lib/api/client'
 import { cn } from '@/lib/utils'
+import { useFixedDropdown } from '@/hooks/useFixedDropdown'
 
 function FieldLabel({ children, required }: { children: React.ReactNode; required?: boolean }) {
   return (
@@ -47,7 +48,6 @@ export function SynastryForm({ natalChartId, onSubmit, onCancel }: SynastryFormP
   const [locationQuery, setLocationQuery] = useState('')
   const [locationValue, setLocationValue] = useState('')
   const [suggestions, setSuggestions] = useState<GeoSuggestion[]>([])
-  const [suggestionsOpen, setSuggestionsOpen] = useState(false)
   const [isSearching, setIsSearching] = useState(false)
   const [savePerson, setSavePerson] = useState(false)
 
@@ -55,18 +55,8 @@ export function SynastryForm({ natalChartId, onSubmit, onCancel }: SynastryFormP
   const [serverError, setServerError] = useState<string | null>(null)
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const containerRef = useRef<HTMLDivElement>(null)
+  const { containerRef, setIsOpen: setSuggestionsOpen, renderDropdown } = useFixedDropdown()
   const currentYear = new Date().getFullYear()
-
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setSuggestionsOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
 
   useEffect(() => {
     loadPersons()
@@ -118,7 +108,7 @@ export function SynastryForm({ natalChartId, onSubmit, onCancel }: SynastryFormP
     } finally {
       setIsSearching(false)
     }
-  }, [])
+  }, [setSuggestionsOpen])
 
   const handleLocationInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value
@@ -280,7 +270,7 @@ export function SynastryForm({ natalChartId, onSubmit, onCancel }: SynastryFormP
               </div>
             </div>
           ) : (
-            <ManualEntry
+             <ManualEntry
               person2Name={person2Name} setPerson2Name={setPerson2Name}
               day={day} setDay={setDay}
               month={month} setMonth={setMonth}
@@ -289,10 +279,10 @@ export function SynastryForm({ natalChartId, onSubmit, onCancel }: SynastryFormP
               locationQuery={locationQuery}
               locationValue={locationValue}
               suggestions={suggestions}
-              suggestionsOpen={suggestionsOpen}
               setSuggestionsOpen={setSuggestionsOpen}
               isSearching={isSearching}
               containerRef={containerRef}
+              renderDropdown={renderDropdown}
               onLocationInput={handleLocationInput}
               onSelectSuggestion={handleSelectSuggestion}
               savePerson={savePerson} setSavePerson={setSavePerson}
@@ -310,14 +300,14 @@ export function SynastryForm({ natalChartId, onSubmit, onCancel }: SynastryFormP
           locationQuery={locationQuery}
           locationValue={locationValue}
           suggestions={suggestions}
-          suggestionsOpen={suggestionsOpen}
-          setSuggestionsOpen={setSuggestionsOpen}
-          isSearching={isSearching}
-          containerRef={containerRef}
-          onLocationInput={handleLocationInput}
-          onSelectSuggestion={handleSelectSuggestion}
-          savePerson={savePerson} setSavePerson={setSavePerson}
-          currentYear={currentYear}
+              setSuggestionsOpen={setSuggestionsOpen}
+              isSearching={isSearching}
+              containerRef={containerRef}
+              renderDropdown={renderDropdown}
+              onLocationInput={handleLocationInput}
+              onSelectSuggestion={handleSelectSuggestion}
+              savePerson={savePerson} setSavePerson={setSavePerson}
+              currentYear={currentYear}
         />
       )}
 
@@ -352,10 +342,10 @@ function ManualEntry({
   locationQuery,
   locationValue,
   suggestions,
-  suggestionsOpen,
   setSuggestionsOpen,
   isSearching,
   containerRef,
+  renderDropdown,
   onLocationInput,
   onSelectSuggestion,
   savePerson, setSavePerson,
@@ -369,10 +359,10 @@ function ManualEntry({
   locationQuery: string
   locationValue: string
   suggestions: GeoSuggestion[]
-  suggestionsOpen: boolean
   setSuggestionsOpen: (v: boolean) => void
   isSearching: boolean
   containerRef: React.RefObject<HTMLDivElement | null>
+  renderDropdown: (content: React.ReactNode) => React.ReactNode
   onLocationInput: (e: React.ChangeEvent<HTMLInputElement>) => void
   onSelectSuggestion: (s: GeoSuggestion) => void
   savePerson: boolean; setSavePerson: (v: boolean) => void
@@ -437,38 +427,27 @@ function ManualEntry({
           )}
         </div>
 
-        {suggestionsOpen && suggestions.length > 0 && (
-          <div className="fixed z-[70] mt-1.5 rounded-xl border border-[rgba(212,175,55,0.15)] overflow-hidden"
-            style={{
-              left: containerRef.current ? containerRef.current.getBoundingClientRect().left : 0,
-              top: containerRef.current ? containerRef.current.getBoundingClientRect().bottom + 6 : 0,
-              width: containerRef.current ? containerRef.current.offsetWidth : 360,
-              maxWidth: 360,
-              background: 'linear-gradient(145deg, rgba(22,15,40,0.98) 0%, rgba(13,9,32,0.99) 100%)',
-              boxShadow: '0 16px 48px rgba(0,0,0,0.6), 0 0 0 1px rgba(212,175,55,0.06)',
-            }}
-          >
-            {suggestions.map((s) => {
-              const parts = s.display_name.split(',')
-              const city = parts[0]
-              const rest = parts.slice(1, 3).join(', ')
-              return (
-                <button
-                  key={s.place_id}
-                  type="button"
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => onSelectSuggestion(s)}
-                  className="w-full flex items-start gap-3 px-4 py-3 text-left hover:bg-[rgba(212,175,55,0.05)] transition-colors border-b border-[rgba(212,175,55,0.06)] last:border-0"
-                >
-                  <MapPin className="w-3.5 h-3.5 text-[#D4AF37] mt-0.5 shrink-0" />
-                  <div className="min-w-0">
-                    <p className="text-sm text-[#F0EAD6] font-medium truncate">{city}</p>
-                    <p className="text-xs text-[#8B7FA8] truncate mt-0.5">{rest}</p>
-                  </div>
-                </button>
-              )
-            })}
-          </div>
+        {renderDropdown(
+          suggestions.map((s) => {
+            const parts = s.display_name.split(',')
+            const city = parts[0]
+            const rest = parts.slice(1, 3).join(', ')
+            return (
+              <button
+                key={s.place_id}
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => onSelectSuggestion(s)}
+                className="w-full flex items-start gap-3 px-4 py-3 text-left hover:bg-[rgba(212,175,55,0.05)] transition-colors border-b border-[rgba(212,175,55,0.06)] last:border-0"
+              >
+                <MapPin className="w-3.5 h-3.5 text-[#D4AF37] mt-0.5 shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-sm text-[#F0EAD6] font-medium truncate">{city}</p>
+                  <p className="text-xs text-[#8B7FA8] truncate mt-0.5">{rest}</p>
+                </div>
+              </button>
+            )
+          })
         )}
       </div>
 

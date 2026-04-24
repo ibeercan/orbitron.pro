@@ -3,6 +3,7 @@ import { useAuth } from '@/contexts/auth-context'
 import { personsApi, geocodingApi } from '@/lib/api/client'
 import { NumberPicker } from '@/components/ui/number-picker'
 import { cn } from '@/lib/utils'
+import { useFixedDropdown } from '@/hooks/useFixedDropdown'
 import { X, Crown, Shield, Check, Users, Trash2, Plus, MapPin, Loader2 } from 'lucide-react'
 
 interface ProfileSlideOverProps {
@@ -54,23 +55,12 @@ export function ProfileSlideOver({ isOpen, onClose }: ProfileSlideOverProps) {
   const [personLocQuery, setPersonLocQuery] = useState('')
   const [personLocValue, setPersonLocValue] = useState('')
   const [personSuggestions, setPersonSuggestions] = useState<GeoSuggestion[]>([])
-  const [personSuggestionsOpen, setPersonSuggestionsOpen] = useState(false)
   const [personLocSearching, setPersonLocSearching] = useState(false)
   const [personSaving, setPersonSaving] = useState(false)
   const [personError, setPersonError] = useState<string | null>(null)
-  const locContainerRef = useRef<HTMLDivElement>(null)
+  const { containerRef: locContainerRef, setIsOpen: setPersonSuggestionsOpen, renderDropdown } = useFixedDropdown()
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const currentYear = new Date().getFullYear()
-
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (locContainerRef.current && !locContainerRef.current.contains(e.target as Node)) {
-        setPersonSuggestionsOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
 
   useEffect(() => {
     if (isOpen) loadPersons()
@@ -113,7 +103,7 @@ export function ProfileSlideOver({ isOpen, onClose }: ProfileSlideOverProps) {
     } finally {
       setPersonLocSearching(false)
     }
-  }, [])
+  }, [setPersonSuggestionsOpen])
 
   const handleLocInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value
@@ -495,38 +485,27 @@ export function ProfileSlideOver({ isOpen, onClose }: ProfileSlideOverProps) {
                       )}
                     </div>
 
-                    {personSuggestionsOpen && personSuggestions.length > 0 && (
-                      <div className="fixed z-[70] mt-1.5 rounded-xl border border-[rgba(212,175,55,0.15)] overflow-hidden"
-                        style={{
-                          left: locContainerRef.current ? locContainerRef.current.getBoundingClientRect().left : 0,
-                          top: locContainerRef.current ? locContainerRef.current.getBoundingClientRect().bottom + 6 : 0,
-                          width: locContainerRef.current ? locContainerRef.current.offsetWidth : 360,
-                          maxWidth: 360,
-                          background: 'linear-gradient(145deg, rgba(22,15,40,0.98) 0%, rgba(13,9,32,0.99) 100%)',
-                          boxShadow: '0 16px 48px rgba(0,0,0,0.6), 0 0 0 1px rgba(212,175,55,0.06)',
-                        }}
-                      >
-                        {personSuggestions.map((s) => {
-                          const parts = s.display_name.split(',')
-                          const city = parts[0]
-                          const rest = parts.slice(1, 3).join(', ')
-                          return (
-                            <button
-                              key={s.place_id}
-                              type="button"
-                              onMouseDown={(e) => e.preventDefault()}
-                              onClick={() => handleSelectSuggestion(s)}
-                              className="w-full flex items-start gap-3 px-4 py-3 text-left hover:bg-[rgba(212,175,55,0.05)] transition-colors border-b border-[rgba(212,175,55,0.06)] last:border-0"
-                            >
-                              <MapPin className="w-3.5 h-3.5 text-[#D4AF37] mt-0.5 shrink-0" />
-                              <div className="min-w-0">
-                                <p className="text-sm text-[#F0EAD6] font-medium truncate">{city}</p>
-                                <p className="text-xs text-[#8B7FA8] truncate mt-0.5">{rest}</p>
-                              </div>
-                            </button>
-                          )
-                        })}
-                      </div>
+                    {renderDropdown(
+                      personSuggestions.map((s) => {
+                        const parts = s.display_name.split(',')
+                        const city = parts[0]
+                        const rest = parts.slice(1, 3).join(', ')
+                        return (
+                          <button
+                            key={s.place_id}
+                            type="button"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => handleSelectSuggestion(s)}
+                            className="w-full flex items-start gap-3 px-4 py-3 text-left hover:bg-[rgba(212,175,55,0.05)] transition-colors border-b border-[rgba(212,175,55,0.06)] last:border-0"
+                          >
+                            <MapPin className="w-3.5 h-3.5 text-[#D4AF37] mt-0.5 shrink-0" />
+                            <div className="min-w-0">
+                              <p className="text-sm text-[#F0EAD6] font-medium truncate">{city}</p>
+                              <p className="text-xs text-[#8B7FA8] truncate mt-0.5">{rest}</p>
+                            </div>
+                          </button>
+                        )
+                      })
                     )}
                   </div>
 

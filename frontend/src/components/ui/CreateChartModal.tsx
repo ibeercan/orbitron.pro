@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react'
+import React, { useState, useRef, useCallback } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -19,6 +19,7 @@ import {
 import { NumberPicker } from '@/components/ui/number-picker'
 import { chartsApi, geocodingApi } from '@/lib/api/client'
 import { cn } from '@/lib/utils'
+import { useFixedDropdown, isGeocodingDropdownClick } from '@/hooks/useFixedDropdown'
 
 /* ── Validation schema ── */
 function getDaysInMonth(month: number, year: number) {
@@ -102,20 +103,9 @@ function LocationAutocomplete({
 }) {
   const [query, setQuery] = useState(value)
   const [suggestions, setSuggestions] = useState<GeoSuggestion[]>([])
-  const [isOpen, setIsOpen] = useState(false)
   const [isSearching, setIsSearching] = useState(false)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const containerRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setIsOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
+  const { containerRef, setIsOpen, renderDropdown } = useFixedDropdown()
 
   const search = useCallback(async (q: string) => {
     if (q.trim().length < 2) {
@@ -133,7 +123,7 @@ function LocationAutocomplete({
     } finally {
       setIsSearching(false)
     }
-  }, [])
+  }, [setIsOpen])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value
@@ -171,39 +161,27 @@ function LocationAutocomplete({
         )}
       </div>
 
-      {/* Dropdown suggestions */}
-      {isOpen && suggestions.length > 0 && (
-        <div className="fixed z-[70] mt-1.5 rounded-xl border border-[rgba(212,175,55,0.15)] overflow-hidden"
-          style={{
-            left: containerRef.current ? containerRef.current.getBoundingClientRect().left : 0,
-            top: containerRef.current ? containerRef.current.getBoundingClientRect().bottom + 6 : 0,
-            width: containerRef.current ? containerRef.current.offsetWidth : 360,
-            maxWidth: 360,
-            background: 'linear-gradient(145deg, rgba(22,15,40,0.98) 0%, rgba(13,9,32,0.99) 100%)',
-            boxShadow: '0 16px 48px rgba(0,0,0,0.6), 0 0 0 1px rgba(212,175,55,0.06)',
-          }}
-        >
-          {suggestions.map((s) => {
-            const parts = s.display_name.split(',')
-            const city = parts[0]
-            const rest = parts.slice(1, 3).join(', ')
-            return (
-              <button
-                key={s.place_id}
-                type="button"
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => handleSelect(s)}
-                className="w-full flex items-start gap-3 px-4 py-3 text-left hover:bg-[rgba(212,175,55,0.05)] transition-colors border-b border-[rgba(212,175,55,0.06)] last:border-0"
-              >
-                <MapPin className="w-3.5 h-3.5 text-[#D4AF37] mt-0.5 shrink-0" />
-                <div className="min-w-0">
-                  <p className="text-sm text-[#F0EAD6] font-medium truncate">{city}</p>
-                  <p className="text-xs text-[#8B7FA8] truncate mt-0.5">{rest}</p>
-                </div>
-              </button>
-            )
-          })}
-        </div>
+      {renderDropdown(
+        suggestions.map((s) => {
+          const parts = s.display_name.split(',')
+          const city = parts[0]
+          const rest = parts.slice(1, 3).join(', ')
+          return (
+            <button
+              key={s.place_id}
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => handleSelect(s)}
+              className="w-full flex items-start gap-3 px-4 py-3 text-left hover:bg-[rgba(212,175,55,0.05)] transition-colors border-b border-[rgba(212,175,55,0.06)] last:border-0"
+            >
+              <MapPin className="w-3.5 h-3.5 text-[#D4AF37] mt-0.5 shrink-0" />
+              <div className="min-w-0">
+                <p className="text-sm text-[#F0EAD6] font-medium truncate">{city}</p>
+                <p className="text-xs text-[#8B7FA8] truncate mt-0.5">{rest}</p>
+              </div>
+            </button>
+          )
+        })
       )}
 
       <FieldError message={error} />
@@ -376,7 +354,14 @@ export function CreateChartModal({ open, onClose, onCreated }: CreateChartModalP
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="p-0 border-0 bg-transparent shadow-none max-w-md w-full">
+      <DialogContent
+        className="p-0 border-0 bg-transparent shadow-none max-w-md w-full"
+        onPointerDownOutside={(e) => {
+          if (isGeocodingDropdownClick(e.detail.originalEvent as PointerEvent)) {
+            e.preventDefault()
+          }
+        }}
+      >
         <div className="luxury-card overflow-hidden">
           {/* Modal header */}
           <div className="flex items-center justify-between px-6 pt-6 pb-5 border-b border-[rgba(212,175,55,0.08)]">
