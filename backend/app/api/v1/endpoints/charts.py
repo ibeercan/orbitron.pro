@@ -24,8 +24,15 @@ from app.charts.schemas import (
     ProfectionResponse,
     TransitTimelineEntry,
     TransitTimelineResponse,
+    AstroTwinsResponse,
+    AstroTwinResult,
+    HistoricalParallelsResponse,
+    HistoricalParallelResult,
+    NotableEventsResponse,
+    NotableEventInfo,
 )
-from app.charts.service import chart_service
+from app.charts.service import chart_service, _build_natal
+from app.charts import notables
 from app.charts.crud import chart as chart_crud
 from app.persons.crud import person as person_crud
 from app.core.logging import logger
@@ -384,3 +391,53 @@ async def delete_chart(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Chart not found")
     await db.commit()
     logger.info("API: Chart soft-deleted", user_id=current_user.id, chart_id=chart_id)
+
+
+@router.post("/astro-twins", response_model=AstroTwinsResponse)
+async def get_astro_twins(
+    *,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+    natal_chart_id: int,
+) -> Any:
+    require_premium(current_user, "astro_twins")
+    native_data, _ = await _get_native_data(db, natal_chart_id, current_user.id)
+    user_chart = _build_natal(native_data["datetime"], native_data["location"])
+    try:
+        result = await notables.compute_astro_twins(user_chart, natal_chart_id)
+        return AstroTwinsResponse(
+            status=result["status"],
+            results=[AstroTwinResult(**r) for r in result["results"]],
+        )
+    except Exception as e:
+        logger.error("API: Failed to compute astro twins", error=str(e))
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.post("/historical-parallels", response_model=HistoricalParallelsResponse)
+async def get_historical_parallels(
+    *,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+    natal_chart_id: int,
+) -> Any:
+    require_premium(current_user, "historical_parallels")
+    native_data, _ = await _get_native_data(db, natal_chart_id, current_user.id)
+    user_chart = _build_natal(native_data["datetime"], native_data["location"])
+    try:
+        result = await notables.compute_historical_parallels(user_chart, natal_chart_id)
+        return HistoricalParallelsResponse(
+            status=result["status"],
+            results=[HistoricalParallelResult(**r) for r in result["results"]],
+        )
+    except Exception as e:
+        logger.error("API: Failed to compute historical parallels", error=str(e))
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.get("/notable-events", response_model=NotableEventsResponse)
+async def list_notable_events(
+    current_user: User = Depends(get_current_active_user),
+) -> Any:
+    events = notables.list_notable_events()
+    return NotableEventsResponse(events=[NotableEventInfo(**e) for e in events])

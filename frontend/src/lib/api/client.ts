@@ -236,3 +236,15 @@ export const chatApi = {
     return api.post(`/chat/${sessionId}/messages`, { content })
   },
 }
+
+export const notablesApi = {
+  astroTwins: async (natalChartId: number) => {
+    return api.post('/charts/astro-twins', null, { params: { natal_chart_id: natalChartId } })
+  },
+  historicalParallels: async (natalChartId: number) => {
+    return api.post('/charts/historical-parallels', null, { params: { natal_chart_id: natalChartId } })
+  },
+  listNotableEvents: async () => {
+    return api.get('/charts/notable-events')
+  },
+}

@@ -12,6 +12,7 @@ import { SolarReturnForm } from '@/components/ui/SolarReturnForm'
 import { LunarReturnForm } from '@/components/ui/LunarReturnForm'
 import { ProfectionForm } from '@/components/ui/ProfectionForm'
 import { TransitTimeline } from '@/components/ui/TransitTimeline'
+import { AstroTwinsPanel } from '@/components/ui/AstroTwinsPanel'
 import { OnboardingTour } from '@/components/ui/OnboardingTour'
 import { Loader2, Calendar, MapPin, Sparkles, Star, Trash2, AlertTriangle, Maximize2, Heart, Clock, Sun, Moon, Target, FileText, Lock, Crown, ArrowLeft } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -623,6 +624,12 @@ const loadChartSvg = async (chart: Chart) => {
                   <TransitTimeline
                     natalChartId={selectedChart.id}
                     parentChartId={selectedChart.parent_chart_id}
+                    isPremium={isPremium}
+                  />
+                )}
+                {selectedChart && (selectedChart.chart_type || 'natal') === 'natal' && selectedChart.id && (
+                  <AstroTwinsPanel
+                    natalChartId={selectedChart.id}
                     isPremium={isPremium}
                   />
                 )}

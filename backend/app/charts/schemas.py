@@ -214,3 +214,44 @@ class TransitTimelineEntry(BaseModel):
 
 class TransitTimelineResponse(BaseModel):
     entries: list[TransitTimelineEntry]
+
+
+class AstroTwinResult(BaseModel):
+    name: str
+    category: str
+    category_ru: str
+    notable_for: str
+    score: float
+    year: int
+    shared_features: list[str] = []
+    key_aspects: list[str] = []
+
+
+class AstroTwinsResponse(BaseModel):
+    status: str
+    results: list[AstroTwinResult] = []
+
+
+class HistoricalParallelResult(BaseModel):
+    name: str
+    year: int
+    notable_for: str
+    score: float
+    key_aspects: list[str] = []
+
+
+class HistoricalParallelsResponse(BaseModel):
+    status: str
+    results: list[HistoricalParallelResult] = []
+
+
+class NotableEventInfo(BaseModel):
+    name: str
+    year: int
+    subcategories: list[str] = []
+    notable_for: str
+    location_name: str
+
+
+class NotableEventsResponse(BaseModel):
+    events: list[NotableEventInfo]
