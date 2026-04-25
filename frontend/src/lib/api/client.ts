@@ -226,12 +226,6 @@ export const geocodingApi = {
   },
 }
 
-export const aiApi = {
-  interpret: async (chartId: string, question: string, requestType: string = 'general') => {
-    return api.post(`/ai/${chartId}/interpret`, { question, request_type: requestType })
-  },
-}
-
 export const inviteApi = {
   generate: async () => {
     return api.post('/invites/generate')
