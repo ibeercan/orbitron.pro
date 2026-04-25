@@ -40,7 +40,7 @@ function ChartActionButton({ icon: Icon, label, premium, onClick }: {
   onClick: () => void
 }) {
   const { user } = useAuth()
-  const locked = premium && user?.subscription_type !== 'premium'
+  const locked = premium && !user?.is_subscription_active && !user?.is_admin
 
   return (
     <button
@@ -352,7 +352,7 @@ export default function Dashboard() {
   const [astrologerMode, setAstrologerMode] = useState(false)
 
   const { user } = useAuth()
-  const isPremium = user?.subscription_type === 'premium'
+  const isPremium = (user?.is_subscription_active ?? false) || (user?.is_admin ?? false)
 
   const [profectionData, setProfectionData] = useState<ProfectionMeta | null>(null)
 

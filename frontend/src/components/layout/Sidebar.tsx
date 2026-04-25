@@ -146,7 +146,7 @@ export function Sidebar({
     navigate('/')
   }
 
-  const isPremium = user?.subscription_type === 'premium' || user?.is_admin
+  const isPremium = user?.is_subscription_active || user?.is_admin
   const subscriptionLabel = user?.is_admin ? 'Admin' : isPremium ? 'Premium' : 'Free'
 
   return (

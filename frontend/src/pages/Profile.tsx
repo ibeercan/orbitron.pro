@@ -20,7 +20,7 @@ export default function Profile() {
           <div>
             <p className="font-medium text-white">{user?.email}</p>
             <p className="text-xs text-gray-500">
-              {user?.subscription_type === 'premium' ? 'Premium' : 'Free'}
+                  {user?.is_subscription_active ? 'Premium' : 'Free'}
             </p>
           </div>
         </div>
@@ -63,10 +63,10 @@ export default function Profile() {
                 <span
                   className={cn(
                     'font-medium',
-                    user?.subscription_type === 'premium' ? 'text-secondary-400' : 'text-gray-400'
+                    user?.is_subscription_active ? 'text-secondary-400' : 'text-gray-400'
                   )}
                 >
-                  {user?.subscription_type === 'premium' ? 'Premium' : 'Free'}
+              {user?.is_subscription_active ? 'Premium' : 'Free'}
                 </span>
               </div>
               <div className="flex justify-between">
@@ -91,7 +91,7 @@ export default function Profile() {
           {/* Subscription */}
           <div className="rounded-lg border border-white/10 bg-white/5 p-6">
             <h2 className="text-lg font-medium text-white mb-4">Подписка</h2>
-            {user?.subscription_type === 'premium' ? (
+            {user?.is_subscription_active ? (
               <div className="text-center py-4">
                 <p className="text-secondary-400 font-medium mb-2">Активна</p>
                 <p className="text-sm text-gray-400">

@@ -40,7 +40,7 @@ export function ProfileSlideOver({ isOpen, onClose }: ProfileSlideOverProps) {
   const navigate = useNavigate()
   const { user } = useAuth()
 
-  const isPremium = user?.subscription_type === 'premium'
+  const isPremium = user?.is_subscription_active || user?.is_admin
   const isAdmin   = user?.is_admin
 
   const initials = user?.email?.[0]?.toUpperCase() || 'U'

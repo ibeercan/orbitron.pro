@@ -9,6 +9,7 @@ interface User {
   is_active: boolean
   is_admin: boolean
   onboarding_completed: boolean
+  is_subscription_active: boolean
   created_at: string
 }
 

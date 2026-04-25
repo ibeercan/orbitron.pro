@@ -47,6 +47,7 @@ class User(BaseModel):
     is_active: bool
     is_admin: bool = False
     onboarding_completed: bool = False
+    is_subscription_active: bool = False
     created_at: datetime
 
     model_config = {"from_attributes": True}

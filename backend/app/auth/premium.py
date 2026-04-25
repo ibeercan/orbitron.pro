@@ -6,7 +6,7 @@ from app.models.user import User, SubscriptionType
 
 
 def require_premium(user: User, feature: str) -> None:
-    if user.subscription_type == SubscriptionType.PREMIUM.value:
+    if user.is_admin or user.is_subscription_active:
         return
     raise HTTPException(
         status_code=status.HTTP_403_FORBIDDEN,
@@ -15,4 +15,4 @@ def require_premium(user: User, feature: str) -> None:
 
 
 def is_premium(user: User) -> bool:
-    return user.subscription_type == SubscriptionType.PREMIUM.value
+    return user.is_admin or user.is_subscription_active
