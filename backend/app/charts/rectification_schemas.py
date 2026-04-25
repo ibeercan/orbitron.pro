@@ -95,3 +95,10 @@ class RectificationResponse(BaseModel):
     event_count: int
     step_minutes: int
     computation_time_ms: float
+
+
+class RectificationPollResponse(BaseModel):
+    status: str
+    progress: int = 0
+    result: Optional[dict] = None
+    error: Optional[str] = None

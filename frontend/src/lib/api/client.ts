@@ -177,10 +177,9 @@ export const chartsApi = {
     events: { date: string; event_type: string; description?: string }[]
     house_system?: string
     step_minutes?: number
-  }) => {
+  }): Promise<{ data: { status: string; progress: number; result?: Record<string, unknown>; error?: string } }> => {
     return api.post('/charts/rectify', data)
-  },
-}
+  },}
 
 export const personsApi = {
   list: async () => {

@@ -17,6 +17,7 @@ from app.core.config import settings
 from app.core.logging import logger
 from app.db.session import engine, get_db
 from app.models.base import Base
+import app.models  # noqa: F401 — ensure all models registered for create_all
 from app.api.v1.api import api_router
 
 cors_origins = list(settings.ALLOWED_ORIGINS)

@@ -34,7 +34,7 @@ from app.charts.schemas import (
     NotableEventsResponse,
     NotableEventInfo,
 )
-from app.charts.rectification_schemas import RectificationRequest, RectificationResponse
+from app.charts.rectification_schemas import RectificationRequest, RectificationResponse, RectificationPollResponse
 from app.charts.rectification import rectify
 from app.charts.service import chart_service, _build_natal
 from app.charts import notables
@@ -514,10 +514,43 @@ async def list_notable_events(
     return NotableEventsResponse(events=[NotableEventInfo(**e) for e in events])
 
 
-@router.post("/rectify", response_model=RectificationResponse)
+@router.post("/rectify", response_model=RectificationPollResponse)
 async def rectify_birth_time(
     request: RectificationRequest,
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ) -> Any:
     require_premium(current_user, "rectification")
-    return await asyncio.to_thread(rectify, request)
+
+    from app.rectification.crud import rect_crud
+    from app.rectification.bg import bg_rectify_and_persist
+    import hashlib, json
+
+    events_key = json.dumps(
+        [{"d": e.date, "t": e.event_type} for e in sorted(request.events, key=lambda e: e.date)],
+        sort_keys=True,
+    )
+    raw = f"{request.birth_date}|{request.location}|{events_key}|{request.step_minutes}|{request.house_system}"
+    input_hash = hashlib.sha256(raw.encode()).hexdigest()
+
+    cached = await rect_crud.get_by_user_and_hash(db, user_id=current_user.id, input_hash=input_hash)
+    if cached:
+        if cached.status == "done" and cached.result_data:
+            return RectificationPollResponse(status="done", progress=100, result=cached.result_data)
+        if cached.status == "computing":
+            is_stale = await rect_crud.reset_stale(db, user_id=current_user.id, input_hash=input_hash)
+            if not is_stale:
+                return RectificationPollResponse(status="computing", progress=cached.progress)
+            await db.commit()
+        if cached.status == "error":
+            await db.delete(cached)
+            await db.flush()
+
+    row = await rect_crud.create_pending(
+        db, user_id=current_user.id, input_hash=input_hash, request_data=request.model_dump(),
+    )
+    await db.commit()
+
+    asyncio.create_task(bg_rectify_and_persist(row.id, request))
+
+    return RectificationPollResponse(status="computing", progress=0)

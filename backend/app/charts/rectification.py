@@ -212,7 +212,7 @@ def _score_event(natal_chart, event: RectificationEvent) -> MatchedEvent:
     )
 
 
-def rectify(request: RectificationRequest) -> RectificationResponse:
+def rectify(request: RectificationRequest, progress_callback=None) -> RectificationResponse:
     t0 = time.perf_counter()
     engine_cls = HOUSE_ENGINES.get(request.house_system, PlacidusHouses)
 
@@ -223,7 +223,10 @@ def rectify(request: RectificationRequest) -> RectificationResponse:
     candidates: list[RectificationCandidate] = []
 
     total_minutes = 24 * 60
-    for minute in range(0, total_minutes, step):
+    total_candidates = len(range(0, total_minutes, step))
+    progress_interval = max(1, total_candidates // 10)
+
+    for i, minute in enumerate(range(0, total_minutes, step)):
         h = minute // 60
         m = minute % 60
         time_str = f"{h:02d}:{m:02d}:00"
@@ -264,6 +267,12 @@ def rectify(request: RectificationRequest) -> RectificationResponse:
             total_score=round(total, 3),
             matched_events=matched_events,
         ))
+
+        if progress_callback and (i + 1) % progress_interval == 0:
+            progress_callback(int(((i + 1) / total_candidates) * 100))
+
+    if progress_callback:
+        progress_callback(100)
 
     candidates.sort(key=lambda c: c.total_score, reverse=True)
     top = candidates[:10]

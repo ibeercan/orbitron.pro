@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { Loader2, Plus, Trash2, Crosshair, Briefcase, Heart, MapPin, Activity, Home, GraduationCap, Wallet, Sparkles, Scale, Plane, Pin } from 'lucide-react'
 import { NumberPicker } from '@/components/ui/number-picker'
 import { chartsApi, geocodingApi } from '@/lib/api/client'
@@ -25,32 +25,40 @@ interface LifeEvent {
   description: string
 }
 
+interface MatchedAspect {
+  planet: string
+  natal_point: string
+  aspect: string
+  orb: number
+  technique: string
+}
+
+interface MatchedEvent {
+  event_date: string
+  event_type: string
+  event_description: string | null
+  score: number
+  matched_aspects: MatchedAspect[]
+}
+
+interface RectificationCandidate {
+  birth_time: string
+  asc_degree: number
+  mc_degree: number
+  asc_sign: string
+  mc_sign: string
+  total_score: number
+  matched_events: MatchedEvent[]
+}
+
 interface RectificationResult {
-  candidates: {
-    birth_time: string
-    asc_degree: number
-    mc_degree: number
-    asc_sign: string
-    mc_sign: string
-    total_score: number
-    matched_events: {
-      event_date: string
-      event_type: string
-      event_description: string | null
-      score: number
-      matched_aspects: {
-        planet: string
-        natal_point: string
-        aspect: string
-        orb: number
-        technique: string
-      }[]
-    }[]
-  }[]
+  candidates: RectificationCandidate[]
   event_count: number
   step_minutes: number
   computation_time_ms: number
 }
+
+type PollStatus = 'idle' | 'computing' | 'done' | 'error'
 
 interface RectificationFormProps {
   onSubmit: (result: Record<string, unknown>) => void
@@ -77,7 +85,7 @@ function LocationAutocomplete({ value, onChange }: { value: string; onChange: (v
   const [query, setQuery] = useState(value)
   const [suggestions, setSuggestions] = useState<GeoSuggestion[]>([])
   const [isSearching, setIsSearching] = useState(false)
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>( null)
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const { containerRef, setIsOpen, renderDropdown } = useFixedDropdown()
 
   const search = useCallback(async (q: string) => {
@@ -145,9 +153,21 @@ export function RectificationForm({ onSubmit, onCancel }: RectificationFormProps
   const [year, setYear] = useState<number | null>(null)
   const [location, setLocation] = useState('')
   const [events, setEvents] = useState<LifeEvent[]>([{ date: '', eventType: 'career', description: '' }])
-  const [isSubmitting, setIsSubmitting] = useState(false)
   const [result, setResult] = useState<RectificationResult | null>(null)
   const [serverError, setServerError] = useState<string | null>(null)
+
+  const [pollStatus, setPollStatus] = useState<PollStatus>('idle')
+  const [progress, setProgress] = useState(0)
+  const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const stopPolling = useCallback(() => {
+    if (pollRef.current) {
+      clearTimeout(pollRef.current)
+      pollRef.current = null
+    }
+  }, [])
+
+  useEffect(() => stopPolling, [stopPolling])
 
   const addEvent = () => {
     if (events.length >= 20) return
@@ -171,30 +191,45 @@ export function RectificationForm({ onSubmit, onCancel }: RectificationFormProps
     const validEvents = events.filter(ev => ev.date)
     if (validEvents.length === 0) return
 
-    setIsSubmitting(true)
     setServerError(null)
     setResult(null)
+    setPollStatus('computing')
+    setProgress(0)
 
     const birthDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-
-    try {
-      const res = await chartsApi.rectify({
-        birth_date: birthDate,
-        location,
-        events: validEvents.map(ev => ({ date: ev.date, event_type: ev.eventType, description: ev.description || undefined })),
-      })
-      setResult(res.data as RectificationResult)
-    } catch (err: unknown) {
-      const e = err as { response?: { data?: { detail?: string } } }
-      setServerError(e?.response?.data?.detail || 'Ошибка ректификации')
-    } finally {
-      setIsSubmitting(false)
+    const requestData = {
+      birth_date: birthDate,
+      location,
+      events: validEvents.map(ev => ({ date: ev.date, event_type: ev.eventType, description: ev.description || undefined })),
     }
+
+    const poll = async () => {
+      try {
+        const res = await chartsApi.rectify(requestData)
+        const { status, progress: pct, result: resData, error } = res.data
+        if (status === 'computing') {
+          setProgress(pct)
+          pollRef.current = setTimeout(poll, 2000)
+        } else if (status === 'done' && resData) {
+          setPollStatus('done')
+          setProgress(100)
+          setResult(resData as unknown as RectificationResult)
+        } else if (status === 'error') {
+          setPollStatus('error')
+          setServerError(error || 'Ошибка ректификации')
+        }
+      } catch (err: unknown) {
+        const e = err as { response?: { data?: { detail?: string } } }
+        setPollStatus('error')
+        setServerError(e?.response?.data?.detail || 'Ошибка сети')
+      }
+    }
+
+    await poll()
   }
 
   const handleSelectTime = async (birthTime: string) => {
     if (!day || !month || !year || !location) return
-    setIsSubmitting(true)
     setServerError(null)
     const birthDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
     const datetime = `${birthDate}T${birthTime}:00`
@@ -204,8 +239,6 @@ export function RectificationForm({ onSubmit, onCancel }: RectificationFormProps
     } catch (err: unknown) {
       const e = err as { response?: { data?: { detail?: string } } }
       setServerError(e?.response?.data?.detail || 'Ошибка создания карты')
-    } finally {
-      setIsSubmitting(false)
     }
   }
 
@@ -219,6 +252,42 @@ export function RectificationForm({ onSubmit, onCancel }: RectificationFormProps
     transit: 'Транзит', solar_arc: 'Солярная дуга', progression: 'Прогрессия', profection: 'Профекция',
   }
 
+  if (pollStatus === 'computing') {
+    return (
+      <div className="flex flex-col items-center justify-center py-8 gap-4">
+        <div className="relative">
+          <div className="w-16 h-16 rounded-full border-2 border-[rgba(212,175,55,0.2)] flex items-center justify-center">
+            <Crosshair className="w-7 h-7 text-[#D4AF37] animate-spin" style={{ animationDuration: '3s' }} />
+          </div>
+          <div className="absolute inset-0 rounded-full animate-pulse-gold" />
+        </div>
+
+        <div className="text-center">
+          <h3 className="font-serif text-lg font-semibold text-[#F0EAD6] mb-1">Ректификация</h3>
+          <p className="text-xs text-[#8B7FA8]">Анализируем кандидатов…</p>
+        </div>
+
+        <div className="w-full max-w-xs">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-[10px] text-[#8B7FA8]">Прогресс</span>
+            <span className="text-[10px] font-semibold text-[#D4AF37]">{progress}%</span>
+          </div>
+          <div className="w-full h-2 rounded-full bg-[rgba(139,127,168,0.1)] overflow-hidden">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-[#D4AF37] to-[#F0C842] transition-all duration-500 ease-out"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        </div>
+
+        <button type="button" onClick={() => { stopPolling(); setPollStatus('idle'); setProgress(0) }}
+          className="text-xs text-[#8B7FA8] hover:text-[#F0EAD6] transition-colors mt-2">
+          Отмена
+        </button>
+      </div>
+    )
+  }
+
   if (result) {
     const maxScore = result.candidates[0]?.total_score || 1
     return (
@@ -228,7 +297,7 @@ export function RectificationForm({ onSubmit, onCancel }: RectificationFormProps
             <h3 className="font-serif text-lg font-semibold text-[#F0EAD6]">Результаты ректификации</h3>
             <p className="text-xs text-[#8B7FA8]">Топ-10 кандидатов · {Math.round(result.computation_time_ms / 1000)}с · шаг {result.step_minutes} мин</p>
           </div>
-          <button onClick={() => setResult(null)} className="text-xs text-[#8B7FA8] hover:text-[#F0EAD6] transition-colors">Новый расчёт</button>
+          <button onClick={() => { setResult(null); setPollStatus('idle') }} className="text-xs text-[#8B7FA8] hover:text-[#F0EAD6] transition-colors">Новый расчёт</button>
         </div>
 
         <div className="space-y-2">
@@ -253,7 +322,7 @@ export function RectificationForm({ onSubmit, onCancel }: RectificationFormProps
                     <div className="h-full rounded-full bg-[#D4AF37]" style={{ width: `${(c.total_score / maxScore) * 100}%` }} />
                   </div>
                   <span className={cn('text-xs font-bold', i === 0 ? 'text-[#D4AF37]' : 'text-[#8B7FA8]')}>{c.total_score.toFixed(1)}</span>
-                  <button onClick={() => handleSelectTime(c.birth_time)} disabled={isSubmitting}
+                  <button onClick={() => handleSelectTime(c.birth_time)}
                     className="text-[9px] px-2.5 py-1.5 rounded-lg bg-[rgba(212,175,55,0.08)] text-[#D4AF37] hover:bg-[rgba(212,175,55,0.15)] border border-[rgba(212,175,55,0.1)] transition-all">
                     Создать карту
                   </button>
@@ -356,11 +425,11 @@ export function RectificationForm({ onSubmit, onCancel }: RectificationFormProps
       )}
 
       <div className="flex gap-3 pt-1">
-        <button type="button" onClick={onCancel} disabled={isSubmitting}
+        <button type="button" onClick={onCancel}
           className="btn-ghost flex-1 h-11 text-sm font-medium">Отмена</button>
-        <button type="submit" disabled={isSubmitting || !day || !month || !year || !location || !events.some(e => e.date)}
+        <button type="submit" disabled={!day || !month || !year || !location || !events.some(e => e.date)}
           className="btn-gold flex-1 h-11 text-sm flex items-center justify-center gap-2">
-          {isSubmitting ? (<><Loader2 className="w-4 h-4 animate-spin" />Анализ…</>) : (<><Crosshair className="w-4 h-4" />Ректификация</>)}
+          <><Crosshair className="w-4 h-4" />Ректификация</>
         </button>
       </div>
     </form>
