@@ -151,6 +151,15 @@ export const chartsApi = {
     return api.post('/charts/profection', data)
   },
 
+  createSolarArc: async (data: {
+    natal_chart_id: number
+    target_date?: string
+    age?: number
+    theme?: string
+  }) => {
+    return api.post('/charts/solar-arc', data)
+  },
+
   generateReport: async (chartId: number, preset?: string, title?: string) => {
     return api.post(`/charts/${chartId}/report`, null, {
       params: { preset: preset || 'standard', ...(title ? { title } : {}) },
