@@ -12,10 +12,11 @@ import { SynastryForm } from '@/components/ui/SynastryForm'
 import { SolarReturnForm } from '@/components/ui/SolarReturnForm'
 import { LunarReturnForm } from '@/components/ui/LunarReturnForm'
 import { ProfectionForm } from '@/components/ui/ProfectionForm'
+import { RectificationForm } from '@/components/ui/RectificationForm'
 import { TransitTimeline } from '@/components/ui/TransitTimeline'
 import { AstroTwinsPanel } from '@/components/ui/AstroTwinsPanel'
 import { OnboardingTour } from '@/components/ui/OnboardingTour'
-import { Loader2, Calendar, MapPin, Sparkles, Star, Trash2, AlertTriangle, Maximize2, Heart, Clock, Sun, Moon, Target, FileText, Lock, Crown, ArrowLeft } from 'lucide-react'
+import { Loader2, Calendar, MapPin, Sparkles, Star, Trash2, AlertTriangle, Maximize2, Heart, Clock, Sun, Moon, Target, FileText, Lock, Crown, ArrowLeft, Crosshair } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/contexts/auth-context'
 
@@ -600,6 +601,7 @@ const loadChartSvg = async (chart: Chart) => {
                     <ChartActionButton icon={Sun} label="Соляр" premium onClick={() => setActiveModal('solar_return')} />
                     <ChartActionButton icon={Moon} label="Лунар" premium onClick={() => setActiveModal('lunar_return')} />
                     <ChartActionButton icon={Target} label="Профекция" premium onClick={() => setActiveModal('profection')} />
+                    <ChartActionButton icon={Crosshair} label="Ректификация" premium onClick={() => setActiveModal('rectification')} />
                     <ChartActionButton icon={FileText} label="PDF" premium onClick={handlePdfDownload} />
                   </div>
                 )}
@@ -926,6 +928,20 @@ const loadChartSvg = async (chart: Chart) => {
             />
           </ModalShell>
         )}
+
+        {/* Rectification modal */}
+        <ModalShell
+          open={activeModal === 'rectification'}
+          onClose={closeModal}
+          icon={<Crosshair className="w-4 h-4 text-[#D4AF37]" style={{ width: 16, height: 16 }} />}
+          title="Ректификация"
+          description="Определение времени рождения по жизненным событиям"
+        >
+          <RectificationForm
+            onSubmit={(chart) => onChartCreatedFromModal(chart)}
+            onCancel={closeModal}
+          />
+        </ModalShell>
 
         {/* Delete confirmation dialog */}
         {chartToDelete && (

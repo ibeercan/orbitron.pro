@@ -161,6 +161,16 @@ export const chartsApi = {
   delete: async (id: number) => {
     return api.delete(`/charts/${id}`)
   },
+
+  rectify: async (data: {
+    birth_date: string
+    location: string
+    events: { date: string; event_type: string; description?: string }[]
+    house_system?: string
+    step_minutes?: number
+  }) => {
+    return api.post('/charts/rectify', data)
+  },
 }
 
 export const personsApi = {

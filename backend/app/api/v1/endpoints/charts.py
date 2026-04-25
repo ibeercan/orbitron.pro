@@ -33,6 +33,8 @@ from app.charts.schemas import (
     NotableEventsResponse,
     NotableEventInfo,
 )
+from app.charts.rectification_schemas import RectificationRequest, RectificationResponse
+from app.charts.rectification import rectify
 from app.charts.service import chart_service, _build_natal
 from app.charts import notables
 from app.charts.crud import chart as chart_crud
@@ -482,3 +484,12 @@ async def list_notable_events(
 ) -> Any:
     events = notables.list_notable_events()
     return NotableEventsResponse(events=[NotableEventInfo(**e) for e in events])
+
+
+@router.post("/rectify", response_model=RectificationResponse)
+async def rectify_birth_time(
+    request: RectificationRequest,
+    current_user: User = Depends(get_current_active_user),
+) -> Any:
+    require_premium(current_user, "rectification")
+    return await asyncio.to_thread(rectify, request)
