@@ -23,6 +23,7 @@ from app.charts.schemas import (
     LunarReturnCreate,
     ProfectionCreate,
     SolarArcCreate,
+    ProgressionCreate,
     Chart,
     ProfectionResponse,
     TransitTimelineEntry,
@@ -311,6 +312,33 @@ async def create_solar_arc(
         return Chart.model_validate(chart)
     except Exception as e:
         logger.error("API: Failed to create solar arc", error=str(e))
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.post("/progression", response_model=Chart, status_code=status.HTTP_201_CREATED)
+async def create_progression(
+    *,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+    chart_in: ProgressionCreate,
+) -> Any:
+    require_premium(current_user, "progression")
+    native_data, natal_chart = await _get_native_data(db, chart_in.natal_chart_id, current_user.id)
+    try:
+        chart_data = await chart_service.create_progression(
+            natal_chart_data=native_data,
+            target_date=chart_in.target_date,
+            age=chart_in.age,
+            theme=chart_in.theme,
+            natal_chart_id=chart_in.natal_chart_id,
+            natal_chart_name=natal_chart.name,
+        )
+        chart = await chart_crud.create(db, obj_in=chart_data, user_id=current_user.id)
+        await db.commit()
+        await db.refresh(chart)
+        return Chart.model_validate(chart)
+    except Exception as e:
+        logger.error("API: Failed to create progression", error=str(e))
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 

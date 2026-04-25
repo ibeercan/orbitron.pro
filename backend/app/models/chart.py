@@ -21,6 +21,7 @@ class ChartType(str, Enum):
     LUNAR_RETURN = "lunar_return"
     PROFECTION = "profection"
     SOLAR_ARC = "solar_arc"
+    PROGRESSION = "progression"
 
 
 class Chart(Base, TimestampMixin, SoftDeleteMixin):

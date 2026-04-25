@@ -14,10 +14,11 @@ import { LunarReturnForm } from '@/components/ui/LunarReturnForm'
 import { ProfectionForm } from '@/components/ui/ProfectionForm'
 import { RectificationForm } from '@/components/ui/RectificationForm'
 import { SolarArcForm } from '@/components/ui/SolarArcForm'
+import { ProgressionForm } from '@/components/ui/ProgressionForm'
 import { TransitTimeline } from '@/components/ui/TransitTimeline'
 import { AstroTwinsPanel } from '@/components/ui/AstroTwinsPanel'
 import { OnboardingTour } from '@/components/ui/OnboardingTour'
-import { Loader2, Calendar, MapPin, Sparkles, Star, Trash2, AlertTriangle, Maximize2, Heart, Clock, Sun, Moon, Target, FileText, Lock, Crown, ArrowLeft, Crosshair, Navigation } from 'lucide-react'
+import { Loader2, Calendar, MapPin, Sparkles, Star, Trash2, AlertTriangle, Maximize2, Heart, Clock, Sun, Moon, Target, FileText, Lock, Crown, ArrowLeft, Crosshair, Navigation, Zap } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/contexts/auth-context'
 
@@ -31,6 +32,7 @@ const CHART_TYPE_LABELS: Record<string, string> = {
   lunar_return: 'Лунарный возврат',
   profection: 'Профекция',
   solar_arc: 'Солярные дуги',
+  progression: 'Вторичные прогрессии',
 }
 
 function ChartActionButton({ icon: Icon, label, premium, onClick }: {
@@ -604,6 +606,7 @@ const loadChartSvg = async (chart: Chart) => {
                     <ChartActionButton icon={Moon} label="Лунар" premium onClick={() => setActiveModal('lunar_return')} />
                     <ChartActionButton icon={Target} label="Профекция" premium onClick={() => setActiveModal('profection')} />
                     <ChartActionButton icon={Navigation} label="Дирекции" premium onClick={() => setActiveModal('solar_arc')} />
+                    <ChartActionButton icon={Zap} label="Прогрессии" premium onClick={() => setActiveModal('progression')} />
                     <ChartActionButton icon={Crosshair} label="Ректификация" premium onClick={() => setActiveModal('rectification')} />
                     <ChartActionButton icon={FileText} label="PDF" premium onClick={handlePdfDownload} />
                   </div>
@@ -942,6 +945,23 @@ const loadChartSvg = async (chart: Chart) => {
             description="Прогностическая техника — дирекции по дуге Солнца"
           >
             <SolarArcForm
+              natalChartId={selectedChart.id}
+              onSubmit={onChartCreatedFromModal}
+              onCancel={closeModal}
+            />
+          </ModalShell>
+        )}
+
+        {/* Progression modal */}
+        {selectedChart && (
+          <ModalShell
+            open={activeModal === 'progression'}
+            onClose={closeModal}
+            icon={<Zap className="w-4 h-4 text-[#D4AF37]" style={{ width: 16, height: 16 }} />}
+            title="Вторичные прогрессии"
+            description="Прогностическая техника — один день = один год жизни"
+          >
+            <ProgressionForm
               natalChartId={selectedChart.id}
               onSubmit={onChartCreatedFromModal}
               onCancel={closeModal}

@@ -179,6 +179,31 @@ class SolarArcCreate(BaseModel):
         return v
 
 
+class ProgressionCreate(BaseModel):
+    natal_chart_id: int
+    target_date: Optional[str] = None
+    age: Optional[int] = None
+    theme: Optional[str] = "midnight"
+
+    @field_validator("theme")
+    @classmethod
+    def validate_theme(cls, v: str) -> str:
+        if v not in VALID_THEMES:
+            raise ValueError(f"Theme must be one of: {', '.join(sorted(VALID_THEMES))}")
+        return v
+
+    @field_validator("target_date")
+    @classmethod
+    def validate_date(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        try:
+            datetime.fromisoformat(v.replace('Z', '+00:00'))
+        except ValueError:
+            raise ValueError("Date must be in ISO format")
+        return v
+
+
 class ProfectionCreate(BaseModel):
     natal_chart_id: int
     target_date: Optional[str] = None

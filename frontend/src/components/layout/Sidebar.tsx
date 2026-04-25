@@ -20,6 +20,7 @@ import {
   Moon,
   Target,
   Navigation,
+  Zap,
 } from 'lucide-react'
 
 const CHART_TYPE_LABELS: Record<string, string> = {
@@ -30,6 +31,7 @@ const CHART_TYPE_LABELS: Record<string, string> = {
   lunar_return: 'Лунар',
   profection: 'Профекция',
   solar_arc: 'Дирекции',
+  progression: 'Прогрессии',
 }
 
 const CHART_TYPE_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -40,6 +42,7 @@ const CHART_TYPE_ICONS: Record<string, React.ComponentType<{ className?: string 
   lunar_return: Moon,
   profection: Target,
   solar_arc: Navigation,
+  progression: Zap,
 }
 
 /* ── Chart type ── */

@@ -541,6 +541,88 @@ class ChartService:
             "prompt_text": "\n".join(prompt_parts),
         }
 
+    async def create_progression(
+        self,
+        natal_chart_data: dict,
+        target_date: str | None = None,
+        age: int | None = None,
+        theme: str = "midnight",
+        zodiac_palette: str = "auto",
+        natal_chart_id: int | None = None,
+        natal_chart_name: str | None = None,
+    ) -> Dict[str, Any]:
+        dt_str = natal_chart_data["datetime"]
+        loc = natal_chart_data["location"]
+        natal = _build_natal(dt_str, loc)
+
+        if target_date is None and age is None:
+            target_date = dt.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
+
+        kwargs: dict = {"angle_method": "quotidian"}
+        if target_date:
+            kwargs["target_date"] = target_date
+        elif age is not None:
+            kwargs["age"] = float(age)
+
+        logger.info("Creating secondary progression", target_date=target_date, age=age)
+        progressed = (
+            MultiChartBuilder.progression(
+                natal, natal_label="Натальная", progressed_label="Прогрессия",
+                **kwargs,
+            )
+            .with_cross_aspects()
+            .calculate()
+        )
+
+        svg_bytes = _render_svg(progressed, theme, zodiac_palette)
+        svg_b64 = _svg_to_b64(svg_bytes)
+
+        cross_aspects = progressed.get_all_cross_aspects()
+        prompt_parts = [
+            f"ВТОРИЧНЫЕ ПРОГРЕССИИ",
+            f"Натальная карта: {dt_str}, {loc}",
+        ]
+        if target_date:
+            prompt_parts.append(f"Целевая дата: {target_date}")
+        elif age is not None:
+            prompt_parts.append(f"Возраст: {age}")
+        prompt_parts.append(f"\nПрогрессные аспекты ({len(cross_aspects)}):")
+        for asp in sorted(cross_aspects, key=lambda a: a.orb):
+            applying = "приближающийся" if asp.is_applying else "расходящийся"
+            prompt_parts.append(
+                f"  Прогр. {asp.object2.name} {asp.aspect_name} натальный {asp.object1.name} "
+                f"орб: {asp.orb:.2f}° ({applying})"
+            )
+
+        label = ""
+        if target_date:
+            try:
+                label = dt.fromisoformat(target_date.replace("Z", "+00:00")).strftime("%Y")
+            except Exception:
+                label = target_date[:4]
+        elif age is not None:
+            try:
+                birth = dt.fromisoformat(dt_str.replace("Z", "+00:00"))
+                label = str(birth.year + age)
+            except Exception:
+                label = str(age)
+        name_suffix = f" · {natal_chart_name}" if natal_chart_name else ""
+
+        return {
+            "name": f"Прогрессии {label}{name_suffix}",
+            "chart_type": "progression",
+            "parent_chart_id": natal_chart_id,
+            "native_data": {
+                "datetime": dt_str,
+                "location": loc,
+                "target_date": target_date,
+                "age": age,
+            },
+            "result_data": progressed.to_dict(),
+            "svg_data": svg_b64,
+            "prompt_text": "\n".join(prompt_parts),
+        }
+
     async def generate_pdf_report(
         self,
         natal_chart_data: dict,
