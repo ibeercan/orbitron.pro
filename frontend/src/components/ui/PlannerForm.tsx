@@ -5,8 +5,8 @@ import { cn } from '@/lib/utils'
 
 const PRESETS = [
   { id: 'minimal', label: 'Минимум', desc: 'Натальная + лунные фазы' },
-  { id: 'standard', label: 'Стандарт', desc: 'Натальная + транзиты + луна + станции' },
-  { id: 'full', label: 'Полный', desc: 'Все разделы и техники' },
+  { id: 'standard', label: 'Стандарт', desc: 'Натальная, транзиты, фазы, станции' },
+  { id: 'full', label: 'Полный', desc: 'Прогрессии, соляр, профекции, эфемерида' },
 ]
 
 const PAGE_SIZES = [
@@ -63,8 +63,8 @@ const FRONT_MATTER_TOGGLES: ToggleConfig[] = [
         type: 'select',
         options: [
           { value: '360', label: 'Полный зодиак (360°)' },
-          { value: '90', label: '90° Диал' },
-          { value: '45', label: '45° Диал' },
+          { value: '90', label: '90° Карта' },
+          { value: '45', label: '45° Карта' },
         ],
       },
     ],
@@ -87,7 +87,7 @@ const DAILY_TOGGLES: ToggleConfig[] = [
       },
     ],
   },
-  { key: 'include_mundane_transits', label: 'Мунданные транзиты', desc: 'Планета-к-планете на небе' },
+  { key: 'include_mundane_transits', label: 'Мунданные транзиты', desc: 'Аспекты планет на небе' },
   { key: 'include_moon_phases', label: 'Лунные фазы' },
   {
     key: 'include_voc',
@@ -98,7 +98,7 @@ const DAILY_TOGGLES: ToggleConfig[] = [
         type: 'select',
         options: [
           { value: 'traditional', label: 'Традиционная (Солнце–Сатурн)' },
-          { value: 'modern', label: 'Модерн (с внешними)' },
+          { value: 'modern', label: 'Современная (с Ураном–Плутоном)' },
         ],
       },
     ],
@@ -606,7 +606,7 @@ export function PlannerForm({ natalChartId, onCancel }: PlannerFormProps) {
 
       {/* ── FRONT MATTER ── */}
       <div>
-        <SectionHeader>Введение</SectionHeader>
+        <SectionHeader>Начальные страницы</SectionHeader>
         <div className="space-y-1">
           {FRONT_MATTER_TOGGLES.map(config => (
             <ToggleRow
@@ -689,8 +689,8 @@ export function PlannerForm({ natalChartId, onCancel }: PlannerFormProps) {
 
           <div>
             <label className="block text-[10px] font-semibold text-[#8B7FA8] uppercase tracking-[0.12em] mb-1.5">
-              Поле для переплёта (дюймы)
-              <span className="normal-case tracking-normal text-[9px] text-[#4A3F6A] ml-1">необязательно</span>
+              Поле для переплёта
+              <span className="normal-case tracking-normal text-[9px] text-[#4A3F6A] ml-1">(в дюймах, необязательно)</span>
             </label>
             <input
               type="number"
