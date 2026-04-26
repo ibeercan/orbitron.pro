@@ -326,6 +326,16 @@
     background: rgba(239, 68, 68, 0.04);
   }
 
+  .luxury-input[type="number"]::-webkit-inner-spin-button,
+  .luxury-input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  .luxury-input[type="number"] {
+    -moz-appearance: textfield;
+  }
+
   /* ============================================
      TYPOGRAPHY
      ============================================ */
