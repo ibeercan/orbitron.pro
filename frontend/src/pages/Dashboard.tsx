@@ -21,7 +21,7 @@ import { ElectionalForm } from '@/components/ui/ElectionalForm'
 import { TransitTimeline } from '@/components/ui/TransitTimeline'
 import { AstroTwinsPanel } from '@/components/ui/AstroTwinsPanel'
 import { OnboardingTour } from '@/components/ui/OnboardingTour'
-import { Loader2, Calendar, MapPin, Sparkles, Star, Trash2, AlertTriangle, Maximize2, Heart, Clock, Sun, Moon, Target, FileText, Lock, Crown, ArrowLeft, Crosshair, Navigation, Zap, Merge, Compass, Search } from 'lucide-react'
+import { Loader2, Calendar, MapPin, Sparkles, Star, Trash2, AlertTriangle, Maximize2, Heart, Clock, Sun, Moon, Target, FileText, Lock, Crown, ArrowLeft, Crosshair, Navigation, Zap, Merge, Compass } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/contexts/auth-context'
 
@@ -562,9 +562,20 @@ const loadChartSvg = async (chart: Chart) => {
         {/* ── Sidebar ── */}
         <Sidebar
           onProfileClick={() => setShowProfile(true)}
-          onCreateChart={() => setShowCreateModal(true)}
-          onCreateHorary={() => setActiveModal('horary')}
-          onCreateElectional={() => setActiveModal('electional')}
+          onCreateChart={(type) => {
+            const map: Record<string, string> = {
+              natal: 'create',
+              horary: 'horary',
+              electional: 'electional',
+              rectification: 'rectification',
+            }
+            const key = map[type || 'natal'] || 'create'
+            if (key === 'create') {
+              setShowCreateModal(true)
+            } else {
+              setActiveModal(key)
+            }
+          }}
           charts={charts}
           selectedChart={selectedChart}
           onSelectChart={selectChart}
@@ -617,9 +628,6 @@ const loadChartSvg = async (chart: Chart) => {
                     <ChartActionButton icon={Target} label="Профекция" premium onClick={() => setActiveModal('profection')} />
                     <ChartActionButton icon={Navigation} label="Дирекции" premium onClick={() => setActiveModal('solar_arc')} />
                     <ChartActionButton icon={Zap} label="Прогрессии" premium onClick={() => setActiveModal('progression')} />
-                    <ChartActionButton icon={Crosshair} label="Ректификация" premium onClick={() => setActiveModal('rectification')} />
-                    <ChartActionButton icon={Compass} label="Хорар" premium onClick={() => setActiveModal('horary')} />
-                    <ChartActionButton icon={Search} label="Электив" premium onClick={() => setActiveModal('electional')} />
                     <ChartActionButton icon={FileText} label="PDF" premium onClick={handlePdfDownload} />
                   </div>
                 )}

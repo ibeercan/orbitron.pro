@@ -2,6 +2,12 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@/contexts/auth-context'
 import { cn } from '@/lib/utils'
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import {
   LogOut,
   User,
   Plus,
@@ -24,6 +30,8 @@ import {
   Merge,
   Compass,
   Search,
+  Crosshair,
+  ChevronDown,
 } from 'lucide-react'
 
 const CHART_TYPE_LABELS: Record<string, string> = {
@@ -39,6 +47,7 @@ const CHART_TYPE_LABELS: Record<string, string> = {
   davison: 'Давидсон',
   horary: 'Хорар',
   electional: 'Электив',
+  rectification: 'Ректификация',
 }
 
 const CHART_TYPE_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -54,6 +63,7 @@ const CHART_TYPE_ICONS: Record<string, React.ComponentType<{ className?: string 
   davison: Merge,
   horary: Compass,
   electional: Search,
+  rectification: Crosshair,
 }
 
 /* ── Chart type ── */
@@ -73,9 +83,7 @@ interface Chart {
 
 interface SidebarProps {
   onProfileClick?: () => void
-  onCreateChart?: () => void
-  onCreateHorary?: () => void
-  onCreateElectional?: () => void
+  onCreateChart?: (type?: 'natal' | 'horary' | 'electional' | 'rectification') => void
   charts?: Chart[]
   selectedChart?: Chart | null
   onSelectChart?: (chart: Chart) => void
@@ -143,8 +151,6 @@ function formatLocation(location: string) {
 export function Sidebar({
   onProfileClick,
   onCreateChart,
-  onCreateHorary,
-  onCreateElectional,
   charts = [],
   selectedChart,
   onSelectChart,
@@ -268,34 +274,34 @@ export function Sidebar({
             {collapsed ? (
               /* Collapsed: icon-only list */
               <div className="flex-1 overflow-y-auto py-3 flex flex-col items-center gap-1.5 px-1.5">
-                {/* New chart button */}
-                <button
-                  onClick={onCreateChart}
-                  title="Новая карта"
-                  className="w-9 h-9 rounded-xl btn-gold flex items-center justify-center shadow-[0_2px_8px_rgba(212,175,55,0.3)] mb-1"
-                >
-                  <Plus className="w-4 h-4" />
-                </button>
-                {/* Horary button */}
-                {onCreateHorary && (
-                  <button
-                    onClick={onCreateHorary}
-                    title="Хорарная карта"
-                    className="w-9 h-9 rounded-xl flex items-center justify-center bg-[rgba(212,175,55,0.04)] border border-[rgba(212,175,55,0.15)] text-[#8B7FA8] hover:text-[#D4AF37] hover:border-[rgba(212,175,55,0.3)] transition-all mb-1"
-                  >
-                    <Compass className="w-4 h-4" />
-                  </button>
-                )}
-                {/* Electional button */}
-                {onCreateElectional && (
-                  <button
-                    onClick={onCreateElectional}
-                    title="Элективная карта"
-                    className="w-9 h-9 rounded-xl flex items-center justify-center bg-[rgba(212,175,55,0.04)] border border-[rgba(212,175,55,0.15)] text-[#8B7FA8] hover:text-[#D4AF37] hover:border-[rgba(212,175,55,0.3)] transition-all mb-1"
-                  >
-                    <Search className="w-4 h-4" />
-                  </button>
-                )}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      title="Новая карта"
+                      className="w-9 h-9 rounded-xl btn-gold flex items-center justify-center shadow-[0_2px_8px_rgba(212,175,55,0.3)] mb-1"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent side="right" align="start" className="w-[180px]">
+                    <DropdownMenuItem onClick={() => onCreateChart?.('natal')}>
+                      <Star className="w-4 h-4 text-[#D4AF37]" />
+                      <span>Натальная карта</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onCreateChart?.('horary')}>
+                      <Compass className="w-4 h-4 text-[#D4AF37]" />
+                      <span>Хорарная карта</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onCreateChart?.('electional')}>
+                      <Sparkles className="w-4 h-4 text-[#D4AF37]" />
+                      <span>Элективная карта</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onCreateChart?.('rectification')}>
+                      <Crosshair className="w-4 h-4 text-[#D4AF37]" />
+                      <span>Ректификация</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
 
                 {charts.map((chart) => {
                   const isActive = selectedChart?.id === chart.id
@@ -329,31 +335,33 @@ export function Sidebar({
                   <span className="text-[10px] font-semibold text-[#4A3F6A] uppercase tracking-[0.16em]">
                     Мои карты
                   </span>
-                  <button
-                    onClick={onCreateChart}
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold text-[#0A0612] bg-gradient-to-r from-[#D4AF37] to-[#C19B25] hover:from-[#E8C43A] hover:to-[#D4AF37] transition-all shadow-[0_2px_8px_rgba(212,175,55,0.3)] active:scale-95"
-                  >
-                    <Plus className="w-3 h-3" />
-                    Новая
-                  </button>
-                  {onCreateHorary && (
-                    <button
-                      onClick={onCreateHorary}
-                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-medium text-[#D4AF37] bg-[rgba(212,175,55,0.06)] border border-[rgba(212,175,55,0.15)] hover:bg-[rgba(212,175,55,0.12)] hover:border-[rgba(212,175,55,0.3)] transition-all active:scale-95"
-                    >
-                      <Compass className="w-3 h-3" />
-                      Хорар
-                    </button>
-                  )}
-                  {onCreateElectional && (
-                    <button
-                      onClick={onCreateElectional}
-                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-medium text-[#8B7FA8] bg-[rgba(212,175,55,0.04)] border border-[rgba(212,175,55,0.1)] hover:text-[#D4AF37] hover:bg-[rgba(212,175,55,0.08)] hover:border-[rgba(212,175,55,0.2)] transition-all active:scale-95"
-                    >
-                      <Sparkles className="w-3 h-3" />
-                      Электив
-                    </button>
-                  )}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold text-[#0A0612] bg-gradient-to-r from-[#D4AF37] to-[#C19B25] hover:from-[#E8C43A] hover:to-[#D4AF37] transition-all shadow-[0_2px_8px_rgba(212,175,55,0.3)] active:scale-95">
+                        <Plus className="w-3 h-3" />
+                        Новая
+                        <ChevronDown className="w-3 h-3" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-[180px]">
+                      <DropdownMenuItem onClick={() => onCreateChart?.('natal')}>
+                        <Star className="w-4 h-4 text-[#D4AF37]" />
+                        <span>Натальная карта</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => onCreateChart?.('horary')}>
+                        <Compass className="w-4 h-4 text-[#D4AF37]" />
+                        <span>Хорарная карта</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => onCreateChart?.('electional')}>
+                        <Sparkles className="w-4 h-4 text-[#D4AF37]" />
+                        <span>Элективная карта</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => onCreateChart?.('rectification')}>
+                        <Crosshair className="w-4 h-4 text-[#D4AF37]" />
+                        <span>Ректификация</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
 
                 <div className="flex-1 overflow-y-auto px-3 pb-3 space-y-1.5">
@@ -518,39 +526,34 @@ export function Sidebar({
             <span className="text-[10px] font-medium uppercase tracking-wide">Карты</span>
           </button>
 
-          <button
-            onClick={onCreateChart}
-            className="flex flex-col items-center gap-1 px-4 py-1.5"
-          >
-            <div className="w-10 h-10 rounded-2xl btn-gold flex items-center justify-center shadow-[0_4px_16px_rgba(212,175,55,0.35)]">
-              <Plus className="w-5 h-5" />
-            </div>
-            <span className="text-[10px] font-medium text-[#D4AF37] uppercase tracking-wide">Новая</span>
-          </button>
-
-          {onCreateHorary && (
-            <button
-              onClick={onCreateHorary}
-              className="flex flex-col items-center gap-1 px-4 py-1.5"
-            >
-              <div className="w-10 h-10 rounded-2xl flex items-center justify-center bg-[rgba(212,175,55,0.06)] border border-[rgba(212,175,55,0.15)] text-[#D4AF37] transition-all">
-                <Compass className="w-5 h-5" />
-              </div>
-              <span className="text-[10px] font-medium text-[#8B7FA8] uppercase tracking-wide">Хорар</span>
-            </button>
-          )}
-
-          {onCreateElectional && (
-            <button
-              onClick={onCreateElectional}
-              className="flex flex-col items-center gap-1 px-4 py-1.5"
-            >
-              <div className="w-10 h-10 rounded-2xl flex items-center justify-center bg-[rgba(212,175,55,0.06)] border border-[rgba(212,175,55,0.15)] text-[#8B7FA8] transition-all">
-                <Sparkles className="w-5 h-5" />
-              </div>
-              <span className="text-[10px] font-medium text-[#8B7FA8] uppercase tracking-wide">Электив</span>
-            </button>
-          )}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex flex-col items-center gap-1 px-4 py-1.5">
+                <div className="w-10 h-10 rounded-2xl btn-gold flex items-center justify-center shadow-[0_4px_16px_rgba(212,175,55,0.35)]">
+                  <Plus className="w-5 h-5" />
+                </div>
+                <span className="text-[10px] font-medium text-[#D4AF37] uppercase tracking-wide">Новая</span>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent side="top" align="center" className="w-[180px]">
+              <DropdownMenuItem onClick={() => onCreateChart?.('natal')}>
+                <Star className="w-4 h-4 text-[#D4AF37]" />
+                <span>Натальная карта</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onCreateChart?.('horary')}>
+                <Compass className="w-4 h-4 text-[#D4AF37]" />
+                <span>Хорарная карта</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onCreateChart?.('electional')}>
+                <Sparkles className="w-4 h-4 text-[#D4AF37]" />
+                <span>Элективная карта</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onCreateChart?.('rectification')}>
+                <Crosshair className="w-4 h-4 text-[#D4AF37]" />
+                <span>Ректификация</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           <button
             onClick={() => {
