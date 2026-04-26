@@ -690,7 +690,7 @@ export function PlannerForm({ natalChartId, onCancel }: PlannerFormProps) {
           <div>
             <label className="block text-[10px] font-semibold text-[#8B7FA8] uppercase tracking-[0.12em] mb-1.5">
               Поле для переплёта
-              <span className="normal-case tracking-normal text-[9px] text-[#4A3F6A] ml-1">(в дюймах, необязательно)</span>
+              <span className="normal-case tracking-normal text-[9px] text-[#4A3F6A] ml-1">(1″ = 2.54 см, необязательно)</span>
             </label>
             <input
               type="number"
