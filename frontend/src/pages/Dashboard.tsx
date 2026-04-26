@@ -8,21 +8,20 @@ import { AssistantChat } from '@/components/chat/AssistantChat'
 import { CreateChartModal } from '@/components/ui/CreateChartModal'
 import { ModalShell } from '@/components/ui/ModalShell'
 import { TransitForm } from '@/components/ui/TransitForm'
-import { SynastryForm } from '@/components/ui/SynastryForm'
+import { RelationshipsForm } from '@/components/ui/RelationshipsForm'
 import { SolarReturnForm } from '@/components/ui/SolarReturnForm'
 import { LunarReturnForm } from '@/components/ui/LunarReturnForm'
 import { ProfectionForm } from '@/components/ui/ProfectionForm'
 import { RectificationForm } from '@/components/ui/RectificationForm'
 import { SolarArcForm } from '@/components/ui/SolarArcForm'
 import { ProgressionForm } from '@/components/ui/ProgressionForm'
-import { CompositeForm } from '@/components/ui/CompositeForm'
 import { HoraryForm } from '@/components/ui/HoraryForm'
 import { ElectionalForm } from '@/components/ui/ElectionalForm'
 import { PlannerForm } from '@/components/ui/PlannerForm'
 import { TransitTimeline } from '@/components/ui/TransitTimeline'
 import { AstroTwinsPanel } from '@/components/ui/AstroTwinsPanel'
 import { OnboardingTour } from '@/components/ui/OnboardingTour'
-import { Loader2, Calendar, MapPin, Sparkles, Star, Trash2, AlertTriangle, Maximize2, Heart, Clock, Sun, Moon, Target, FileText, Lock, Crown, ArrowLeft, Crosshair, Navigation, Zap, Merge, Compass, BookOpen } from 'lucide-react'
+import { Loader2, Calendar, MapPin, Sparkles, Star, Trash2, AlertTriangle, Maximize2, Heart, Clock, Sun, Moon, Target, FileText, Lock, Crown, ArrowLeft, Crosshair, Navigation, Zap, Compass, BookOpen } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/contexts/auth-context'
 
@@ -621,8 +620,7 @@ const loadChartSvg = async (chart: Chart) => {
 
                 {selectedChart && (selectedChart.chart_type || 'natal') === 'natal' && (
                   <div className="flex items-center gap-1.5 px-5 py-2 border-b border-[rgba(212,175,55,0.06)] shrink-0 overflow-x-auto" data-onboarding="actions">
-                    <ChartActionButton icon={Heart} label="Синастрия" premium onClick={() => setActiveModal('synastry')} />
-                    <ChartActionButton icon={Merge} label="Композит" premium onClick={() => setActiveModal('composite')} />
+                    <ChartActionButton icon={Heart} label="Отношения" premium onClick={() => setActiveModal('relationships')} />
                     <ChartActionButton icon={Clock} label="Транзиты" onClick={() => setActiveModal('transit')} />
                     <ChartActionButton icon={Sun} label="Соляр" premium onClick={() => setActiveModal('solar_return')} />
                     <ChartActionButton icon={Moon} label="Лунар" premium onClick={() => setActiveModal('lunar_return')} />
@@ -871,33 +869,16 @@ const loadChartSvg = async (chart: Chart) => {
           onCreated={handleChartCreated}
         />
 
-        {/* Synastry modal */}
+        {/* Relationships modal */}
         {selectedChart && (
           <ModalShell
-            open={activeModal === 'synastry'}
+            open={activeModal === 'relationships'}
             onClose={closeModal}
             icon={<Heart className="w-4 h-4 text-[#D4AF37]" style={{ width: 16, height: 16 }} />}
-            title="Синастрия"
-            description="Совместимость двух натальных карт"
+            title="Отношения"
+            description="Совместимость и синтез двух натальных карт"
           >
-            <SynastryForm
-              natalChartId={selectedChart.id}
-              onSubmit={onChartCreatedFromModal}
-              onCancel={closeModal}
-            />
-          </ModalShell>
-        )}
-
-        {/* Composite modal */}
-        {selectedChart && (
-          <ModalShell
-            open={activeModal === 'composite'}
-            onClose={closeModal}
-            icon={<Merge className="w-4 h-4 text-[#D4AF37]" style={{ width: 16, height: 16 }} />}
-            title="Композит / Давидсон"
-            description="Карта отношений как единое целое"
-          >
-            <CompositeForm
+            <RelationshipsForm
               natalChartId={selectedChart.id}
               onSubmit={onChartCreatedFromModal}
               onCancel={closeModal}

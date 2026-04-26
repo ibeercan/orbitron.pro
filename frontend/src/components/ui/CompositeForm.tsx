@@ -32,10 +32,11 @@ interface CompositeFormProps {
   natalChartId: number
   onSubmit: (chart: Record<string, unknown>) => void
   onCancel: () => void
+  defaultType?: 'composite' | 'davison'
 }
 
-export function CompositeForm({ natalChartId, onSubmit, onCancel }: CompositeFormProps) {
-  const [synthesisType, setSynthesisType] = useState<'composite' | 'davison'>('composite')
+export function CompositeForm({ natalChartId, onSubmit, onCancel, defaultType = 'composite' }: CompositeFormProps) {
+  const [synthesisType, setSynthesisType] = useState<'composite' | 'davison'>(defaultType)
   const [mode, setMode] = useState<'saved' | 'manual'>('saved')
   const [persons, setPersons] = useState<Person[]>([])
   const [selectedPersonId, setSelectedPersonId] = useState<number | null>(null)
