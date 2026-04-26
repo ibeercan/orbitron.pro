@@ -163,7 +163,7 @@ class AIService:
     def _build_prompt(self, prompt_text: str, question: str, chart_type: str = "natal") -> str:
         user_question = question.strip() or "Дай общую интерпретацию этой натальной карты"
         hint = CHART_TYPE_PROMPT_HINTS.get(chart_type, "")
-        chart_label = {"natal": "НАТАЛЬНОЙ КАРТЫ", "synastry": "СИНАСТРИИ", "transit": "ТРАНЗИТОВ", "solar_return": "СОЛЯРНОГО ВОЗВРАТА", "lunar_return": "ЛУНАРНОГО ВОЗВРАТА", "profection": "ПРОФЕКЦИИ", "solar_arc": "СОЛЯРНЫХ ДУГ", "progression": "ВТОРИЧНЫХ ПРОГРЕССИЙ", "composite": "КОМПОЗИТНОЙ КАРТЫ", "davison": "КАРТЫ ДАВИДСОНА", "horary": "ХОРАРНОЙ КАРТЫ", "electional": "ЭЛЕКТИВНОЙ КАРТЫ"}.get(chart_type, "НАТАЛЬНОЙ КАРТЫ")
+        chart_label = {"natal": "НАТАЛЬНОЙ КАРТЫ", "synastry": "СИНАСТРИИ", "transit": "ТРАНЗИТОВ", "solar_return": "СОЛЯРНОГО ВОЗВРАТА", "lunar_return": "ЛУНАРНОГО ВОЗВРАТА", "profection": "ПРОФЕКЦИИ", "solar_arc": "СОЛЯРНЫХ ДУГ", "progression": "ВТОРИЧНЫХ ПРОГРЕССИЙ", "composite": "КОМПОЗИТНОЙ КАРТЫ", "davison": "КАРТЫ ДАВИДСОНА", "horary": "ХОРАРНОЙ КАРТЫ", "electional": "ЭЛЕКТИВНОЙ КАРТЫ", "planetary_return": "ПЛАНЕТАРНОГО ВОЗВРАТА"}.get(chart_type, "НАТАЛЬНОЙ КАРТЫ")
         prompt = (
             f"ДАННЫЕ {chart_label}:\n{prompt_text}\n\n"
             f"ВОПРОС ПОЛЬЗОВАТЕЛЯ: {user_question}\n\n"

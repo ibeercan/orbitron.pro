@@ -26,5 +26,12 @@ PREMIUM_FEATURES = {
     "pdf_report",
     "horary",
     "electional",
+    "planetary_return",
+    "solar_arc",
+    "progression",
+    "composite",
+    "astro_twins",
+    "historical_parallels",
+    "rectification",
     "planner",
 }

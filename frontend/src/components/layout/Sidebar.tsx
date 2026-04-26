@@ -31,6 +31,7 @@ import {
   Compass,
   Search,
   Crosshair,
+  RotateCcw,
   ChevronDown,
 } from 'lucide-react'
 
@@ -48,6 +49,7 @@ const CHART_TYPE_LABELS: Record<string, string> = {
   horary: 'Хорар',
   electional: 'Электив',
   rectification: 'Ректификация',
+  planetary_return: 'Возврат планеты',
 }
 
 const CHART_TYPE_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -64,6 +66,7 @@ const CHART_TYPE_ICONS: Record<string, React.ComponentType<{ className?: string 
   horary: Compass,
   electional: Search,
   rectification: Crosshair,
+  planetary_return: RotateCcw,
 }
 
 /* ── Chart type ── */

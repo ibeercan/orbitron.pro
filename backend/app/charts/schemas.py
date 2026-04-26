@@ -1,6 +1,6 @@
 import re
 from pydantic import BaseModel, field_validator, computed_field
-from typing import Optional
+from typing import Optional, ClassVar
 from datetime import datetime
 
 VALID_THEMES = {
@@ -134,6 +134,41 @@ class LunarReturnCreate(BaseModel):
     natal_chart_id: int
     near_date: Optional[str] = None
     theme: Optional[str] = "midnight"
+
+    @field_validator("theme")
+    @classmethod
+    def validate_theme(cls, v: str) -> str:
+        if v not in VALID_THEMES:
+            raise ValueError(f"Theme must be one of: {', '.join(sorted(VALID_THEMES))}")
+        return v
+
+    @field_validator("near_date")
+    @classmethod
+    def validate_date(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        try:
+            datetime.fromisoformat(v.replace('Z', '+00:00'))
+        except ValueError:
+            raise ValueError("Date must be in ISO format")
+        return v
+
+
+class PlanetaryReturnCreate(BaseModel):
+    natal_chart_id: int
+    planet: str = "Saturn"
+    near_date: Optional[str] = None
+    location_override: Optional[str] = None
+    theme: Optional[str] = "midnight"
+
+    VALID_PLANETS: ClassVar[set[str]] = {"Mercury", "Venus", "Mars", "Jupiter", "Saturn"}
+
+    @field_validator("planet")
+    @classmethod
+    def validate_planet(cls, v: str) -> str:
+        if v not in cls.VALID_PLANETS:
+            raise ValueError(f"planet must be one of: {', '.join(sorted(cls.VALID_PLANETS))}")
+        return v
 
     @field_validator("theme")
     @classmethod

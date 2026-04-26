@@ -11,6 +11,7 @@ import { TransitForm } from '@/components/ui/TransitForm'
 import { RelationshipsForm } from '@/components/ui/RelationshipsForm'
 import { SolarReturnForm } from '@/components/ui/SolarReturnForm'
 import { LunarReturnForm } from '@/components/ui/LunarReturnForm'
+import { PlanetaryReturnForm } from '@/components/ui/PlanetaryReturnForm'
 import { ProfectionForm } from '@/components/ui/ProfectionForm'
 import { RectificationForm } from '@/components/ui/RectificationForm'
 import { SolarArcForm } from '@/components/ui/SolarArcForm'
@@ -21,7 +22,7 @@ import { PlannerForm } from '@/components/ui/PlannerForm'
 import { TransitTimeline } from '@/components/ui/TransitTimeline'
 import { AstroTwinsPanel } from '@/components/ui/AstroTwinsPanel'
 import { OnboardingTour } from '@/components/ui/OnboardingTour'
-import { Loader2, Calendar, MapPin, Sparkles, Star, Trash2, AlertTriangle, Maximize2, Heart, Clock, Sun, Moon, Target, FileText, Lock, Crown, ArrowLeft, Crosshair, Navigation, Zap, Compass, BookOpen } from 'lucide-react'
+import { Loader2, Calendar, MapPin, Sparkles, Star, Trash2, AlertTriangle, Maximize2, Heart, Clock, Sun, Moon, Target, FileText, Lock, Crown, ArrowLeft, Crosshair, Navigation, Zap, Compass, BookOpen, RotateCcw } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/contexts/auth-context'
 
@@ -40,6 +41,7 @@ const CHART_TYPE_LABELS: Record<string, string> = {
   davison: 'Давидсон',
   horary: 'Хорарная карта',
   electional: 'Элективная карта',
+  planetary_return: 'Планетарный возврат',
 }
 
 function ChartActionButton({ icon: Icon, label, premium, onClick }: {
@@ -624,6 +626,7 @@ const loadChartSvg = async (chart: Chart) => {
                     <ChartActionButton icon={Clock} label="Транзиты" onClick={() => setActiveModal('transit')} />
                     <ChartActionButton icon={Sun} label="Соляр" premium onClick={() => setActiveModal('solar_return')} />
                     <ChartActionButton icon={Moon} label="Лунар" premium onClick={() => setActiveModal('lunar_return')} />
+                    <ChartActionButton icon={RotateCcw} label="Возврат" premium onClick={() => setActiveModal('planetary_return')} />
                     <ChartActionButton icon={Target} label="Профекция" premium onClick={() => setActiveModal('profection')} />
                     <ChartActionButton icon={Navigation} label="Дирекции" premium onClick={() => setActiveModal('solar_arc')} />
                     <ChartActionButton icon={Zap} label="Прогрессии" premium onClick={() => setActiveModal('progression')} />
@@ -960,6 +963,23 @@ const loadChartSvg = async (chart: Chart) => {
             description="Месячный прогноз по возвращению Луны"
           >
             <LunarReturnForm
+              natalChartId={selectedChart.id}
+              onSubmit={onChartCreatedFromModal}
+              onCancel={closeModal}
+            />
+          </ModalShell>
+        )}
+
+        {/* Planetary return modal */}
+        {selectedChart && (
+          <ModalShell
+            open={activeModal === 'planetary_return'}
+            onClose={closeModal}
+            icon={<RotateCcw className="w-4 h-4 text-[#D4AF37]" style={{ width: 16, height: 16 }} />}
+            title="Планетарный возврат"
+            description="Возврат планеты в натальное положение"
+          >
+            <PlanetaryReturnForm
               natalChartId={selectedChart.id}
               onSubmit={onChartCreatedFromModal}
               onCancel={closeModal}

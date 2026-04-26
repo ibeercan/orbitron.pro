@@ -142,6 +142,16 @@ export const chartsApi = {
     return api.post('/charts/lunar-return', data)
   },
 
+  createPlanetaryReturn: async (data: {
+    natal_chart_id: number
+    planet?: string
+    near_date?: string
+    location_override?: string
+    theme?: string
+  }) => {
+    return api.post('/charts/planetary-return', data)
+  },
+
   createProfection: async (data: {
     natal_chart_id: number
     target_date?: string

@@ -405,6 +405,58 @@ class ChartService:
             "prompt_text": lr.to_prompt_text(),
         }
 
+    async def create_planetary_return(
+        self,
+        natal_chart_data: dict,
+        planet: str = "Saturn",
+        near_date: str | None = None,
+        location_override: tuple | None = None,
+        theme: str = "midnight",
+        zodiac_palette: str = "auto",
+        natal_chart_id: int | None = None,
+        natal_chart_name: str | None = None,
+    ) -> Dict[str, Any]:
+        from stellium import ReturnBuilder
+
+        dt_str = natal_chart_data["datetime"]
+        loc = natal_chart_data["location"]
+        natal = _build_natal(dt_str, loc)
+
+        PLANET_NAMES_RU = {
+            "Mercury": "Меркурия",
+            "Venus": "Венеры",
+            "Mars": "Марса",
+            "Jupiter": "Юпитера",
+            "Saturn": "Сатурна",
+        }
+        planet_ru = PLANET_NAMES_RU.get(planet, planet)
+
+        logger.info("Creating planetary return", planet=planet, near_date=near_date)
+        kwargs = {"natal": natal, "planet": planet}
+        if near_date:
+            kwargs["near_date"] = near_date
+        if location_override:
+            kwargs["location"] = location_override
+        pr = ReturnBuilder.planetary(**kwargs).calculate()
+
+        svg_bytes = _render_svg(pr, theme, zodiac_palette)
+        svg_b64 = _svg_to_b64(svg_bytes)
+
+        return {
+            "name": f"Возврат {planet_ru}" + (f" · {natal_chart_name}" if natal_chart_name else ""),
+            "chart_type": "planetary_return",
+            "parent_chart_id": natal_chart_id,
+            "native_data": {
+                "datetime": dt_str,
+                "location": loc,
+                "planet": planet,
+                "near_date": near_date,
+            },
+            "result_data": pr.to_dict(),
+            "svg_data": svg_b64,
+            "prompt_text": pr.to_prompt_text(),
+        }
+
     async def create_profection(
         self,
         natal_chart_data: dict,

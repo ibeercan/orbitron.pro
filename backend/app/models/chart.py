@@ -26,6 +26,7 @@ class ChartType(str, Enum):
     DAVISON = "davison"
     HORARY = "horary"
     ELECTIONAL = "electional"
+    PLANETARY_RETURN = "planetary_return"
 
 
 class Chart(Base, TimestampMixin, SoftDeleteMixin):

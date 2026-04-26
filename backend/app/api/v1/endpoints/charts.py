@@ -21,6 +21,7 @@ from app.charts.schemas import (
     TransitCreate,
     SolarReturnCreate,
     LunarReturnCreate,
+    PlanetaryReturnCreate,
     ProfectionCreate,
     SolarArcCreate,
     ProgressionCreate,
@@ -280,6 +281,42 @@ async def create_lunar_return(
         return Chart.model_validate(chart)
     except Exception as e:
         logger.error("API: Failed to create lunar return", error=str(e))
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.post("/planetary-return", response_model=Chart, status_code=status.HTTP_201_CREATED)
+async def create_planetary_return(
+    *,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+    chart_in: PlanetaryReturnCreate,
+) -> Any:
+    require_premium(current_user, "planetary_return")
+    native_data, natal_chart = await _get_native_data(db, chart_in.natal_chart_id, current_user.id)
+    loc_override = None
+    if chart_in.location_override:
+        parts = chart_in.location_override.split(",")
+        if len(parts) == 2:
+            try:
+                loc_override = (float(parts[0].strip()), float(parts[1].strip()))
+            except ValueError:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="location_override must be 'lat,lon'")
+    try:
+        chart_data = await chart_service.create_planetary_return(
+            natal_chart_data=native_data,
+            planet=chart_in.planet,
+            near_date=chart_in.near_date,
+            location_override=loc_override,
+            theme=chart_in.theme,
+            natal_chart_id=chart_in.natal_chart_id,
+            natal_chart_name=natal_chart.name,
+        )
+        chart = await chart_crud.create(db, obj_in=chart_data, user_id=current_user.id)
+        await db.commit()
+        await db.refresh(chart)
+        return Chart.model_validate(chart)
+    except Exception as e:
+        logger.error("API: Failed to create planetary return", error=str(e))
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 

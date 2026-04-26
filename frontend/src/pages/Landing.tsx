@@ -4,7 +4,10 @@ import { useForm } from 'react-hook-form'
 import { subscriptionApi, authApi } from '@/lib/api/client'
 import { useAuth } from '@/contexts/auth-context'
 import { cn } from '@/lib/utils'
-import { ArrowRight, Sparkles, Heart, Clock, Compass, Crosshair, Users, Loader2, ChevronLeft } from 'lucide-react'
+import {
+  ArrowRight, Sparkles, Heart, Compass, Users, Loader2, ChevronLeft,
+  Sun, Zap, RotateCcw, BookOpen, MessageCircle, Crown, Check, X,
+} from 'lucide-react'
 
 interface SubscribeFormData {
   email: string
@@ -85,6 +88,17 @@ function OrbitronLogo({ size = 64 }: { size?: number }) {
     </svg>
   )
 }
+
+const FEATURES = [
+  { icon: Sparkles, title: 'Натальная карта', desc: 'Полный анализ личности, характера и потенциала — с ИИ-интерпретацией' },
+  { icon: Heart, title: 'Совместимость', desc: 'Синастрия, композит и Давидсон — разберите отношения с партнёром' },
+  { icon: RotateCcw, title: 'Планетарный возврат', desc: 'Возврат Сатурна, Юпитера и других планет — ключевые периоды жизни' },
+  { icon: Sun, title: 'Соляр и лунар', desc: 'Прогноз на год и месяц — темы, фокус, управитель периода' },
+  { icon: Zap, title: 'Прогрессии и дирекции', desc: 'Вторичные прогрессии и солярные дуги — эволюция личности и события' },
+  { icon: Compass, title: 'Хорар и электив', desc: 'Ответ на вопрос и выбор лучшего момента для начинания' },
+  { icon: BookOpen, title: 'Плэннер', desc: 'Астрологический планер на год: транзиты, фазы Луны, аспекты — с PDF' },
+  { icon: Users, title: 'Звёздный двойник', desc: 'Найдите знаменитостей с похожей натальной картой' },
+]
 
 export default function Landing() {
   const navigate = useNavigate()
@@ -329,6 +343,19 @@ export default function Landing() {
     success:  { title: 'Добро пожаловать!',   subtitle: 'Переходим в личный кабинет...' },
   }[step]
 
+  const COMPARISON = [
+    { feature: 'Натальные карты', free: '1', premium: '∞' },
+    { feature: 'ИИ-астролог', free: '3 в месяц', premium: '∞' },
+    { feature: 'Транзиты', free: 'Сегодня', premium: 'Любая дата + таймлайн' },
+    { feature: 'Синастрия и отношения', free: '—', premium: '✓' },
+    { feature: 'Соляр, лунар, возвраты', free: '—', premium: '✓' },
+    { feature: 'Профекции, дирекции, прогрессии', free: '—', premium: '✓' },
+    { feature: 'Хорар и электив', free: '—', premium: '✓' },
+    { feature: 'Ректификация', free: '—', premium: '✓' },
+    { feature: 'Звёздный двойник', free: '—', premium: '✓' },
+    { feature: 'Плэннер и PDF-отчёты', free: '—', premium: '✓' },
+  ]
+
   return (
     <div className="relative min-h-screen overflow-hidden">
       <canvas ref={canvasRef} className="fixed inset-0 z-0" />
@@ -337,9 +364,9 @@ export default function Landing() {
         <div className="absolute inset-0 bg-gradient-to-br from-[#0A0612]/60 via-transparent to-[#0D0919]/40" />
       </div>
 
-      <main className="relative z-10 min-h-screen flex flex-col items-center justify-center px-6 py-12">
+      <main className="relative z-10 flex flex-col items-center px-6 pt-16 pb-20">
 
-            {/* Logo — centered above everything */}
+            {/* Logo + Headline */}
             <div className="flex flex-col items-center animate-in mb-8">
               <div className="animate-float mb-5">
                 <OrbitronLogo size={64} />
@@ -349,301 +376,302 @@ export default function Landing() {
                 <br />
                 <span className="gold-shimmer-text">через звёзды</span>
               </h1>
+              <p className="mt-4 text-[#8B7FA8] text-center max-w-md">
+                Профессиональная астрология с ИИ-интерпретацией — натальные карты, прогнозы, совместимость и многое другое
+              </p>
             </div>
 
-            {/* Form + Feature pills row — left spacer balances pills to keep form centered */}
-            <div className="w-full max-w-5xl flex flex-col sm:flex-row items-start justify-center gap-6 sm:gap-8">
-
-              {/* Left spacer — invisible, same width as pills */}
-              <div className="hidden sm:block sm:w-72 sm:shrink-0" />
-
-              {/* Form card — visually centered */}
-              <div className="w-full sm:w-96 sm:shrink-0 animate-in animate-in-delay-1">
-                {step === 'success' ? (
-                  <div className="luxury-card p-8 text-center">
-                    <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-[rgba(212,175,55,0.12)] flex items-center justify-center">
-                      <OrbitronLogo size={40} />
+            {/* Auth form */}
+            <div className="w-full max-w-sm animate-in animate-in-delay-1">
+              {step === 'success' ? (
+                <div className="luxury-card p-8 text-center">
+                  <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-[rgba(212,175,55,0.12)] flex items-center justify-center">
+                    <OrbitronLogo size={40} />
+                  </div>
+                  <h2 className="font-serif text-2xl font-semibold text-[#F0EAD6] mb-2">
+                    Добро пожаловать!
+                  </h2>
+                  <p className="text-[#8B7FA8] text-sm">Переходим в личный кабинет...</p>
+                  <div className="mt-6 flex justify-center">
+                    <div className="flex gap-1.5">
+                      <div className="w-2 h-2 rounded-full bg-[#D4AF37] animate-typing-1" />
+                      <div className="w-2 h-2 rounded-full bg-[#D4AF37] animate-typing-2" />
+                      <div className="w-2 h-2 rounded-full bg-[#D4AF37] animate-typing-3" />
                     </div>
-                    <h2 className="font-serif text-2xl font-semibold text-[#F0EAD6] mb-2">
-                      Добро пожаловать!
+                  </div>
+                </div>
+              ) : (
+                <div className="luxury-card overflow-hidden">
+              <div className="px-7 pt-7 pb-5 border-b border-[rgba(212,175,55,0.08)]">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="font-serif text-2xl font-semibold text-[#F0EAD6]">
+                      {formTitle.title}
                     </h2>
-                    <p className="text-[#8B7FA8] text-sm">Переходим в личный кабинет...</p>
-                    <div className="mt-6 flex justify-center">
-                      <div className="flex gap-1.5">
-                        <div className="w-2 h-2 rounded-full bg-[#D4AF37] animate-typing-1" />
-                        <div className="w-2 h-2 rounded-full bg-[#D4AF37] animate-typing-2" />
-                        <div className="w-2 h-2 rounded-full bg-[#D4AF37] animate-typing-3" />
-                      </div>
-                    </div>
+                    <p className="text-[#8B7FA8] text-sm mt-1">{formTitle.subtitle}</p>
                   </div>
-                ) : (
-                  <div className="luxury-card overflow-hidden">
-                <div className="px-7 pt-7 pb-5 border-b border-[rgba(212,175,55,0.08)]">
-                  <div className="flex items-center justify-between">
+                  {(step === 'login' || step === 'register' || step === 'check') && (
+                    <button
+                      onClick={goBack}
+                      className="w-8 h-8 rounded-lg flex items-center justify-center text-[#8B7FA8] hover:text-[#D4AF37] hover:bg-[rgba(212,175,55,0.08)] transition-all"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+
+                {isPremium && (step === 'register' || step === 'email') && (
+                  <div className="mt-3">
+                    <span className="badge-gold">Premium навсегда</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="px-7 py-6">
+                {step !== 'email' && (
+                  <div className="mb-5 flex items-center gap-2 px-3.5 py-2.5 rounded-lg bg-[rgba(212,175,55,0.06)] border border-[rgba(212,175,55,0.15)]">
+                    <div className="w-1.5 h-1.5 rounded-full bg-[#D4AF37] shrink-0" />
+                    <span className="text-sm text-[#D4AF37] font-medium truncate">{email}</span>
+                  </div>
+                )}
+
+                {step === 'email' && (
+                  <form onSubmit={handleEmailSubmit(checkEmail)} className="flex flex-col gap-4">
                     <div>
-                      <h2 className="font-serif text-2xl font-semibold text-[#F0EAD6]">
-                        {formTitle.title}
-                      </h2>
-                      <p className="text-[#8B7FA8] text-sm mt-1">{formTitle.subtitle}</p>
+                      <label className="block text-xs font-medium text-[#8B7FA8] mb-1.5 uppercase tracking-wide">
+                        Email
+                      </label>
+                      <input
+                        type="email"
+                        placeholder="you@example.com"
+                        {...registerEmail('email', {
+                          required: 'Email обязателен',
+                          pattern: { value: /^[\w.-]+@[\w.-]+\.\w+$/, message: 'Некорректный email' },
+                        })}
+                        className={cn('luxury-input w-full h-11 px-4', emailErrors.email && 'error')}
+                      />
+                      {emailErrors.email && (
+                        <p className="text-xs text-red-400 mt-1.5">{emailErrors.email.message}</p>
+                      )}
                     </div>
-                    {(step === 'login' || step === 'register' || step === 'check') && (
-                      <button
-                        onClick={goBack}
-                        className="w-8 h-8 rounded-lg flex items-center justify-center text-[#8B7FA8] hover:text-[#D4AF37] hover:bg-[rgba(212,175,55,0.08)] transition-all"
-                      >
-                        <ChevronLeft className="w-4 h-4" />
-                      </button>
+
+                    <div>
+                      <label className="block text-xs font-medium text-[#8B7FA8] mb-1.5 uppercase tracking-wide">
+                        Код приглашения <span className="text-[#4A3F6A] normal-case tracking-normal font-normal">(если есть)</span>
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="XXXX-XXXX"
+                        {...registerEmail('invite_code')}
+                        className="luxury-input w-full h-11 px-4"
+                      />
+                    </div>
+
+                    {message && (
+                      <div className="px-4 py-3 rounded-lg bg-[rgba(212,175,55,0.06)] border border-[rgba(212,175,55,0.2)] text-sm text-[#D4AF37]">
+                        {message}
+                      </div>
                     )}
+
+                    <button type="submit" disabled={isLoading} className="btn-gold h-11 w-full flex items-center justify-center gap-2 mt-1">
+                      {isLoading ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <>
+                          Продолжить
+                          <ArrowRight className="w-4 h-4" />
+                        </>
+                      )}
+                    </button>
+                  </form>
+                )}
+
+                {step === 'login' && (
+                  <form onSubmit={handlePasswordSubmit(onLogin)} className="flex flex-col gap-4">
+                    <div>
+                      <label className="block text-xs font-medium text-[#8B7FA8] mb-1.5 uppercase tracking-wide">
+                        Пароль
+                      </label>
+                      <input
+                        type="password"
+                        placeholder="••••••••"
+                        autoFocus
+                        {...registerPassword('password', { required: 'Пароль обязателен' })}
+                        className={cn('luxury-input w-full h-11 px-4', passwordErrors.password && 'error')}
+                      />
+                      {passwordErrors.password && (
+                        <p className="text-xs text-red-400 mt-1.5">{passwordErrors.password.message}</p>
+                      )}
+                    </div>
+
+                    {message && (
+                      <div className="px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 text-sm text-red-400">
+                        {message}
+                      </div>
+                    )}
+
+                    <button type="submit" disabled={isLoading} className="btn-gold h-11 w-full flex items-center justify-center gap-2">
+                      {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Войти'}
+                    </button>
+                  </form>
+                )}
+
+                {step === 'check' && (
+                  <div className="flex flex-col gap-4">
+                    {message && (
+                      <p className="text-sm text-[#8B7FA8] leading-relaxed">{message}</p>
+                    )}
+                    <button
+                      onClick={onSubscribe}
+                      disabled={isLoading}
+                      className="btn-gold h-11 w-full flex items-center justify-center gap-2"
+                    >
+                      {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Подписаться на рассылку'}
+                    </button>
                   </div>
+                )}
 
-                  {isPremium && (step === 'register' || step === 'email') && (
-                    <div className="mt-3">
-                      <span className="badge-gold">Premium навсегда</span>
+                {step === 'register' && (
+                  <form onSubmit={handlePasswordSubmit(onRegister)} className="flex flex-col gap-4">
+                    <div>
+                      <label className="block text-xs font-medium text-[#8B7FA8] mb-1.5 uppercase tracking-wide">
+                        Придумайте пароль
+                      </label>
+                      <input
+                        type="password"
+                        placeholder="Минимум 6 символов"
+                        autoFocus
+                        {...registerPassword('password', {
+                          required: 'Пароль обязателен',
+                          minLength: { value: 6, message: 'Минимум 6 символов' },
+                        })}
+                        className={cn('luxury-input w-full h-11 px-4', passwordErrors.password && 'error')}
+                      />
+                      {passwordErrors.password && (
+                        <p className="text-xs text-red-400 mt-1.5">{passwordErrors.password.message}</p>
+                      )}
                     </div>
-                  )}
-                </div>
 
-                <div className="px-7 py-6">
-                  {step !== 'email' && (
-                    <div className="mb-5 flex items-center gap-2 px-3.5 py-2.5 rounded-lg bg-[rgba(212,175,55,0.06)] border border-[rgba(212,175,55,0.15)]">
-                      <div className="w-1.5 h-1.5 rounded-full bg-[#D4AF37] shrink-0" />
-                      <span className="text-sm text-[#D4AF37] font-medium truncate">{email}</span>
-                    </div>
-                  )}
-
-                  {step === 'email' && (
-                    <form onSubmit={handleEmailSubmit(checkEmail)} className="flex flex-col gap-4">
-                      <div>
-                        <label className="block text-xs font-medium text-[#8B7FA8] mb-1.5 uppercase tracking-wide">
-                          Email
-                        </label>
-                        <input
-                          type="email"
-                          placeholder="you@example.com"
-                          {...registerEmail('email', {
-                            required: 'Email обязателен',
-                            pattern: { value: /^[\w.-]+@[\w.-]+\.\w+$/, message: 'Некорректный email' },
-                          })}
-                          className={cn('luxury-input w-full h-11 px-4', emailErrors.email && 'error')}
-                        />
-                        {emailErrors.email && (
-                          <p className="text-xs text-red-400 mt-1.5">{emailErrors.email.message}</p>
-                        )}
+                    {message && (
+                      <div className="px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 text-sm text-red-400">
+                        {message}
                       </div>
+                    )}
 
-                      <div>
-                        <label className="block text-xs font-medium text-[#8B7FA8] mb-1.5 uppercase tracking-wide">
-                          Код приглашения <span className="text-[#4A3F6A] normal-case tracking-normal font-normal">(если есть)</span>
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="XXXX-XXXX"
-                          {...registerEmail('invite_code')}
-                          className="luxury-input w-full h-11 px-4"
-                        />
-                      </div>
-
-                      {message && (
-                        <div className="px-4 py-3 rounded-lg bg-[rgba(212,175,55,0.06)] border border-[rgba(212,175,55,0.2)] text-sm text-[#D4AF37]">
-                          {message}
-                        </div>
-                      )}
-
-                      <button type="submit" disabled={isLoading} className="btn-gold h-11 w-full flex items-center justify-center gap-2 mt-1">
-                        {isLoading ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <>
-                            Продолжить
-                            <ArrowRight className="w-4 h-4" />
-                          </>
-                        )}
-                      </button>
-                    </form>
-                  )}
-
-                  {step === 'login' && (
-                    <form onSubmit={handlePasswordSubmit(onLogin)} className="flex flex-col gap-4">
-                      <div>
-                        <label className="block text-xs font-medium text-[#8B7FA8] mb-1.5 uppercase tracking-wide">
-                          Пароль
-                        </label>
-                        <input
-                          type="password"
-                          placeholder="••••••••"
-                          autoFocus
-                          {...registerPassword('password', { required: 'Пароль обязателен' })}
-                          className={cn('luxury-input w-full h-11 px-4', passwordErrors.password && 'error')}
-                        />
-                        {passwordErrors.password && (
-                          <p className="text-xs text-red-400 mt-1.5">{passwordErrors.password.message}</p>
-                        )}
-                      </div>
-
-                      {message && (
-                        <div className="px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 text-sm text-red-400">
-                          {message}
-                        </div>
-                      )}
-
-                      <button type="submit" disabled={isLoading} className="btn-gold h-11 w-full flex items-center justify-center gap-2">
-                        {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Войти'}
-                      </button>
-                    </form>
-                  )}
-
-                  {step === 'check' && (
-                    <div className="flex flex-col gap-4">
-                      {message && (
-                        <p className="text-sm text-[#8B7FA8] leading-relaxed">{message}</p>
-                      )}
-                      <button
-                        onClick={onSubscribe}
-                        disabled={isLoading}
-                        className="btn-gold h-11 w-full flex items-center justify-center gap-2"
-                      >
-                        {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Подписаться на рассылку'}
-                      </button>
-                    </div>
-                  )}
-
-                  {step === 'register' && (
-                    <form onSubmit={handlePasswordSubmit(onRegister)} className="flex flex-col gap-4">
-                      <div>
-                        <label className="block text-xs font-medium text-[#8B7FA8] mb-1.5 uppercase tracking-wide">
-                          Придумайте пароль
-                        </label>
-                        <input
-                          type="password"
-                          placeholder="Минимум 6 символов"
-                          autoFocus
-                          {...registerPassword('password', {
-                            required: 'Пароль обязателен',
-                            minLength: { value: 6, message: 'Минимум 6 символов' },
-                          })}
-                          className={cn('luxury-input w-full h-11 px-4', passwordErrors.password && 'error')}
-                        />
-                        {passwordErrors.password && (
-                          <p className="text-xs text-red-400 mt-1.5">{passwordErrors.password.message}</p>
-                        )}
-                      </div>
-
-                      {message && (
-                        <div className="px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 text-sm text-red-400">
-                          {message}
-                        </div>
-                      )}
-
-                      <button type="submit" disabled={isLoading} className="btn-gold h-11 w-full flex items-center justify-center gap-2">
-                        {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Создать аккаунт'}
-                      </button>
-                    </form>
-                  )}
-                </div>
-
-                <div className="px-7 pb-6">
-                  <p className="text-xs text-[#4A3F6A] text-center">
-                    Продолжая, вы соглашаетесь с условиями использования сервиса
-                  </p>
-                </div>
-              </div>
-            )}
+                    <button type="submit" disabled={isLoading} className="btn-gold h-11 w-full flex items-center justify-center gap-2">
+                      {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Создать аккаунт'}
+                    </button>
+                  </form>
+                )}
               </div>
 
-              {/* Feature pills — vertical column on desktop, right of form */}
-              <div className="w-full sm:w-72 sm:shrink-0 flex flex-col sm:flex-col gap-3 animate-in animate-in-delay-2">
-                <div className="feature-pill">
-                  <div className="w-8 h-8 rounded-lg bg-[rgba(212,175,55,0.12)] flex items-center justify-center shrink-0">
-                    <Sparkles className="w-4 h-4 text-[#D4AF37]" />
-                  </div>
-                  <div>
-                    <span className="text-sm font-medium text-[#F0EAD6]">Натальная карта</span>
-                    <p className="text-xs text-[#8B7FA8] mt-0.5">Полный анализ личности, характера и потенциала — с ИИ-интерпретацией</p>
-                  </div>
-                </div>
-                <div className="feature-pill">
-                  <div className="w-8 h-8 rounded-lg bg-[rgba(212,175,55,0.12)] flex items-center justify-center shrink-0">
-                    <Heart className="w-4 h-4 text-[#D4AF37]" />
-                  </div>
-                  <div>
-                    <span className="text-sm font-medium text-[#F0EAD6]">Совместимость</span>
-                    <p className="text-xs text-[#8B7FA8] mt-0.5">Синастрия и комозит — разберите отношения с партнёром</p>
-                  </div>
-                </div>
-                <div className="feature-pill">
-                  <div className="w-8 h-8 rounded-lg bg-[rgba(212,175,55,0.12)] flex items-center justify-center shrink-0">
-                    <Clock className="w-4 h-4 text-[#D4AF37]" />
-                  </div>
-                  <div>
-                    <span className="text-sm font-medium text-[#F0EAD6]">Прогнозы</span>
-                    <p className="text-xs text-[#8B7FA8] mt-0.5">Транзиты, соляры, лунары, профекции — что готовят планеты</p>
-                  </div>
-                </div>
-                <div
-                  className="feature-pill relative overflow-hidden"
-                  style={{ borderColor: 'rgba(212,175,55,0.25)' }}
-                >
-                  <div className="w-8 h-8 rounded-lg bg-[rgba(212,175,55,0.12)] flex items-center justify-center shrink-0">
-                    <Compass className="w-4 h-4 text-[#D4AF37]" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-[#F0EAD6]">Хорар и электив</span>
-                      <span className="text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-[rgba(212,175,55,0.12)] border border-[rgba(212,175,55,0.25)] text-[#D4AF37]">
-                        New
-                      </span>
-                    </div>
-                    <p className="text-xs text-[#8B7FA8] mt-0.5">Ответ на вопрос и выбор лучшего момента для начинания</p>
-                  </div>
-                </div>
-                <div className="feature-pill">
-                  <div className="w-8 h-8 rounded-lg bg-[rgba(212,175,55,0.12)] flex items-center justify-center shrink-0">
-                    <Crosshair className="w-4 h-4 text-[#D4AF37]" />
-                  </div>
-                  <div>
-                    <span className="text-sm font-medium text-[#F0EAD6]">Ректификация</span>
-                    <p className="text-xs text-[#8B7FA8] mt-0.5">Точное время рождения — определение по жизненным событиям</p>
-                  </div>
-                </div>
-                <div
-                  className="feature-pill py-4 relative overflow-hidden"
-                  style={{
-                    borderColor: 'rgba(139,92,246,0.3)',
-                    background: 'linear-gradient(135deg, rgba(139,92,246,0.08) 0%, rgba(16,11,30,0.95) 50%, rgba(212,175,55,0.04) 100%)',
-                    boxShadow: '0 0 20px rgba(139,92,246,0.12), 0 0 40px rgba(139,92,246,0.06)',
-                  }}
-                >
-                  <div className="absolute inset-0 pointer-events-none opacity-30">
-                    <div
-                      className="absolute -top-4 -right-4 w-24 h-24 rounded-full"
-                      style={{ background: 'radial-gradient(circle, rgba(139,92,246,0.2) 0%, transparent 70%)' }}
-                    />
-                  </div>
-                  <div className="w-8 h-8 rounded-lg bg-[rgba(139,92,246,0.15)] flex items-center justify-center shrink-0 relative">
-                    <Users className="w-4 h-4 text-[#A78BFA]" />
-                  </div>
-                  <div className="relative">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-[#C4B5FD]">Звёздный двойник</span>
-                      <span
-                        className="text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full"
-                        style={{
-                          background: 'linear-gradient(135deg, rgba(139,92,246,0.2), rgba(212,175,55,0.15))',
-                          border: '1px solid rgba(139,92,246,0.3)',
-                          color: '#C4B5FD',
-                        }}
-                      >
-                        New
-                      </span>
-                    </div>
-                    <p className="text-xs text-[#8B7FA8] mt-0.5">Найдите знаменитостей с похожей натальной картой</p>
-                  </div>
-                </div>
+              <div className="px-7 pb-6">
+                <p className="text-xs text-[#4A3F6A] text-center">
+                  Продолжая, вы соглашаетесь с условиями использования сервиса
+                </p>
               </div>
             </div>
+            )}
+            </div>
 
-            {/* Bottom decorative text */}
-            <div className="flex items-center gap-3 mt-8 animate-in animate-in-delay-3">
+            {/* ── Feature Grid ── */}
+            <section className="w-full max-w-4xl mt-20 animate-in animate-in-delay-2">
+              <h2 className="font-serif text-2xl sm:text-3xl font-semibold text-center text-[#F0EAD6] mb-2">
+                Все инструменты астролога — в одном приложении
+              </h2>
+              <p className="text-[#8B7FA8] text-center text-sm mb-10 max-w-xl mx-auto">
+                От натальной карты до планер на год — Orbitron покрывает все техники западной астрологии
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {FEATURES.map((f) => (
+                  <div key={f.title} className="feature-pill flex-col items-start gap-3 py-5 px-5">
+                    <div className="w-9 h-9 rounded-lg bg-[rgba(212,175,55,0.12)] flex items-center justify-center shrink-0">
+                      <f.icon className="w-4.5 h-4.5 text-[#D4AF37]" />
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-[#F0EAD6]">{f.title}</span>
+                      <p className="text-xs text-[#8B7FA8] mt-1 leading-relaxed">{f.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {/* ── AI Astrologer Section ── */}
+            <section className="w-full max-w-3xl mt-20 animate-in animate-in-delay-3">
+              <div className="feature-pill flex-col items-center text-center py-8 px-6 relative overflow-hidden"
+                style={{ borderColor: 'rgba(139,92,246,0.3)', background: 'linear-gradient(135deg, rgba(139,92,246,0.1) 0%, rgba(16,11,30,0.95) 50%, rgba(212,175,55,0.06) 100%)' }}>
+                <div className="absolute inset-0 pointer-events-none opacity-30">
+                  <div className="absolute -top-8 -right-8 w-40 h-40 rounded-full"
+                    style={{ background: 'radial-gradient(circle, rgba(139,92,246,0.2) 0%, transparent 70%)' }} />
+                  <div className="absolute -bottom-8 -left-8 w-32 h-32 rounded-full"
+                    style={{ background: 'radial-gradient(circle, rgba(212,175,55,0.15) 0%, transparent 70%)' }} />
+                </div>
+                <div className="relative">
+                  <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-[rgba(139,92,246,0.15)] flex items-center justify-center">
+                    <MessageCircle className="w-7 h-7 text-[#A78BFA]" />
+                  </div>
+                  <h2 className="font-serif text-2xl sm:text-3xl font-semibold text-[#F0EAD6] mb-3">
+                    ИИ-астролог
+                  </h2>
+                  <p className="text-[#8B7FA8] text-sm max-w-md mx-auto mb-6 leading-relaxed">
+                    Задайте любой вопрос о карте — ИИ даст профессиональную интерпретацию с учётом аспектов, домов и достоинств планет. Специализированные подсказки для каждого типа карты.
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-4 justify-center max-w-sm mx-auto">
+                    <div className="flex items-center gap-2 text-sm text-[#8B7FA8]">
+                      <div className="w-5 h-5 rounded-full bg-[rgba(212,175,55,0.15)] flex items-center justify-center shrink-0">
+                        <span className="text-[10px] text-[#D4AF37] font-bold">F</span>
+                      </div>
+                      <span>3 вопроса в месяц</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-[#C4B5FD]">
+                      <div className="w-5 h-5 rounded-full bg-[rgba(139,92,246,0.2)] flex items-center justify-center shrink-0">
+                        <Crown className="w-3 h-3 text-[#A78BFA]" />
+                      </div>
+                      <span>Безлимит — Premium</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* ── Free vs Premium ── */}
+            <section className="w-full max-w-2xl mt-20 animate-in animate-in-delay-4">
+              <h2 className="font-serif text-2xl sm:text-3xl font-semibold text-center text-[#F0EAD6] mb-2">
+                Бесплатно
+                <span className="mx-3 text-[#4A3F6A]">/</span>
+                <span className="bg-gradient-to-r from-[#D4AF37] to-[#F0C842] bg-clip-text text-transparent">Premium</span>
+              </h2>
+              <p className="text-[#8B7FA8] text-center text-sm mb-8">
+                Начните бесплатно — раскройте все возможности с Premium
+              </p>
+
+              <div className="luxury-card overflow-hidden">
+                <div className="grid grid-cols-3 text-xs font-semibold uppercase tracking-wider text-[#8B7FA8]">
+                  <div className="px-5 py-3 border-b border-[rgba(212,175,55,0.08)]">Функция</div>
+                  <div className="px-5 py-3 border-b border-[rgba(212,175,55,0.08)] text-center">Free</div>
+                  <div className="px-5 py-3 border-b border-[rgba(212,175,55,0.08)] text-center text-[#D4AF37]">Premium</div>
+                </div>
+                {COMPARISON.map((row, i) => (
+                  <div key={row.feature} className={cn(
+                    'grid grid-cols-3 text-sm',
+                    i < COMPARISON.length - 1 && 'border-b border-[rgba(212,175,55,0.06)]'
+                  )}>
+                    <div className="px-5 py-3 text-[#F0EAD6]">{row.feature}</div>
+                    <div className="px-5 py-3 text-center text-[#4A3F6A]">
+                      {row.free === '—' ? <X className="w-4 h-4 mx-auto text-[#4A3F6A]/50" /> : row.free}
+                    </div>
+                    <div className="px-5 py-3 text-center text-[#D4AF37]">
+                      {row.premium === '✓' ? <Check className="w-4 h-4 mx-auto text-[#D4AF37]" /> : row.premium}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {/* ── Bottom bar ── */}
+            <div className="flex items-center gap-3 mt-20 animate-in animate-in-delay-5">
               <div className="gold-divider w-12" />
               <span className="text-xs text-[#4A3F6A] tracking-widest uppercase font-medium">
                 Orbitron · Ранний доступ · 2026
