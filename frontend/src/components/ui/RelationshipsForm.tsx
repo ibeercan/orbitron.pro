@@ -21,21 +21,14 @@ interface RelationshipsFormProps {
 export function RelationshipsForm({ natalChartId, onSubmit, onCancel }: RelationshipsFormProps) {
   const [selectedType, setSelectedType] = useState<RelationshipType>('synastry')
 
-  if (selectedType === 'synastry') {
-    return <SynastryForm natalChartId={natalChartId} onSubmit={onSubmit} onCancel={onCancel} />
-  }
-
-  if (selectedType === 'composite') {
-    return <CompositeForm natalChartId={natalChartId} onSubmit={onSubmit} onCancel={onCancel} defaultType="composite" />
-  }
-
-  if (selectedType === 'davison') {
-    return <CompositeForm natalChartId={natalChartId} onSubmit={onSubmit} onCancel={onCancel} defaultType="davison" />
-  }
-
   return (
-    <div className="space-y-5">
-      <div className="space-y-2">
+    <div className="space-y-4">
+      <div className="flex items-center gap-2 pt-1 pb-1.5">
+        <span className="text-[10px] font-bold text-[#D4AF37] uppercase tracking-[0.14em]">Тип отношений</span>
+        <div className="flex-1 h-px bg-[rgba(212,175,55,0.1)]" />
+      </div>
+
+      <div className="space-y-1.5">
         {RELATIONSHIP_TYPES.map((t) => {
           const Icon = t.icon
           const isActive = selectedType === t.id
@@ -45,7 +38,7 @@ export function RelationshipsForm({ natalChartId, onSubmit, onCancel }: Relation
               type="button"
               onClick={() => setSelectedType(t.id)}
               className={cn(
-                'w-full text-left p-3 rounded-xl transition-all border',
+                'w-full text-left p-2.5 rounded-xl transition-all border',
                 isActive
                   ? 'bg-[rgba(212,175,55,0.1)] border-[rgba(212,175,55,0.25)]'
                   : 'border-transparent bg-[rgba(212,175,55,0.04)] hover:bg-[rgba(212,175,55,0.08)]'
@@ -76,22 +69,15 @@ export function RelationshipsForm({ natalChartId, onSubmit, onCancel }: Relation
         })}
       </div>
 
-      <div className="flex gap-3 pt-1">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="btn-ghost flex-1 h-11 text-sm font-medium"
-        >
-          Отмена
-        </button>
-        <button
-          type="button"
-          onClick={() => setSelectedType('synastry')}
-          className="btn-gold flex-1 h-11 text-sm"
-        >
-          Далее
-        </button>
-      </div>
+      {selectedType === 'synastry' && (
+        <SynastryForm key="synastry" natalChartId={natalChartId} onSubmit={onSubmit} onCancel={onCancel} />
+      )}
+      {selectedType === 'composite' && (
+        <CompositeForm key="composite" natalChartId={natalChartId} onSubmit={onSubmit} onCancel={onCancel} defaultType="composite" />
+      )}
+      {selectedType === 'davison' && (
+        <CompositeForm key="davison" natalChartId={natalChartId} onSubmit={onSubmit} onCancel={onCancel} defaultType="davison" />
+      )}
     </div>
   )
 }

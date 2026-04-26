@@ -877,6 +877,7 @@ const loadChartSvg = async (chart: Chart) => {
             icon={<Heart className="w-4 h-4 text-[#D4AF37]" style={{ width: 16, height: 16 }} />}
             title="Отношения"
             description="Совместимость и синтез двух натальных карт"
+            size="lg"
           >
             <RelationshipsForm
               natalChartId={selectedChart.id}
