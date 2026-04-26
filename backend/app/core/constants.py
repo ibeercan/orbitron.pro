@@ -24,4 +24,5 @@ PREMIUM_FEATURES = {
     "lunar_return",
     "profection",
     "pdf_report",
+    "horary",
 }

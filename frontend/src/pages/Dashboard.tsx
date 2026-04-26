@@ -15,10 +15,12 @@ import { ProfectionForm } from '@/components/ui/ProfectionForm'
 import { RectificationForm } from '@/components/ui/RectificationForm'
 import { SolarArcForm } from '@/components/ui/SolarArcForm'
 import { ProgressionForm } from '@/components/ui/ProgressionForm'
+import { CompositeForm } from '@/components/ui/CompositeForm'
+import { HoraryForm } from '@/components/ui/HoraryForm'
 import { TransitTimeline } from '@/components/ui/TransitTimeline'
 import { AstroTwinsPanel } from '@/components/ui/AstroTwinsPanel'
 import { OnboardingTour } from '@/components/ui/OnboardingTour'
-import { Loader2, Calendar, MapPin, Sparkles, Star, Trash2, AlertTriangle, Maximize2, Heart, Clock, Sun, Moon, Target, FileText, Lock, Crown, ArrowLeft, Crosshair, Navigation, Zap } from 'lucide-react'
+import { Loader2, Calendar, MapPin, Sparkles, Star, Trash2, AlertTriangle, Maximize2, Heart, Clock, Sun, Moon, Target, FileText, Lock, Crown, ArrowLeft, Crosshair, Navigation, Zap, Merge, Compass } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/contexts/auth-context'
 
@@ -33,6 +35,9 @@ const CHART_TYPE_LABELS: Record<string, string> = {
   profection: 'Профекция',
   solar_arc: 'Солярные дуги',
   progression: 'Вторичные прогрессии',
+  composite: 'Композит',
+  davison: 'Давидсон',
+  horary: 'Хорарная карта',
 }
 
 function ChartActionButton({ icon: Icon, label, premium, onClick }: {
@@ -556,6 +561,7 @@ const loadChartSvg = async (chart: Chart) => {
         <Sidebar
           onProfileClick={() => setShowProfile(true)}
           onCreateChart={() => setShowCreateModal(true)}
+          onCreateHorary={() => setActiveModal('horary')}
           charts={charts}
           selectedChart={selectedChart}
           onSelectChart={selectChart}
@@ -601,6 +607,7 @@ const loadChartSvg = async (chart: Chart) => {
                 {selectedChart && (selectedChart.chart_type || 'natal') === 'natal' && (
                   <div className="flex items-center gap-1.5 px-5 py-2 border-b border-[rgba(212,175,55,0.06)] shrink-0 overflow-x-auto" data-onboarding="actions">
                     <ChartActionButton icon={Heart} label="Синастрия" premium onClick={() => setActiveModal('synastry')} />
+                    <ChartActionButton icon={Merge} label="Композит" premium onClick={() => setActiveModal('composite')} />
                     <ChartActionButton icon={Clock} label="Транзиты" onClick={() => setActiveModal('transit')} />
                     <ChartActionButton icon={Sun} label="Соляр" premium onClick={() => setActiveModal('solar_return')} />
                     <ChartActionButton icon={Moon} label="Лунар" premium onClick={() => setActiveModal('lunar_return')} />
@@ -608,6 +615,7 @@ const loadChartSvg = async (chart: Chart) => {
                     <ChartActionButton icon={Navigation} label="Дирекции" premium onClick={() => setActiveModal('solar_arc')} />
                     <ChartActionButton icon={Zap} label="Прогрессии" premium onClick={() => setActiveModal('progression')} />
                     <ChartActionButton icon={Crosshair} label="Ректификация" premium onClick={() => setActiveModal('rectification')} />
+                    <ChartActionButton icon={Compass} label="Хорар" premium onClick={() => setActiveModal('horary')} />
                     <ChartActionButton icon={FileText} label="PDF" premium onClick={handlePdfDownload} />
                   </div>
                 )}
@@ -865,6 +873,37 @@ const loadChartSvg = async (chart: Chart) => {
             />
           </ModalShell>
         )}
+
+        {/* Composite modal */}
+        {selectedChart && (
+          <ModalShell
+            open={activeModal === 'composite'}
+            onClose={closeModal}
+            icon={<Merge className="w-4 h-4 text-[#D4AF37]" style={{ width: 16, height: 16 }} />}
+            title="Композит / Давидсон"
+            description="Карта отношений как единое целое"
+          >
+            <CompositeForm
+              natalChartId={selectedChart.id}
+              onSubmit={onChartCreatedFromModal}
+              onCancel={closeModal}
+            />
+          </ModalShell>
+        )}
+
+        {/* Horary modal */}
+        <ModalShell
+          open={activeModal === 'horary'}
+          onClose={closeModal}
+          icon={<Compass className="w-4 h-4 text-[#D4AF37]" style={{ width: 16, height: 16 }} />}
+          title="Хорарная карта"
+          description="Ответ на конкретный вопрос по моменту его задавания"
+        >
+          <HoraryForm
+            onSubmit={onChartCreatedFromModal}
+            onCancel={closeModal}
+          />
+        </ModalShell>
 
         {/* Transit modal */}
         {selectedChart && (

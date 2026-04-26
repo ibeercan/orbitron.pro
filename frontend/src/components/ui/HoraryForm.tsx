@@ -2,13 +2,7 @@ import React, { useState, useRef, useCallback } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Loader2, MapPin, ChevronDown, ChevronUp, Star, X } from 'lucide-react'
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/ui/dialog'
+import { Loader2, MapPin, ChevronDown, ChevronUp, Compass } from 'lucide-react'
 import {
   Select,
   SelectContent,
@@ -19,9 +13,8 @@ import {
 import { NumberPicker } from '@/components/ui/number-picker'
 import { chartsApi, geocodingApi } from '@/lib/api/client'
 import { cn } from '@/lib/utils'
-import { useFixedDropdown, isGeocodingDropdownClick } from '@/hooks/useFixedDropdown'
+import { useFixedDropdown } from '@/hooks/useFixedDropdown'
 
-/* ── Validation schema ── */
 function getDaysInMonth(month: number, year: number) {
   return new Date(year, month, 0).getDate()
 }
@@ -30,6 +23,7 @@ const currentYear = new Date().getFullYear()
 
 const schema = z
   .object({
+    question: z.string().min(3, 'Введите вопрос (минимум 3 символа)'),
     name: z.string().optional(),
     day: z
       .string()
@@ -45,14 +39,14 @@ const schema = z
       .string()
       .min(1, 'Введите год')
       .transform(Number)
-      .refine((v) => v >= 1900 && v <= currentYear, `Год от 1900 до ${currentYear}`),
+      .refine((v) => v >= 1900 && v <= currentYear + 1, `Год от 1900 до ${currentYear + 1}`),
     time: z
       .string()
       .min(1, 'Введите время')
       .regex(/^([01]\d|2[0-3]):([0-5]\d)$/, 'Формат HH:MM (24ч)'),
-    location: z.string().min(2, 'Выберите место рождения'),
+    location: z.string().min(2, 'Выберите место'),
     theme: z.string().default('midnight'),
-    house_system: z.string().default('placidus'),
+    house_system: z.string().default('regiomontanus'),
     preset: z.string().default('detailed'),
   })
   .superRefine((data, ctx) => {
@@ -68,7 +62,6 @@ const schema = z
 
 type FormValues = z.input<typeof schema>
 
-/* ── Geocoding suggestion type ── */
 interface GeoSuggestion {
   place_id: number
   display_name: string
@@ -76,7 +69,6 @@ interface GeoSuggestion {
   lon: string
 }
 
-/* ── Styled field label ── */
 function FieldLabel({ children, required }: { children: React.ReactNode; required?: boolean }) {
   return (
     <label className="block text-[10px] font-semibold text-[#8B7FA8] uppercase tracking-[0.12em] mb-1.5">
@@ -86,13 +78,11 @@ function FieldLabel({ children, required }: { children: React.ReactNode; require
   )
 }
 
-/* ── Styled error message ── */
 function FieldError({ message }: { message?: string }) {
   if (!message) return null
   return <p className="text-[11px] text-red-400 mt-1.5 flex items-center gap-1">{message}</p>
 }
 
-/* ── Location autocomplete ── */
 function LocationAutocomplete({
   value,
   onChange,
@@ -190,7 +180,6 @@ function LocationAutocomplete({
   )
 }
 
-/* ── Advanced settings section ── */
 function AdvancedSettings({
   control,
 }: {
@@ -249,13 +238,16 @@ function AdvancedSettings({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="luxury-select-content" position="popper" sideOffset={4}>
+                    <SelectItem value="regiomontanus">Региомонтан</SelectItem>
                     <SelectItem value="placidus">Плацидус</SelectItem>
                     <SelectItem value="whole_sign">Целые знаки</SelectItem>
-                    <SelectItem value="regiomontanus">Региомонтан</SelectItem>
                   </SelectContent>
                 </Select>
               )}
             />
+            <p className="text-[11px] text-[#4A3F6A] mt-1">
+              Региомонтан — стандартная система для хорарной астрологии
+            </p>
           </div>
 
           <div>
@@ -283,23 +275,17 @@ function AdvancedSettings({
   )
 }
 
-/* ── Main modal ── */
-interface CreateChartModalProps {
-  open: boolean
-  onClose: () => void
-  onCreated: (chart: {
-    id: number
-    native_data: { datetime: string; location: string }
-    result_data: Record<string, unknown>
-    svg_path: string
-    prompt_text: string
-    created_at: string
-  }) => void
+interface HoraryFormProps {
+  onSubmit: (chart: Record<string, unknown>) => void
+  onCancel: () => void
 }
 
-export function CreateChartModal({ open, onClose, onCreated }: CreateChartModalProps) {
+export function HoraryForm({ onSubmit, onCancel }: HoraryFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [serverError, setServerError] = useState<string | null>(null)
+
+  const now = new Date()
+  const pad = (n: number) => String(n).padStart(2, '0')
 
   const {
     register,
@@ -308,234 +294,201 @@ export function CreateChartModal({ open, onClose, onCreated }: CreateChartModalP
     setValue,
     watch,
     formState: { errors },
-    reset,
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
+      question: '',
       name: '',
-      day: '',
-      month: '',
-      year: '',
-      time: '',
+      day: String(now.getDate()),
+      month: String(now.getMonth() + 1),
+      year: String(now.getFullYear()),
+      time: `${pad(now.getHours())}:${pad(now.getMinutes())}`,
       location: '',
       theme: 'midnight',
-      house_system: 'placidus',
+      house_system: 'regiomontanus',
       preset: 'detailed',
     },
   })
 
   const locationValue = watch('location')
 
-  const onSubmit = async (data: FormValues) => {
+  const onFormSubmit = async (data: FormValues) => {
     setIsSubmitting(true)
     setServerError(null)
 
-    const day   = String(data.day).padStart(2, '0')
+    const day = String(data.day).padStart(2, '0')
     const month = String(data.month).padStart(2, '0')
     const datetime = `${data.year}-${month}-${day}T${data.time}:00`
 
     try {
-      const res = await chartsApi.create({
+      const res = await chartsApi.createHorary({
         datetime,
         location: data.location,
+        question: data.question,
         name: data.name || undefined,
         theme: data.theme,
         house_system: data.house_system,
         preset: data.preset,
       })
-      reset()
-      onCreated(res.data)
-      onClose()
+      onSubmit(res.data)
     } catch (err: unknown) {
-      const msg =
-        (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ||
-        'Не удалось создать карту. Попробуйте ещё раз.'
-      setServerError(msg)
+      const e = err as { response?: { data?: { detail?: string } } }
+      setServerError(e.response?.data?.detail || 'Не удалось создать карту')
     } finally {
       setIsSubmitting(false)
     }
   }
 
   return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent
-        className="p-0 border-0 bg-transparent shadow-none max-w-md w-full"
-        onPointerDownOutside={(e) => {
-          if (isGeocodingDropdownClick(e.detail.originalEvent as PointerEvent)) {
-            e.preventDefault()
-          }
-        }}
-      >
-        <div className="luxury-card overflow-hidden">
-          {/* Modal header */}
-          <div className="flex items-center justify-between px-6 pt-6 pb-5 border-b border-[rgba(212,175,55,0.08)]">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-[rgba(212,175,55,0.1)] border border-[rgba(212,175,55,0.2)] flex items-center justify-center">
-                <Star className="w-4.5 h-4.5 text-[#D4AF37]" style={{ width: 18, height: 18 }} />
-              </div>
-              <div>
-                <DialogTitle className="font-serif text-xl font-semibold text-[#F0EAD6] m-0">
-                  Новая натальная карта
-                </DialogTitle>
-                <DialogDescription className="text-xs text-[#8B7FA8] mt-0.5">
-                  Введите дату, время и место рождения
-                </DialogDescription>
-              </div>
-            </div>
-            <button
-              onClick={onClose}
-              className="w-9 h-9 rounded-xl flex items-center justify-center text-[#8B7FA8] hover:text-[#F0EAD6] hover:bg-[rgba(212,175,55,0.08)] transition-all"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
+    <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-5">
+      {/* Question */}
+      <div>
+        <FieldLabel required>Хорарный вопрос</FieldLabel>
+        <textarea
+          {...register('question')}
+          rows={3}
+          placeholder="Найду ли я работу в этом году?"
+          autoComplete="off"
+          className={cn(
+            'luxury-input w-full px-4 py-3 text-sm resize-none',
+            errors.question && 'error'
+          )}
+        />
+        <FieldError message={(errors.question as { message?: string })?.message} />
+        <p className="text-[11px] text-[#4A3F6A] mt-1">
+          Сформулируйте конкретный вопрос для хорарной карты
+        </p>
+      </div>
 
-          {/* Form body */}
-          <div className="px-6 py-6 max-h-[65dvh] overflow-y-auto overscroll-contain">
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+      {/* Name */}
+      <div>
+        <FieldLabel>Имя / название</FieldLabel>
+        <input
+          {...register('name')}
+          placeholder="Хорар о работе"
+          autoComplete="name"
+          className="luxury-input w-full h-11 px-4 text-sm"
+        />
+      </div>
 
-              {/* ── Name field ── */}
-              <div>
-                <FieldLabel>Имя</FieldLabel>
-                <input
-                  {...register('name')}
-                  placeholder="Иванов Иван"
-                  autoComplete="name"
-                  className="luxury-input w-full h-11 px-4 text-sm"
-                />
-                <p className="text-[11px] text-[#4A3F6A] mt-1">
-                  Необязательно. Поможет найти карту позже
-                </p>
-              </div>
-
-              {/* ── Date fields ── */}
-              <div>
-                <FieldLabel required>Дата рождения</FieldLabel>
-                <div className="grid grid-cols-3 gap-2.5">
-                  <Controller
-                    name="day"
-                    control={control}
-                    render={({ field }) => (
-                      <NumberPicker
-                        value={field.value ? Number(field.value) : null}
-                        onChange={(v) => field.onChange(v !== null ? String(v) : '')}
-                        min={1}
-                        max={31}
-                        placeholder="День"
-                      />
-                    )}
-                  />
-                  <Controller
-                    name="month"
-                    control={control}
-                    render={({ field }) => (
-                      <NumberPicker
-                        value={field.value ? Number(field.value) : null}
-                        onChange={(v) => field.onChange(v !== null ? String(v) : '')}
-                        min={1}
-                        max={12}
-                        placeholder="Мес."
-                      />
-                    )}
-                  />
-                  <Controller
-                    name="year"
-                    control={control}
-                    render={({ field }) => (
-                      <NumberPicker
-                        value={field.value ? Number(field.value) : null}
-                        onChange={(v) => field.onChange(v !== null ? String(v) : '')}
-                        min={1900}
-                        max={currentYear}
-                        placeholder="Год"
-                      />
-                    )}
-                  />
-                </div>
-                {(errors.day || errors.month || errors.year) && (
-                  <p className="text-[11px] text-red-400 mt-1.5">
-                    {(errors.day as { message?: string })?.message ||
-                      (errors.month as { message?: string })?.message ||
-                      (errors.year as { message?: string })?.message}
-                  </p>
-                )}
-              </div>
-
-              {/* ── Time field ── */}
-              <div>
-                <FieldLabel required>Время рождения</FieldLabel>
-                <input
-                  {...register('time')}
-                  placeholder="12:00"
-                  maxLength={5}
-                  inputMode="numeric"
-                  autoComplete="off"
-                  className={cn('luxury-input h-11 px-4 text-sm w-36', errors.time && 'error')}
-                  onChange={(e) => {
-                    let val = e.target.value.replace(/[^\d:]/g, '')
-                    if (val.length === 2 && !val.includes(':')) val = val + ':'
-                    e.target.value = val
-                    register('time').onChange(e)
-                  }}
-                />
-                <FieldError message={(errors.time as { message?: string })?.message} />
-                <p className="text-[11px] text-[#4A3F6A] mt-1">
-                  Используйте 24-часовой формат (например, 14:30)
-                </p>
-              </div>
-
-              {/* ── Location ── */}
-              <div>
-                <FieldLabel required>Место рождения</FieldLabel>
-                <LocationAutocomplete
-                  value={locationValue}
-                  onChange={(val) => setValue('location', val, { shouldValidate: true })}
-                  error={(errors.location as { message?: string })?.message}
-                />
-              </div>
-
-              {/* ── Advanced settings ── */}
-              <AdvancedSettings control={control} />
-
-              {/* ── Server error ── */}
-              {serverError && (
-                <div className="px-4 py-3 rounded-xl border border-red-500/20 bg-red-500/08 text-sm text-red-400">
-                  {serverError}
-                </div>
-              )}
-
-              {/* ── Actions ── */}
-              <div className="flex gap-3 pt-1">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  disabled={isSubmitting}
-                  className="btn-ghost flex-1 h-11 text-sm font-medium"
-                >
-                  Отмена
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="btn-gold flex-1 h-11 text-sm flex items-center justify-center gap-2"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Строим карту…
-                    </>
-                  ) : (
-                    <>
-                      <Star className="w-4 h-4" />
-                      Создать карту
-                    </>
-                  )}
-                </button>
-              </div>
-            </form>
-          </div>
+      {/* Date */}
+      <div>
+        <FieldLabel required>Момент вопроса</FieldLabel>
+        <div className="grid grid-cols-3 gap-2.5">
+          <Controller
+            name="day"
+            control={control}
+            render={({ field }) => (
+              <NumberPicker
+                value={field.value ? Number(field.value) : null}
+                onChange={(v) => field.onChange(v !== null ? String(v) : '')}
+                min={1}
+                max={31}
+                placeholder="День"
+              />
+            )}
+          />
+          <Controller
+            name="month"
+            control={control}
+            render={({ field }) => (
+              <NumberPicker
+                value={field.value ? Number(field.value) : null}
+                onChange={(v) => field.onChange(v !== null ? String(v) : '')}
+                min={1}
+                max={12}
+                placeholder="Мес."
+              />
+            )}
+          />
+          <Controller
+            name="year"
+            control={control}
+            render={({ field }) => (
+              <NumberPicker
+                value={field.value ? Number(field.value) : null}
+                onChange={(v) => field.onChange(v !== null ? String(v) : '')}
+                min={1900}
+                max={currentYear + 1}
+                placeholder="Год"
+              />
+            )}
+          />
         </div>
-      </DialogContent>
-    </Dialog>
+        {(errors.day || errors.month || errors.year) && (
+          <p className="text-[11px] text-red-400 mt-1.5">
+            {(errors.day as { message?: string })?.message ||
+              (errors.month as { message?: string })?.message ||
+              (errors.year as { message?: string })?.message}
+          </p>
+        )}
+      </div>
+
+      {/* Time */}
+      <div>
+        <FieldLabel required>Время вопроса</FieldLabel>
+        <input
+          {...register('time')}
+          placeholder="12:00"
+          maxLength={5}
+          inputMode="numeric"
+          autoComplete="off"
+          className={cn('luxury-input h-11 px-4 text-sm w-36', errors.time && 'error')}
+          onChange={(e) => {
+            let val = e.target.value.replace(/[^\d:]/g, '')
+            if (val.length === 2 && !val.includes(':')) val = val + ':'
+            e.target.value = val
+            register('time').onChange(e)
+          }}
+        />
+        <FieldError message={(errors.time as { message?: string })?.message} />
+      </div>
+
+      {/* Location */}
+      <div>
+        <FieldLabel required>Место вопроса</FieldLabel>
+        <LocationAutocomplete
+          value={locationValue}
+          onChange={(val) => setValue('location', val, { shouldValidate: true })}
+          error={(errors.location as { message?: string })?.message}
+        />
+        <p className="text-[11px] text-[#4A3F6A] mt-1">
+          Место, где вы находились в момент задавания вопроса
+        </p>
+      </div>
+
+      {/* Advanced settings */}
+      <AdvancedSettings control={control} />
+
+      {/* Server error */}
+      {serverError && (
+        <div className="px-4 py-3 rounded-xl border border-red-500/20 bg-red-500/08 text-sm text-red-400">
+          {serverError}
+        </div>
+      )}
+
+      {/* Actions */}
+      <div className="flex gap-3 pt-1">
+        <button
+          type="button"
+          onClick={onCancel}
+          disabled={isSubmitting}
+          className="btn-ghost flex-1 h-11 text-sm font-medium"
+        >
+          Отмена
+        </button>
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className="btn-gold flex-1 h-11 text-sm flex items-center justify-center gap-2"
+        >
+          {isSubmitting ? (
+            <><Loader2 className="w-4 h-4 animate-spin" />Строим…</>
+          ) : (
+            <><Compass className="w-4 h-4" />Построить</>
+          )}
+        </button>
+      </div>
+    </form>
   )
 }

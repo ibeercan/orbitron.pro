@@ -24,6 +24,8 @@ from app.charts.schemas import (
     ProfectionCreate,
     SolarArcCreate,
     ProgressionCreate,
+    CompositeCreate,
+    HoraryCreate,
     Chart,
     ProfectionResponse,
     TransitTimelineEntry,
@@ -87,6 +89,35 @@ async def create_natal_chart(
         return Chart.model_validate(chart)
     except Exception as e:
         logger.error("API: Failed to create natal chart", user_id=user_id, error=str(e))
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.post("/horary", response_model=Chart, status_code=status.HTTP_201_CREATED)
+async def create_horary_chart(
+    *,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+    chart_in: HoraryCreate,
+) -> Any:
+    require_premium(current_user, "horary")
+
+    try:
+        chart_data = await chart_service.create_horary_chart(
+            datetime_str=chart_in.datetime,
+            location=chart_in.location,
+            question=chart_in.question,
+            theme=chart_in.theme,
+            house_system=chart_in.house_system,
+            preset=chart_in.preset,
+            zodiac_palette=chart_in.zodiac_palette,
+            name=chart_in.name,
+        )
+        chart = await chart_crud.create(db, obj_in=chart_data, user_id=current_user.id)
+        await db.commit()
+        await db.refresh(chart)
+        return Chart.model_validate(chart)
+    except Exception as e:
+        logger.error("API: Failed to create horary chart", user_id=current_user.id, error=str(e))
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
@@ -339,6 +370,58 @@ async def create_progression(
         return Chart.model_validate(chart)
     except Exception as e:
         logger.error("API: Failed to create progression", error=str(e))
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.post("/composite", response_model=Chart, status_code=status.HTTP_201_CREATED)
+async def create_composite(
+    *,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+    chart_in: CompositeCreate,
+) -> Any:
+    require_premium(current_user, "composite")
+    native_data, natal_chart = await _get_native_data(db, chart_in.natal_chart_id, current_user.id)
+
+    person2_datetime = chart_in.person2_datetime
+    person2_location = chart_in.person2_location
+    person2_name = chart_in.person2_name or "Partner"
+    person1_name = natal_chart.name or "You"
+    person_id = chart_in.person_id
+
+    if person_id:
+        person_obj = await person_crud.get_by_id_and_user(db, id=person_id, user_id=current_user.id)
+        if not person_obj:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Person not found")
+        person2_datetime = person_obj.datetime
+        person2_location = person_obj.location
+        person2_name = person_obj.name
+
+    if not person2_datetime or not person2_location:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Either person_id or person2_datetime+person2_location required",
+        )
+
+    try:
+        chart_data = await chart_service.create_composite(
+            natal_chart_data=native_data,
+            person2_datetime=person2_datetime,
+            person2_location=person2_location,
+            person2_name=person2_name,
+            person1_name=person1_name,
+            synthesis_type=chart_in.synthesis_type,
+            theme=chart_in.theme,
+            natal_chart_id=chart_in.natal_chart_id,
+            natal_chart_name=natal_chart.name,
+            person_id=person_id,
+        )
+        chart = await chart_crud.create(db, obj_in=chart_data, user_id=current_user.id)
+        await db.commit()
+        await db.refresh(chart)
+        return Chart.model_validate(chart)
+    except Exception as e:
+        logger.error("API: Failed to create composite", error=str(e))
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 

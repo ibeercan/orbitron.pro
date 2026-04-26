@@ -7,14 +7,15 @@ import tempfile
 from datetime import datetime as dt, timezone
 from typing import Dict, Any
 
-from stellium import ChartBuilder, MultiChartBuilder, ReportBuilder
-from stellium.engines import PlacidusHouses, WholeSignHouses
+from stellium import ChartBuilder, MultiChartBuilder, ReportBuilder, SynthesisBuilder
+from stellium.engines import PlacidusHouses, WholeSignHouses, RegiomontanusHouses
 
 from app.core.logging import logger
 
 HOUSE_ENGINES = {
     "placidus": PlacidusHouses,
     "whole_sign": WholeSignHouses,
+    "regiomontanus": RegiomontanusHouses,
 }
 
 THEME_PALETTE_MAP = {
@@ -132,6 +133,35 @@ class ChartService:
             "result_data": chart.to_dict(),
             "svg_data": svg_b64,
             "prompt_text": chart.to_prompt_text(),
+        }
+
+    async def create_horary_chart(
+        self,
+        datetime_str: str,
+        location: str,
+        question: str,
+        theme: str = "midnight",
+        house_system: str = "regiomontanus",
+        preset: str = "detailed",
+        zodiac_palette: str = "auto",
+        name: str | None = None,
+    ) -> Dict[str, Any]:
+        logger.info("Creating horary chart", datetime=datetime_str, location=location, question=question[:80])
+        chart = _build_natal(datetime_str, location, house_system)
+        svg_bytes = _render_svg(chart, theme, zodiac_palette)
+        svg_b64 = _svg_to_b64(svg_bytes)
+
+        prompt_text = chart.to_prompt_text()
+        if question:
+            prompt_text = f"Хорарный вопрос: {question}\n\n{prompt_text}"
+
+        return {
+            "name": name,
+            "chart_type": "horary",
+            "native_data": {"datetime": datetime_str, "location": location, "question": question},
+            "result_data": chart.to_dict(),
+            "svg_data": svg_b64,
+            "prompt_text": prompt_text,
         }
 
     async def create_synastry_chart(
@@ -619,6 +649,70 @@ class ChartService:
                 "age": age,
             },
             "result_data": progressed.to_dict(),
+            "svg_data": svg_b64,
+            "prompt_text": "\n".join(prompt_parts),
+        }
+
+    async def create_composite(
+        self,
+        natal_chart_data: dict,
+        person2_datetime: str,
+        person2_location: str,
+        person2_name: str = "Partner",
+        person1_name: str = "You",
+        synthesis_type: str = "composite",
+        theme: str = "midnight",
+        zodiac_palette: str = "auto",
+        natal_chart_id: int | None = None,
+        natal_chart_name: str | None = None,
+        person_id: int | None = None,
+    ) -> Dict[str, Any]:
+        dt_str = natal_chart_data["datetime"]
+        loc = natal_chart_data["location"]
+        person1 = _build_natal(dt_str, loc)
+        person2 = _build_natal(person2_datetime, person2_location)
+
+        logger.info("Creating synthesis chart", synthesis_type=synthesis_type)
+
+        builder = SynthesisBuilder.composite(person1, person2) if synthesis_type == "composite" else SynthesisBuilder.davison(person1, person2)
+        synthesis = builder.with_houses(True).with_labels(person1_name, person2_name).calculate()
+
+        svg_bytes = _render_svg(synthesis, theme, zodiac_palette)
+        svg_b64 = _svg_to_b64(svg_bytes)
+
+        type_label = "Композит" if synthesis_type == "composite" else "Давидсон"
+        method_label = "мидпоинт позиций" if synthesis_type == "composite" else "мидпоинт времени и места"
+
+        prompt_parts = [
+            f"{type_label.upper()} ({method_label})",
+            f"Персона 1 ({person1_name}): {dt_str}, {loc}",
+            f"Персона 2 ({person2_name}): {person2_datetime}, {person2_location}",
+        ]
+
+        internal_aspects = synthesis.internal_aspects if hasattr(synthesis, "internal_aspects") else []
+        if internal_aspects:
+            prompt_parts.append(f"\nАспекты композита ({len(internal_aspects)}):")
+            for asp in sorted(internal_aspects, key=lambda a: a.orb):
+                prompt_parts.append(
+                    f"  {asp.object1.name} {asp.aspect_name} {asp.object2.name} орб: {asp.orb:.2f}°"
+                )
+
+        name_suffix = f" · {natal_chart_name}" if natal_chart_name else ""
+        chart_type = "composite" if synthesis_type == "composite" else "davison"
+
+        return {
+            "name": f"{type_label}{name_suffix}",
+            "chart_type": chart_type,
+            "parent_chart_id": natal_chart_id,
+            "person_id": person_id,
+            "native_data": {
+                "datetime": dt_str,
+                "location": loc,
+                "person1": {"datetime": dt_str, "location": loc, "name": person1_name},
+                "person2": {"datetime": person2_datetime, "location": person2_location, "name": person2_name},
+                "synthesis_type": synthesis_type,
+            },
+            "result_data": synthesis.to_dict(),
             "svg_data": svg_b64,
             "prompt_text": "\n".join(prompt_parts),
         }

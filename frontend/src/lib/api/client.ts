@@ -169,6 +169,31 @@ export const chartsApi = {
     return api.post('/charts/progression', data)
   },
 
+  createComposite: async (data: {
+    natal_chart_id: number
+    person_id?: number
+    person2_datetime?: string
+    person2_location?: string
+    person2_name?: string
+    synthesis_type: string
+    theme?: string
+  }) => {
+    return api.post('/charts/composite', data)
+  },
+
+  createHorary: async (data: {
+    datetime: string
+    location: string
+    question: string
+    name?: string
+    theme?: string
+    house_system?: string
+    preset?: string
+    zodiac_palette?: string
+  }) => {
+    return api.post('/charts/horary', data)
+  },
+
   generateReport: async (chartId: number, preset?: string, title?: string) => {
     return api.post(`/charts/${chartId}/report`, null, {
       params: { preset: preset || 'standard', ...(title ? { title } : {}) },

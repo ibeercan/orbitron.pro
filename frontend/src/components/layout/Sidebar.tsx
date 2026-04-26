@@ -21,6 +21,8 @@ import {
   Target,
   Navigation,
   Zap,
+  Merge,
+  Compass,
 } from 'lucide-react'
 
 const CHART_TYPE_LABELS: Record<string, string> = {
@@ -32,6 +34,9 @@ const CHART_TYPE_LABELS: Record<string, string> = {
   profection: 'Профекция',
   solar_arc: 'Дирекции',
   progression: 'Прогрессии',
+  composite: 'Композит',
+  davison: 'Давидсон',
+  horary: 'Хорар',
 }
 
 const CHART_TYPE_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -43,6 +48,9 @@ const CHART_TYPE_ICONS: Record<string, React.ComponentType<{ className?: string 
   profection: Target,
   solar_arc: Navigation,
   progression: Zap,
+  composite: Merge,
+  davison: Merge,
+  horary: Compass,
 }
 
 /* ── Chart type ── */
@@ -63,6 +71,7 @@ interface Chart {
 interface SidebarProps {
   onProfileClick?: () => void
   onCreateChart?: () => void
+  onCreateHorary?: () => void
   charts?: Chart[]
   selectedChart?: Chart | null
   onSelectChart?: (chart: Chart) => void
@@ -130,6 +139,7 @@ function formatLocation(location: string) {
 export function Sidebar({
   onProfileClick,
   onCreateChart,
+  onCreateHorary,
   charts = [],
   selectedChart,
   onSelectChart,
@@ -261,6 +271,16 @@ export function Sidebar({
                 >
                   <Plus className="w-4 h-4" />
                 </button>
+                {/* Horary button */}
+                {onCreateHorary && (
+                  <button
+                    onClick={onCreateHorary}
+                    title="Хорарная карта"
+                    className="w-9 h-9 rounded-xl flex items-center justify-center bg-[rgba(212,175,55,0.04)] border border-[rgba(212,175,55,0.15)] text-[#8B7FA8] hover:text-[#D4AF37] hover:border-[rgba(212,175,55,0.3)] transition-all mb-1"
+                  >
+                    <Compass className="w-4 h-4" />
+                  </button>
+                )}
 
                 {charts.map((chart) => {
                   const isActive = selectedChart?.id === chart.id
@@ -301,6 +321,15 @@ export function Sidebar({
                     <Plus className="w-3 h-3" />
                     Новая
                   </button>
+                  {onCreateHorary && (
+                    <button
+                      onClick={onCreateHorary}
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-medium text-[#D4AF37] bg-[rgba(212,175,55,0.06)] border border-[rgba(212,175,55,0.15)] hover:bg-[rgba(212,175,55,0.12)] hover:border-[rgba(212,175,55,0.3)] transition-all active:scale-95"
+                    >
+                      <Compass className="w-3 h-3" />
+                      Хорар
+                    </button>
+                  )}
                 </div>
 
                 <div className="flex-1 overflow-y-auto px-3 pb-3 space-y-1.5">
@@ -474,6 +503,18 @@ export function Sidebar({
             </div>
             <span className="text-[10px] font-medium text-[#D4AF37] uppercase tracking-wide">Новая</span>
           </button>
+
+          {onCreateHorary && (
+            <button
+              onClick={onCreateHorary}
+              className="flex flex-col items-center gap-1 px-4 py-1.5"
+            >
+              <div className="w-10 h-10 rounded-2xl flex items-center justify-center bg-[rgba(212,175,55,0.06)] border border-[rgba(212,175,55,0.15)] text-[#D4AF37] transition-all">
+                <Compass className="w-5 h-5" />
+              </div>
+              <span className="text-[10px] font-medium text-[#8B7FA8] uppercase tracking-wide">Хорар</span>
+            </button>
+          )}
 
           <button
             onClick={() => {
