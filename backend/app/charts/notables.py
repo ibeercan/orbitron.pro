@@ -67,12 +67,69 @@ PLANET_RU: dict[str, str] = {
     "Pluto": "Плутон", "True Node": "Восходящий узел",
     "Mean Node": "Восходящий узел", "North Node": "Восходящий узел",
     "South Node": "Нисходящий узел", "Mean Apogee": "Чёрная Луна",
-    "Chiron": "Хирон", "Ascendant": "Асцендент", "Midheaven": "МС",
+    "Chiron": "Хирон",
+    "Ascendant": "Асцендент", "ASC": "Асцендент",
+    "Midheaven": "МС", "MC": "МС",
+    "Imum Coeli": "ИС", "IC": "ИС",
+    "Descendant": "Десцендент", "DSC": "Десцендент",
     "Vertex": "Вертекс", "Part of Fortune": "Колесо Фортуны",
     "East Point": "Точка Востока", "South Point": "Южная точка",
-    "Descendant": "Десцендент", "Imum Coeli": "IC",
-    "ASC": "Асцендент", "DSC": "Десцендент", "MC": "МС", "IC": "IC",
 }
+
+SUBCATEGORY_RU: dict[str, str] = {
+    "activist": "Активист", "actor": "Актёр", "actress": "Актриса",
+    "architect": "Архитектор", "artist": "Художник", "astronomer": "Астроном",
+    "astrophysicist": "Астрофизик", "author": "Писатель", "biologist": "Биолог",
+    "boxer": "Боксёр", "chemist": "Химик", "civil_rights": "Права человека",
+    "comedian": "Комик", "composer": "Композитор", "criminal": "Преступник",
+    "dancer": "Танцовщик", "engineer": "Инженер", "entrepreneur": "Предприниматель",
+    "explorer": "Исследователь", "filmmaker": "Режиссёр", "first lady": "Первая леди",
+    "gangster": "Гангстер", "humanitarian": "Гуманист", "inventor": "Изобретатель",
+    "investor": "Инвестор", "mathematician": "Математик", "minister": "Священник",
+    "monarch": "Монарх", "musician": "Музыкант", "mystic": "Мистик",
+    "novelist": "Новелист", "occultist": "Оккультист", "painter": "Живописец",
+    "philanthropist": "Филантроп", "philosopher": "Философ", "physicist": "Физик",
+    "physician": "Врач", "playwright": "Драматург", "poet": "Поэт",
+    "political theorist": "Политический теорик", "politician": "Политик",
+    "producer": "Продюсер", "psychic": "Медиум", "revolutionary": "Революционер",
+    "royal": "Монарх", "scientist": "Учёный", "sculptor": "Скульптор",
+    "serial killer": "Серийный убийца", "singer": "Певец", "songwriter": "Автор песен",
+    "spiritual teacher": "Духовный учитель", "statesman": "Государственный деятель",
+    "surrealist": "Сюрреалист", "theorist": "Теоретик", "writer": "Писатель",
+    "yogi": "Йог", "zen master": "Мастер дзэн",
+    "Impressionist": "Импрессионист", "Surrealist": "Сюрреалист",
+    "Cubist": "Кубист", "Modernist": "Модернист",
+    "Nobel": "Нобелевский лауреат", "Nobel laureate": "Нобелевский лауреат",
+    "Entrepreneur": "Предприниматель", "Horary Master": "Мастер хорара",
+    "Traditional Astrologer": "Традиционный астролог",
+    "Vedic astrologer": "Ведический астролог",
+    "Humanistic Astrologer": "Гуманистический астролог",
+    "U.S. President": "Президент США", "UK Prime Minister": "Премьер-министр Великобритании",
+    "German Chancellor": "Канцлер Германии",
+    "First Lady": "Первая леди", "Princess": "Принцесса", "Queen": "Королева",
+    "Princess of Wales": "Принцесса Уэльская",
+    "Disaster": "Катастрофа", "Historical": "Историческое", "Military": "Военное",
+    "Nuclear": "Ядерное", "Political": "Политическое", "Scientific": "Научное",
+    "Space": "Космос", "Terrorist": "Теракт", "Maritime": "Морское",
+    "assassination": "Покушение", "attack": "Атака", "death": "Гибель",
+    "disaster": "Катастрофа", "financial": "Финансовое", "founding": "Основание",
+    "historical": "Историческое", "independence": "Независимость",
+    "nuclear": "Ядерное", "pandemic": "Пандемия", "political": "Политическое",
+    "protest": "Протест", "scientific": "Научное", "war": "Война",
+    "achievement": "Достижение",
+    "Child Prodigy": "Вундеркинд", "Cultural Icon": "Культовый деятель",
+    "visionary": "Провидец", "Visionary": "Провидец",
+}
+
+def _translate_subcategories(subs: list[str]) -> list[str]:
+    result = []
+    for s in subs:
+        ru = SUBCATEGORY_RU.get(s, SUBCATEGORY_RU.get(s.lower()))
+        if ru:
+            result.append(ru)
+        else:
+            result.append(s.capitalize())
+    return result
 
 _ASPECT_RU_CI: dict[str, str] = {
     k.lower(): v for k, v in {
@@ -200,9 +257,9 @@ def _compute_astro_twins_sync(user_chart: CalculatedChart) -> list[dict[str, Any
                 "year": notable.datetime.utc_datetime.year,
                 "shared_features": shared,
                 "key_aspects": key_aspects,
-                "subcategories": notable.subcategories or [],
+                "subcategories": _translate_subcategories(notable.subcategories or []),
                 "astrological_notes": notable.astrological_notes or "",
-                "data_quality": notable.data_quality or "",
+                "data_quality": DATA_QUALITY_RU.get(notable.data_quality, notable.data_quality or ""),
             })
         except Exception as e:
             logger.warning("Failed to compare with notable", name=name, error=str(e))
@@ -270,7 +327,7 @@ def _compute_historical_parallels_sync(user_chart: CalculatedChart) -> list[dict
                 "notable_for": event.notable_for or "",
                 "score": round(score, 1),
                 "key_aspects": key_aspects,
-                "subcategories": event.subcategories or [],
+                "subcategories": _translate_subcategories(event.subcategories or []),
                 "category_ru": CATEGORY_RU.get(event.category, CATEGORY_RU.get(cat, event.category)),
                 "shared_features": shared,
             })
@@ -299,7 +356,7 @@ def list_notable_events() -> list[dict[str, Any]]:
                 events.append({
                     "name": e.name,
                     "year": e.datetime.utc_datetime.year,
-                    "subcategories": e.subcategories or [],
+                    "subcategories": _translate_subcategories(e.subcategories or []),
                     "notable_for": e.notable_for or "",
                     "location_name": e.location.name,
                 })
@@ -314,7 +371,7 @@ def list_notable_events() -> list[dict[str, Any]]:
             events.append({
                 "name": e.name,
                 "year": e.datetime.utc_datetime.year,
-                "subcategories": e.subcategories or [],
+                "subcategories": _translate_subcategories(e.subcategories or []),
                 "notable_for": e.notable_for or "",
                 "location_name": e.location.name,
             })
