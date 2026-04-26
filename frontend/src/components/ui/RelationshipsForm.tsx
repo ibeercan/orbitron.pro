@@ -1,16 +1,15 @@
 import { useState } from 'react'
-import { Heart, Merge, MapPin } from 'lucide-react'
+import { Heart, Merge } from 'lucide-react'
 import { SynastryForm } from '@/components/ui/SynastryForm'
 import { CompositeForm } from '@/components/ui/CompositeForm'
 import { cn } from '@/lib/utils'
 
 const RELATIONSHIP_TYPES = [
   { id: 'synastry' as const, label: 'Синастрия', desc: 'Наложение двух натальных карт', icon: Heart },
-  { id: 'composite' as const, label: 'Композит', desc: 'Средняя точка планет', icon: Merge },
-  { id: 'davison' as const, label: 'Давидсон', desc: 'Средняя точка времени и места', icon: MapPin },
+  { id: 'composite' as const, label: 'Композит / Давидсон', desc: 'Карта отношений как единое целое', icon: Merge },
 ]
 
-type RelationshipType = 'synastry' | 'composite' | 'davison'
+type RelationshipType = 'synastry' | 'composite'
 
 interface RelationshipsFormProps {
   natalChartId: number
@@ -73,10 +72,7 @@ export function RelationshipsForm({ natalChartId, onSubmit, onCancel }: Relation
         <SynastryForm key="synastry" natalChartId={natalChartId} onSubmit={onSubmit} onCancel={onCancel} />
       )}
       {selectedType === 'composite' && (
-        <CompositeForm key="composite" natalChartId={natalChartId} onSubmit={onSubmit} onCancel={onCancel} defaultType="composite" />
-      )}
-      {selectedType === 'davison' && (
-        <CompositeForm key="davison" natalChartId={natalChartId} onSubmit={onSubmit} onCancel={onCancel} defaultType="davison" />
+        <CompositeForm key="composite" natalChartId={natalChartId} onSubmit={onSubmit} onCancel={onCancel} />
       )}
     </div>
   )
