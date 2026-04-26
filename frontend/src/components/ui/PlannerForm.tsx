@@ -4,9 +4,9 @@ import { chartsApi } from '@/lib/api/client'
 import { cn } from '@/lib/utils'
 
 const PRESETS = [
-  { id: 'minimal', label: 'Минимум', desc: 'Натальная + лунные фазы' },
-  { id: 'standard', label: 'Стандарт', desc: 'Натальная, транзиты, фазы, станции' },
-  { id: 'full', label: 'Полный', desc: 'Прогрессии, соляр, профекции, эфемерида' },
+  { id: 'minimal', label: 'Минимум', desc: 'Натальная, фазы, луна без курса' },
+  { id: 'standard', label: 'Стандарт', desc: 'Натальная, транзиты, фазы, луна без курса, станции' },
+  { id: 'full', label: 'Полный', desc: 'Все техники и ежедневные страницы' },
 ]
 
 const PAGE_SIZES = [
