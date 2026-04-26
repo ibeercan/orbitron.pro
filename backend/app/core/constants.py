@@ -26,4 +26,5 @@ PREMIUM_FEATURES = {
     "pdf_report",
     "horary",
     "electional",
+    "planner",
 }

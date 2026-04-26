@@ -252,7 +252,45 @@ export const chartsApi = {
     step_minutes?: number
   }): Promise<{ data: { status: string; progress: number; result?: Record<string, unknown>; error?: string } }> => {
     return api.post('/charts/rectify', data)
-  },}
+  },
+
+  plannerGenerate: async (data: {
+    chart_id: number
+    year: number
+    preset: string
+    date_range_start?: string
+    date_range_end?: string
+    page_size: string
+    week_starts_on: string
+    binding_margin?: number
+    front_natal: boolean
+    front_progressed: boolean
+    front_solar_return: boolean
+    front_profections: boolean
+    front_zr_timeline: boolean
+    front_zr_lot: string
+    front_ephemeris: boolean
+    front_ephemeris_harmonic: number
+    include_natal_transits: boolean
+    include_natal_transits_outer_only: boolean
+    include_mundane_transits: boolean
+    include_moon_phases: boolean
+    include_voc: boolean
+    include_voc_mode: string
+    include_ingresses: boolean
+    include_stations: boolean
+  }) => {
+    return api.post('/planner/generate', data)
+  },
+
+  plannerPoll: async (plannerId: number) => {
+    return api.get(`/planner/${plannerId}/poll`)
+  },
+
+  plannerDownload: async (plannerId: number) => {
+    return api.get(`/planner/${plannerId}/download`, { responseType: 'blob' })
+  },
+}
 
 export const personsApi = {
   list: async () => {

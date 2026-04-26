@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils'
 import { useFixedDropdown } from '@/hooks/useFixedDropdown'
 
 const PRESETS = [
-  { id: 'general', label: 'Общее', desc: 'Растущая Луна, не VOC, Меркурий прямой' },
+  { id: 'general', label: 'Общее', desc: 'Растущая Луна, не без курса, Меркурий прямой' },
   { id: 'business', label: 'Бизнес', desc: 'Юпитер в хорошем доме, нет поражения Луны' },
   { id: 'relationship', label: 'Отношения', desc: 'Венера прямая, гармония Луны и Венеры' },
   { id: 'contracts', label: 'Контракты', desc: 'Меркурий прямой, Луна не в трудных знаках' },
@@ -16,7 +16,7 @@ const PRESETS = [
 
 const CONDITIONS = [
   { key: 'moon_waxing', label: 'Растущая Луна', desc: 'Луна в растущей фазе' },
-  { key: 'moon_not_voc', label: 'Луна не VOC', desc: 'Луна имеет применяющие аспекты' },
+  { key: 'moon_not_voc', label: 'Луна не без курса', desc: 'Луна имеет применяющие аспекты до смены знака' },
   { key: 'moon_not_combust', label: 'Луна не сожжена', desc: 'Не вблизи Солнца (>8.5°)' },
   { key: 'moon_not_in_difficult_signs', label: 'Луна не в изгнании', desc: 'Не в Скорпионе/Козероге' },
   { key: 'mercury_not_rx', label: 'Меркурий прямой', desc: 'Не ретрограден' },

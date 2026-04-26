@@ -1,5 +1,6 @@
 import React from 'react'
 import { X } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import {
   Dialog,
   DialogContent,
@@ -15,13 +16,19 @@ interface ModalShellProps {
   title: string
   description: string
   children: React.ReactNode
+  size?: 'sm' | 'lg'
 }
 
-export function ModalShell({ open, onClose, icon, title, description, children }: ModalShellProps) {
+export function ModalShell({ open, onClose, icon, title, description, children, size = 'sm' }: ModalShellProps) {
+  const scrollClass = size === 'lg' ? 'max-h-[80dvh]' : 'max-h-[65dvh]'
+
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent
-        className="p-0 border-0 bg-transparent shadow-none max-w-md w-full"
+        className={cn(
+          'p-0 border-0 bg-transparent shadow-none w-full',
+          size === 'lg' ? 'max-w-2xl' : 'max-w-md'
+        )}
         onPointerDownOutside={(e) => {
           if (isGeocodingDropdownClick(e.detail.originalEvent as PointerEvent)) {
             e.preventDefault()
@@ -51,7 +58,7 @@ export function ModalShell({ open, onClose, icon, title, description, children }
             </button>
           </div>
 
-          <div className="px-6 py-6 max-h-[65dvh] overflow-y-auto overscroll-contain">
+          <div className={cn('px-6 py-6 overflow-y-auto overscroll-contain', scrollClass)}>
             {children}
           </div>
         </div>

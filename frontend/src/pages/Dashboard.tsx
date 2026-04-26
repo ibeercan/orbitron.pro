@@ -18,10 +18,11 @@ import { ProgressionForm } from '@/components/ui/ProgressionForm'
 import { CompositeForm } from '@/components/ui/CompositeForm'
 import { HoraryForm } from '@/components/ui/HoraryForm'
 import { ElectionalForm } from '@/components/ui/ElectionalForm'
+import { PlannerForm } from '@/components/ui/PlannerForm'
 import { TransitTimeline } from '@/components/ui/TransitTimeline'
 import { AstroTwinsPanel } from '@/components/ui/AstroTwinsPanel'
 import { OnboardingTour } from '@/components/ui/OnboardingTour'
-import { Loader2, Calendar, MapPin, Sparkles, Star, Trash2, AlertTriangle, Maximize2, Heart, Clock, Sun, Moon, Target, FileText, Lock, Crown, ArrowLeft, Crosshair, Navigation, Zap, Merge, Compass } from 'lucide-react'
+import { Loader2, Calendar, MapPin, Sparkles, Star, Trash2, AlertTriangle, Maximize2, Heart, Clock, Sun, Moon, Target, FileText, Lock, Crown, ArrowLeft, Crosshair, Navigation, Zap, Merge, Compass, BookOpen } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/contexts/auth-context'
 
@@ -628,6 +629,7 @@ const loadChartSvg = async (chart: Chart) => {
                     <ChartActionButton icon={Target} label="Профекция" premium onClick={() => setActiveModal('profection')} />
                     <ChartActionButton icon={Navigation} label="Дирекции" premium onClick={() => setActiveModal('solar_arc')} />
                     <ChartActionButton icon={Zap} label="Прогрессии" premium onClick={() => setActiveModal('progression')} />
+                    <ChartActionButton icon={BookOpen} label="Плэннер" premium onClick={() => setActiveModal('planner')} />
                     <ChartActionButton icon={FileText} label="PDF" premium onClick={handlePdfDownload} />
                   </div>
                 )}
@@ -1047,6 +1049,23 @@ const loadChartSvg = async (chart: Chart) => {
             onCancel={closeModal}
           />
         </ModalShell>
+
+        {/* Planner modal */}
+        {selectedChart && (
+          <ModalShell
+            open={activeModal === 'planner'}
+            onClose={closeModal}
+            icon={<BookOpen className="w-4 h-4 text-[#D4AF37]" style={{ width: 16, height: 16 }} />}
+            title="Астрологический планер"
+            description="PDF-планер с транзитами, лунными фазами и аспектами на год"
+            size="lg"
+          >
+            <PlannerForm
+              natalChartId={selectedChart.id}
+              onCancel={closeModal}
+            />
+          </ModalShell>
+        )}
 
         {/* Delete confirmation dialog */}
         {chartToDelete && (
