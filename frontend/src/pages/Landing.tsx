@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form'
 import { subscriptionApi, authApi } from '@/lib/api/client'
 import { useAuth } from '@/contexts/auth-context'
 import { cn } from '@/lib/utils'
-import { ArrowRight, Star, Sparkles, Shield, Loader2, ChevronLeft, Users } from 'lucide-react'
+import { ArrowRight, Sparkles, Heart, Clock, Compass, Crosshair, Users, Loader2, ChevronLeft } from 'lucide-react'
 
 interface SubscribeFormData {
   email: string
@@ -558,25 +558,51 @@ export default function Landing() {
                   </div>
                   <div>
                     <span className="text-sm font-medium text-[#F0EAD6]">Натальная карта</span>
-                    <p className="text-xs text-[#8B7FA8] mt-0.5">Профессиональные расчёты с ИИ-интерпретацией</p>
+                    <p className="text-xs text-[#8B7FA8] mt-0.5">Полный анализ личности, характера и потенциала — с ИИ-интерпретацией</p>
                   </div>
                 </div>
                 <div className="feature-pill">
                   <div className="w-8 h-8 rounded-lg bg-[rgba(212,175,55,0.12)] flex items-center justify-center shrink-0">
-                    <Star className="w-4 h-4 text-[#D4AF37]" />
+                    <Heart className="w-4 h-4 text-[#D4AF37]" />
                   </div>
                   <div>
-                    <span className="text-sm font-medium text-[#F0EAD6]">Синастрия и транзиты</span>
-                    <p className="text-xs text-[#8B7FA8] mt-0.5">Совместимость, текущие и будущие влияния планет</p>
+                    <span className="text-sm font-medium text-[#F0EAD6]">Совместимость</span>
+                    <p className="text-xs text-[#8B7FA8] mt-0.5">Синастрия и комозит — разберите отношения с партнёром</p>
                   </div>
                 </div>
                 <div className="feature-pill">
                   <div className="w-8 h-8 rounded-lg bg-[rgba(212,175,55,0.12)] flex items-center justify-center shrink-0">
-                    <Shield className="w-4 h-4 text-[#D4AF37]" />
+                    <Clock className="w-4 h-4 text-[#D4AF37]" />
                   </div>
                   <div>
-                    <span className="text-sm font-medium text-[#F0EAD6]">Прогностика</span>
-                    <p className="text-xs text-[#8B7FA8] mt-0.5">Соляры, лунары, профекции — прогнозы по вашей карте</p>
+                    <span className="text-sm font-medium text-[#F0EAD6]">Прогнозы</span>
+                    <p className="text-xs text-[#8B7FA8] mt-0.5">Транзиты, соляры, лунары, профекции — что готовят планеты</p>
+                  </div>
+                </div>
+                <div
+                  className="feature-pill relative overflow-hidden"
+                  style={{ borderColor: 'rgba(212,175,55,0.25)' }}
+                >
+                  <div className="w-8 h-8 rounded-lg bg-[rgba(212,175,55,0.12)] flex items-center justify-center shrink-0">
+                    <Compass className="w-4 h-4 text-[#D4AF37]" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-[#F0EAD6]">Хорар и электив</span>
+                      <span className="text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-[rgba(212,175,55,0.12)] border border-[rgba(212,175,55,0.25)] text-[#D4AF37]">
+                        New
+                      </span>
+                    </div>
+                    <p className="text-xs text-[#8B7FA8] mt-0.5">Ответ на вопрос и выбор лучшего момента для начинания</p>
+                  </div>
+                </div>
+                <div className="feature-pill">
+                  <div className="w-8 h-8 rounded-lg bg-[rgba(212,175,55,0.12)] flex items-center justify-center shrink-0">
+                    <Crosshair className="w-4 h-4 text-[#D4AF37]" />
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium text-[#F0EAD6]">Ректификация</span>
+                    <p className="text-xs text-[#8B7FA8] mt-0.5">Точное время рождения — определение по жизненным событиям</p>
                   </div>
                 </div>
                 <div
@@ -610,7 +636,7 @@ export default function Landing() {
                         New
                       </span>
                     </div>
-                    <p className="text-xs text-[#8B7FA8] mt-0.5">Найди знаменитостей с похожей натальной картой</p>
+                    <p className="text-xs text-[#8B7FA8] mt-0.5">Найдите знаменитостей с похожей натальной картой</p>
                   </div>
                 </div>
               </div>
