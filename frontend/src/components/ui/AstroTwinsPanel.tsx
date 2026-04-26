@@ -17,6 +17,9 @@ interface AstroTwinResult {
   year: number
   shared_features: string[]
   key_aspects: string[]
+  subcategories: string[]
+  astrological_notes: string
+  data_quality: string
 }
 
 interface HistoricalParallelResult {
@@ -25,6 +28,9 @@ interface HistoricalParallelResult {
   notable_for: string
   score: number
   key_aspects: string[]
+  subcategories: string[]
+  category_ru: string
+  shared_features: string[]
 }
 
 type Tab = 'twins' | 'parallels'
@@ -91,8 +97,20 @@ function AstroTwinCard({ twin, rank }: { twin: AstroTwinResult; rank: number }) 
         <span className="shrink-0 text-[10px] font-bold text-[#4A3F6A] mt-1">#{rank}</span>
       </div>
 
-      {expanded && (twin.shared_features.length > 0 || twin.key_aspects.length > 0) && (
+      {expanded && (twin.shared_features.length > 0 || twin.key_aspects.length > 0 || twin.astrological_notes || twin.subcategories.length > 0) && (
         <div className="px-3 pb-3 pt-1 border-t border-[rgba(212,175,55,0.06)]">
+          {twin.subcategories.length > 0 && (
+            <div className="mb-2">
+              <p className="text-[9px] font-semibold text-[#8B7FA8] uppercase tracking-wider mb-1">Категории</p>
+              <div className="flex flex-wrap gap-1">
+                {twin.subcategories.map((s, i) => (
+                  <span key={i} className="text-[9px] px-1.5 py-0.5 rounded bg-[rgba(212,175,55,0.04)] text-[#8B7FA8] border border-[rgba(212,175,55,0.08)]">
+                    {s}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
           {twin.shared_features.length > 0 && (
             <div className="mb-2">
               <p className="text-[9px] font-semibold text-[#8B7FA8] uppercase tracking-wider mb-1">Общие черты</p>
@@ -106,7 +124,7 @@ function AstroTwinCard({ twin, rank }: { twin: AstroTwinResult; rank: number }) 
             </div>
           )}
           {twin.key_aspects.length > 0 && (
-            <div>
+            <div className="mb-2">
               <p className="text-[9px] font-semibold text-[#8B7FA8] uppercase tracking-wider mb-1">Ключевые аспекты</p>
               <div className="flex flex-wrap gap-1">
                 {twin.key_aspects.map((a, i) => (
@@ -116,6 +134,15 @@ function AstroTwinCard({ twin, rank }: { twin: AstroTwinResult; rank: number }) 
                 ))}
               </div>
             </div>
+          )}
+          {twin.astrological_notes && (
+            <div>
+              <p className="text-[9px] font-semibold text-[#8B7FA8] uppercase tracking-wider mb-1">Астрологический комментарий</p>
+              <p className="text-[10px] text-[#8B7FA8] leading-relaxed italic">{twin.astrological_notes}</p>
+            </div>
+          )}
+          {twin.data_quality && (
+            <p className="text-[8px] text-[#4A3F6A] mt-1.5">Надёжность данных: {twin.data_quality}</p>
           )}
         </div>
       )}
@@ -146,25 +173,58 @@ function ParallelCard({ parallel }: { parallel: HistoricalParallelResult }) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="text-[13px] font-semibold text-[#F0EAD6] truncate">{parallel.name}</span>
+            {parallel.category_ru && (
+              <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-[rgba(139,92,246,0.08)] text-[#A78BFA] border border-[rgba(139,92,246,0.12)] shrink-0">
+                {parallel.category_ru}
+              </span>
+            )}
             <span className="text-[10px] font-bold" style={{ color: scoreColor }}>
               {parallel.score.toFixed(0)}%
             </span>
           </div>
-          <p className="text-[10px] text-[#8B7FA8] mt-0.5 truncate">{parallel.notable_for}</p>
+          <p className="text-[10px] text-[#8B7FA8] mt-0.5 line-clamp-2">{parallel.notable_for}</p>
           <p className="text-[9px] text-[#4A3F6A] mt-0.5">{parallel.year}</p>
         </div>
       </div>
 
-      {expanded && parallel.key_aspects.length > 0 && (
+      {expanded && (parallel.key_aspects.length > 0 || parallel.shared_features.length > 0 || parallel.subcategories.length > 0) && (
         <div className="mt-2 pt-2 border-t border-[rgba(212,175,55,0.06)]">
-          <p className="text-[9px] font-semibold text-[#8B7FA8] uppercase tracking-wider mb-1">Резонирующие аспекты</p>
-          <div className="flex flex-wrap gap-1">
-            {parallel.key_aspects.map((a, i) => (
-              <span key={i} className="text-[9px] px-1.5 py-0.5 rounded bg-[rgba(139,92,246,0.06)] text-[#A78BFA]">
-                {a}
-              </span>
-            ))}
-          </div>
+          {parallel.subcategories.length > 0 && (
+            <div className="mb-2">
+              <p className="text-[9px] font-semibold text-[#8B7FA8] uppercase tracking-wider mb-1">Категории</p>
+              <div className="flex flex-wrap gap-1">
+                {parallel.subcategories.map((s, i) => (
+                  <span key={i} className="text-[9px] px-1.5 py-0.5 rounded bg-[rgba(139,92,246,0.04)] text-[#8B7FA8] border border-[rgba(139,92,246,0.08)]">
+                    {s}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+          {parallel.shared_features.length > 0 && (
+            <div className="mb-2">
+              <p className="text-[9px] font-semibold text-[#8B7FA8] uppercase tracking-wider mb-1">Общие черты</p>
+              <div className="flex flex-wrap gap-1">
+                {parallel.shared_features.map((f, i) => (
+                  <span key={i} className="text-[9px] px-1.5 py-0.5 rounded bg-[rgba(212,175,55,0.06)] text-[#D4AF37]">
+                    {f}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+          {parallel.key_aspects.length > 0 && (
+            <div>
+              <p className="text-[9px] font-semibold text-[#8B7FA8] uppercase tracking-wider mb-1">Резонирующие аспекты</p>
+              <div className="flex flex-wrap gap-1">
+                {parallel.key_aspects.map((a, i) => (
+                  <span key={i} className="text-[9px] px-1.5 py-0.5 rounded bg-[rgba(139,92,246,0.06)] text-[#A78BFA]">
+                    {a}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -177,9 +237,11 @@ function useInsightPolling<T>(
   fetcher: () => Promise<{ data: { status: string; results: T[]; error?: string } }>,
   onResults: (results: T[]) => void,
   onError: (error: string) => void,
+  maxAttempts: number = 30,
 ) {
   const [fetchStatus, setFetchStatus] = useState<FetchStatus>('idle')
   const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const attemptsRef = useRef(0)
 
   const stopPolling = useCallback(() => {
     if (pollRef.current) {
@@ -193,8 +255,15 @@ function useInsightPolling<T>(
   const start = useCallback(async () => {
     setFetchStatus('computing')
     stopPolling()
+    attemptsRef.current = 0
 
     const poll = async () => {
+      attemptsRef.current += 1
+      if (attemptsRef.current > maxAttempts) {
+        setFetchStatus('error')
+        onError('Расчёт занимает слишком долго. Попробуйте позже.')
+        return
+      }
       try {
         const res = await fetcher()
         const { status, results, error } = res.data
@@ -214,7 +283,7 @@ function useInsightPolling<T>(
     }
 
     await poll()
-  }, [fetcher, onResults, onError, stopPolling])
+  }, [fetcher, onResults, onError, stopPolling, maxAttempts])
 
   const reset = useCallback(() => {
     stopPolling()

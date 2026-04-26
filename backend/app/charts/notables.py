@@ -1,7 +1,6 @@
 """Notable people & events — Star Twins, Historical Parallels."""
 
 import asyncio
-from pathlib import Path
 from typing import Any
 
 from stellium import (
@@ -11,7 +10,6 @@ from stellium import (
     Notable,
     get_notable_registry,
 )
-import stellium
 from stellium.engines import PlacidusHouses
 
 from app.core.logging import logger
@@ -21,34 +19,6 @@ TZ_FIXES = {
     "Europe/Uzhgorod": "Europe/Kyiv",
     "Europe/Zaporozhye": "Europe/Kyiv",
 }
-
-_yaml_fixed = False
-
-
-def _fix_stellium_timezone_yaml() -> None:
-    global _yaml_fixed
-    if _yaml_fixed:
-        return
-
-    stellium_dir = Path(stellium.__file__).parent
-    yaml_path = stellium_dir / "data" / "notables" / "events" / "historical.yaml"
-    if not yaml_path.exists():
-        logger.warning("Stellium events YAML not found", path=str(yaml_path))
-        _yaml_fixed = True
-        return
-
-    content = yaml_path.read_text(encoding="utf-8")
-    changed = False
-    for old_tz, new_tz in TZ_FIXES.items():
-        if old_tz in content:
-            content = content.replace(old_tz, new_tz)
-            changed = True
-
-    if changed:
-        yaml_path.write_text(content, encoding="utf-8")
-        logger.info("Fixed stale timezone entries in Stellium events YAML")
-
-    _yaml_fixed = True
 
 ZODIAC_RU = [
     "Овен", "Телец", "Близнецы", "Рак",
@@ -71,6 +41,23 @@ CATEGORY_RU: dict[str, str] = {
     "polymath": "Эрудит",
     "scientist": "Учёный",
     "writer": "Писатель",
+    "event": "Событие",
+    "historic": "Историческое",
+    "military": "Военное",
+    "space": "Космос",
+    "accident": "Катастрофа",
+    "aviation": "Авиация",
+    "economic": "Экономика",
+    "health": "Здоровье",
+}
+
+DATA_QUALITY_RU: dict[str, str] = {
+    "AA": "AA (точное время)",
+    "A": "A (надёжный источник)",
+    "B": "B (биография)",
+    "C": "C (приблизительное)",
+    "DD": "DD (спорное)",
+    "X": "X (без источника)",
 }
 
 PLANET_RU: dict[str, str] = {
@@ -99,6 +86,7 @@ _ASPECT_RU_CI: dict[str, str] = {
 
 ASPECT_RU = _ASPECT_RU_CI
 
+
 def _format_aspect(asp) -> str:
     p1 = PLANET_RU.get(asp.object1.name, asp.object1.name)
     p2 = PLANET_RU.get(asp.object2.name, asp.object2.name)
@@ -123,12 +111,16 @@ def _get_planet_sign(chart: CalculatedChart, planet_name: str) -> str | None:
     return None
 
 
+def _fix_timezone_field(notable: Notable) -> None:
+    if notable.location and notable.location.timezone in TZ_FIXES:
+        notable.location.timezone = TZ_FIXES[notable.location.timezone]
+
+
 def _build_all_notable_charts() -> None:
     global _charts_loaded
     if _charts_loaded:
         return
 
-    _fix_stellium_timezone_yaml()
     reg = get_notable_registry()
 
     for n in reg.get_births():
@@ -144,6 +136,7 @@ def _build_all_notable_charts() -> None:
             logger.warning("Failed to build notable chart", name=n.name, error=str(e))
 
     for n in reg.get_events():
+        _fix_timezone_field(n)
         _events_data.append(n)
         try:
             chart = (
@@ -195,7 +188,7 @@ def _compute_astro_twins_sync(user_chart: CalculatedChart) -> list[dict[str, Any
 
             key_aspects: list[str] = []
             sorted_aspects = sorted(multi.get_all_cross_aspects(), key=lambda a: a.orb)
-            for asp in sorted_aspects[:5]:
+            for asp in sorted_aspects[:3]:
                 key_aspects.append(_format_aspect(asp))
 
             results.append({
@@ -206,7 +199,10 @@ def _compute_astro_twins_sync(user_chart: CalculatedChart) -> list[dict[str, Any
                 "score": round(score, 1),
                 "year": notable.datetime.utc_datetime.year,
                 "shared_features": shared,
-                "key_aspects": key_aspects[:3],
+                "key_aspects": key_aspects,
+                "subcategories": notable.subcategories or [],
+                "astrological_notes": notable.astrological_notes or "",
+                "data_quality": notable.data_quality or "",
             })
         except Exception as e:
             logger.warning("Failed to compare with notable", name=name, error=str(e))
@@ -226,6 +222,9 @@ async def compute_astro_twins(
 
 
 def _compute_historical_parallels_sync(user_chart: CalculatedChart) -> list[dict[str, Any]]:
+    user_sun = _get_planet_sign(user_chart, "Sun")
+    user_moon = _get_planet_sign(user_chart, "Moon")
+
     results: list[dict[str, Any]] = []
 
     for event in _events_data:
@@ -249,10 +248,21 @@ def _compute_historical_parallels_sync(user_chart: CalculatedChart) -> list[dict
             )
             score = multi.calculate_compatibility_score()
 
+            event_sun = _get_planet_sign(event_chart, "Sun")
+            event_moon = _get_planet_sign(event_chart, "Moon")
+
+            shared: list[str] = []
+            if user_sun and event_sun and user_sun == event_sun:
+                shared.append(f"Солнце в {user_sun}")
+            if user_moon and event_moon and user_moon == event_moon:
+                shared.append(f"Луна в {user_moon}")
+
             key_aspects: list[str] = []
             sorted_aspects = sorted(multi.get_all_cross_aspects(), key=lambda a: a.orb)
             for asp in sorted_aspects[:3]:
                 key_aspects.append(_format_aspect(asp))
+
+            cat = event.category if event.category != "event" else event.subcategories[0] if event.subcategories else event.category
 
             results.append({
                 "name": event.name,
@@ -260,6 +270,9 @@ def _compute_historical_parallels_sync(user_chart: CalculatedChart) -> list[dict
                 "notable_for": event.notable_for or "",
                 "score": round(score, 1),
                 "key_aspects": key_aspects,
+                "subcategories": event.subcategories or [],
+                "category_ru": CATEGORY_RU.get(event.category, CATEGORY_RU.get(cat, event.category)),
+                "shared_features": shared,
             })
         except Exception as e:
             logger.warning("Failed to compute historical parallel", event=event.name, error=str(e))

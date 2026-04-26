@@ -358,6 +358,9 @@ class AstroTwinResult(BaseModel):
     year: int
     shared_features: list[str] = []
     key_aspects: list[str] = []
+    subcategories: list[str] = []
+    astrological_notes: str = ""
+    data_quality: str = ""
 
 
 class AstroTwinsResponse(BaseModel):
@@ -372,6 +375,9 @@ class HistoricalParallelResult(BaseModel):
     notable_for: str
     score: float
     key_aspects: list[str] = []
+    subcategories: list[str] = []
+    category_ru: str = ""
+    shared_features: list[str] = []
 
 
 class HistoricalParallelsResponse(BaseModel):
