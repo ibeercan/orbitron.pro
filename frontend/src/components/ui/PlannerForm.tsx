@@ -36,7 +36,7 @@ interface SubOptionConfig {
 
 const FRONT_MATTER_TOGGLES: ToggleConfig[] = [
   { key: 'front_natal', label: 'Натальная карта' },
-  { key: 'front_progressed', label: 'Прогрессированная карта' },
+  { key: 'front_progressed', label: 'Прогрессии' },
   { key: 'front_solar_return', label: 'Солярный возврат' },
   { key: 'front_profections', label: 'Профекции' },
   {
@@ -104,7 +104,7 @@ const DAILY_TOGGLES: ToggleConfig[] = [
     ],
   },
   { key: 'include_ingresses', label: 'Вхождения в знаки' },
-  { key: 'include_stations', label: 'Станции планет (R/D)' },
+  { key: 'include_stations', label: 'Станции планет', desc: 'Ретроградное и прямое движение' },
 ]
 
 const PRESET_CONFIGS: Record<string, Record<string, unknown>> = {
