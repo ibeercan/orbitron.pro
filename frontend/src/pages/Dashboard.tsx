@@ -17,10 +17,11 @@ import { SolarArcForm } from '@/components/ui/SolarArcForm'
 import { ProgressionForm } from '@/components/ui/ProgressionForm'
 import { CompositeForm } from '@/components/ui/CompositeForm'
 import { HoraryForm } from '@/components/ui/HoraryForm'
+import { ElectionalForm } from '@/components/ui/ElectionalForm'
 import { TransitTimeline } from '@/components/ui/TransitTimeline'
 import { AstroTwinsPanel } from '@/components/ui/AstroTwinsPanel'
 import { OnboardingTour } from '@/components/ui/OnboardingTour'
-import { Loader2, Calendar, MapPin, Sparkles, Star, Trash2, AlertTriangle, Maximize2, Heart, Clock, Sun, Moon, Target, FileText, Lock, Crown, ArrowLeft, Crosshair, Navigation, Zap, Merge, Compass } from 'lucide-react'
+import { Loader2, Calendar, MapPin, Sparkles, Star, Trash2, AlertTriangle, Maximize2, Heart, Clock, Sun, Moon, Target, FileText, Lock, Crown, ArrowLeft, Crosshair, Navigation, Zap, Merge, Compass, Search } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/contexts/auth-context'
 
@@ -38,6 +39,7 @@ const CHART_TYPE_LABELS: Record<string, string> = {
   composite: 'Композит',
   davison: 'Давидсон',
   horary: 'Хорарная карта',
+  electional: 'Элективная карта',
 }
 
 function ChartActionButton({ icon: Icon, label, premium, onClick }: {
@@ -562,6 +564,7 @@ const loadChartSvg = async (chart: Chart) => {
           onProfileClick={() => setShowProfile(true)}
           onCreateChart={() => setShowCreateModal(true)}
           onCreateHorary={() => setActiveModal('horary')}
+          onCreateElectional={() => setActiveModal('electional')}
           charts={charts}
           selectedChart={selectedChart}
           onSelectChart={selectChart}
@@ -616,6 +619,7 @@ const loadChartSvg = async (chart: Chart) => {
                     <ChartActionButton icon={Zap} label="Прогрессии" premium onClick={() => setActiveModal('progression')} />
                     <ChartActionButton icon={Crosshair} label="Ректификация" premium onClick={() => setActiveModal('rectification')} />
                     <ChartActionButton icon={Compass} label="Хорар" premium onClick={() => setActiveModal('horary')} />
+                    <ChartActionButton icon={Search} label="Электив" premium onClick={() => setActiveModal('electional')} />
                     <ChartActionButton icon={FileText} label="PDF" premium onClick={handlePdfDownload} />
                   </div>
                 )}
@@ -900,6 +904,20 @@ const loadChartSvg = async (chart: Chart) => {
           description="Ответ на конкретный вопрос по моменту его задавания"
         >
           <HoraryForm
+            onSubmit={onChartCreatedFromModal}
+            onCancel={closeModal}
+          />
+        </ModalShell>
+
+        {/* Electional modal */}
+        <ModalShell
+          open={activeModal === 'electional'}
+          onClose={closeModal}
+          icon={<Sparkles className="w-4 h-4 text-[#D4AF37]" style={{ width: 16, height: 16 }} />}
+          title="Элективная карта"
+          description="Выбор наилучшего момента для начинания"
+        >
+          <ElectionalForm
             onSubmit={onChartCreatedFromModal}
             onCancel={closeModal}
           />

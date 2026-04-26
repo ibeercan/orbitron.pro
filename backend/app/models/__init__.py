@@ -18,6 +18,7 @@ from app.models.request import RequestLog
 from app.models.early_subscriber import EarlySubscriber
 from app.models.insight_cache import InsightCache, InsightType, InsightStatus
 from app.models.rectification_cache import RectificationCache, RectificationStatus
+from app.models.electional_cache import ElectionalCache, ElectionalStatus
 from app.ai.token_usage import TokenUsage
 
 __all__ = [
@@ -50,5 +51,7 @@ __all__ = [
     "InsightStatus",
     "RectificationCache",
     "RectificationStatus",
+    "ElectionalCache",
+    "ElectionalStatus",
     "TokenUsage",
 ]

@@ -194,6 +194,45 @@ export const chartsApi = {
     return api.post('/charts/horary', data)
   },
 
+  createElectional: async (data: {
+    datetime: string
+    location: string
+    question: string
+    name?: string
+    theme?: string
+    house_system?: string
+    preset?: string
+    conditions?: string[]
+    step?: string
+  }) => {
+    return api.post('/charts/horary', data)
+  },
+
+  electionalSearch: async (data: {
+    location: string
+    start_date: string
+    end_date: string
+    preset: string
+    conditions: string[]
+    step?: string
+  }) => {
+    return api.post('/electional/search', data)
+  },
+
+  electionalPoll: async (searchId: number) => {
+    return api.get(`/electional/${searchId}/poll`)
+  },
+
+  electionalSelect: async (data: {
+    search_id: number
+    moment_index: number
+    name?: string
+    theme?: string
+    house_system?: string
+  }) => {
+    return api.post('/electional/select', data)
+  },
+
   generateReport: async (chartId: number, preset?: string, title?: string) => {
     return api.post(`/charts/${chartId}/report`, null, {
       params: { preset: preset || 'standard', ...(title ? { title } : {}) },

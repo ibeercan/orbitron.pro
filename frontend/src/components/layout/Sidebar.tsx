@@ -23,6 +23,7 @@ import {
   Zap,
   Merge,
   Compass,
+  Search,
 } from 'lucide-react'
 
 const CHART_TYPE_LABELS: Record<string, string> = {
@@ -37,6 +38,7 @@ const CHART_TYPE_LABELS: Record<string, string> = {
   composite: 'Композит',
   davison: 'Давидсон',
   horary: 'Хорар',
+  electional: 'Электив',
 }
 
 const CHART_TYPE_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -51,6 +53,7 @@ const CHART_TYPE_ICONS: Record<string, React.ComponentType<{ className?: string 
   composite: Merge,
   davison: Merge,
   horary: Compass,
+  electional: Search,
 }
 
 /* ── Chart type ── */
@@ -72,6 +75,7 @@ interface SidebarProps {
   onProfileClick?: () => void
   onCreateChart?: () => void
   onCreateHorary?: () => void
+  onCreateElectional?: () => void
   charts?: Chart[]
   selectedChart?: Chart | null
   onSelectChart?: (chart: Chart) => void
@@ -140,6 +144,7 @@ export function Sidebar({
   onProfileClick,
   onCreateChart,
   onCreateHorary,
+  onCreateElectional,
   charts = [],
   selectedChart,
   onSelectChart,
@@ -281,6 +286,16 @@ export function Sidebar({
                     <Compass className="w-4 h-4" />
                   </button>
                 )}
+                {/* Electional button */}
+                {onCreateElectional && (
+                  <button
+                    onClick={onCreateElectional}
+                    title="Элективная карта"
+                    className="w-9 h-9 rounded-xl flex items-center justify-center bg-[rgba(212,175,55,0.04)] border border-[rgba(212,175,55,0.15)] text-[#8B7FA8] hover:text-[#D4AF37] hover:border-[rgba(212,175,55,0.3)] transition-all mb-1"
+                  >
+                    <Search className="w-4 h-4" />
+                  </button>
+                )}
 
                 {charts.map((chart) => {
                   const isActive = selectedChart?.id === chart.id
@@ -328,6 +343,15 @@ export function Sidebar({
                     >
                       <Compass className="w-3 h-3" />
                       Хорар
+                    </button>
+                  )}
+                  {onCreateElectional && (
+                    <button
+                      onClick={onCreateElectional}
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-medium text-[#8B7FA8] bg-[rgba(212,175,55,0.04)] border border-[rgba(212,175,55,0.1)] hover:text-[#D4AF37] hover:bg-[rgba(212,175,55,0.08)] hover:border-[rgba(212,175,55,0.2)] transition-all active:scale-95"
+                    >
+                      <Sparkles className="w-3 h-3" />
+                      Электив
                     </button>
                   )}
                 </div>
@@ -513,6 +537,18 @@ export function Sidebar({
                 <Compass className="w-5 h-5" />
               </div>
               <span className="text-[10px] font-medium text-[#8B7FA8] uppercase tracking-wide">Хорар</span>
+            </button>
+          )}
+
+          {onCreateElectional && (
+            <button
+              onClick={onCreateElectional}
+              className="flex flex-col items-center gap-1 px-4 py-1.5"
+            >
+              <div className="w-10 h-10 rounded-2xl flex items-center justify-center bg-[rgba(212,175,55,0.06)] border border-[rgba(212,175,55,0.15)] text-[#8B7FA8] transition-all">
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <span className="text-[10px] font-medium text-[#8B7FA8] uppercase tracking-wide">Электив</span>
             </button>
           )}
 

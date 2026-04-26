@@ -25,4 +25,5 @@ PREMIUM_FEATURES = {
     "profection",
     "pdf_report",
     "horary",
+    "electional",
 }

@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.api.v1.endpoints import auth, charts, subscriptions, invites, chat, persons, admin
+from app.api.v1.endpoints import auth, charts, subscriptions, invites, chat, persons, admin, electional
 
 api_router = APIRouter()
 
@@ -11,3 +11,4 @@ api_router.include_router(invites.router, prefix="/invites", tags=["invites"])
 api_router.include_router(chat.router, prefix="/chat", tags=["chat"])
 api_router.include_router(persons.router, prefix="/persons", tags=["persons"])
 api_router.include_router(admin.router, prefix="/admin", tags=["admin"])
+api_router.include_router(electional.router, prefix="/electional", tags=["electional"])
