@@ -1011,7 +1011,7 @@ const loadChartSvg = async (chart: Chart) => {
             open={activeModal === 'solar_arc'}
             onClose={closeModal}
             icon={<Navigation className="w-4 h-4 text-[#D4AF37]" style={{ width: 16, height: 16 }} />}
-            title="Солярные дуги"
+            title="Дирекции"
             description="Прогностическая техника — дирекции по дуге Солнца"
           >
             <SolarArcForm
