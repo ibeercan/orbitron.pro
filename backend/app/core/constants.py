@@ -1,6 +1,7 @@
 """Application constants."""
 
 COOKIE_NAME = "access_token"
+REFRESH_COOKIE_NAME = "refresh_token"
 OAUTH2_SCHEME = "Bearer"
 
 DEFAULT_RATE_LIMIT = "100/minute"

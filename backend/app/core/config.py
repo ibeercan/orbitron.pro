@@ -1,4 +1,5 @@
 import json
+import logging
 from pathlib import Path
 from typing import List, Optional
 
@@ -33,7 +34,7 @@ _DEFAULT_SYSTEM_PROMPT = """Ты — профессиональный астро
 
 ПРАВИЛА ОТВЕТА:
 1. ВСЕГДА отвечай на том же языке, на котором задан вопрос. Если вопрос на русском — отвечай на русском.
-2. Отвечай ТОЛЬКО готовым ответом — без вступлений типа "Давайте разберём", "Конечно!" или пересказа вопроса.
+2. Отвегай ТОЛЬКО готовым ответом — без вступлений типа "Давайте разберём", "Конечно!" или пересказа вопроса.
 3. Никогда не показывай свои размышления или внутренний процесс рассуждения.
 4. Используй красивое Markdown-форматирование: заголовки (###), жирный текст (**), курсив (*), списки.
 5. Структура ответа:
@@ -63,6 +64,9 @@ CHART_TYPE_PROMPT_HINTS: dict[str, str] = {
 
 
 class Settings(BaseSettings):
+    # Environment
+    ENVIRONMENT: str = "development"
+
     # Database
     POSTGRES_DB: str = "astrology"
     POSTGRES_USER: str = "user"
@@ -77,11 +81,36 @@ class Settings(BaseSettings):
             return f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@postgres:5432/{self.POSTGRES_DB}"
         return f"postgresql://{self.POSTGRES_USER}@postgres:5432/{self.POSTGRES_DB}"
 
-    # JWT — MUST be set in .env for production
+    # JWT
     SECRET_KEY: str = "dev-only-insecure-key-change-in-production"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+
+    @field_validator("SECRET_KEY")
+    @classmethod
+    def validate_secret_key(cls, v: str) -> str:
+        insecure_values = {
+            "dev-only-insecure-key-change-in-production",
+            "change-this-in-production",
+            "your-super-secret-key-change-in-production",
+        }
+        if v.strip() in insecure_values:
+            raise ValueError(
+                "SECRET_KEY must be changed from the default value. "
+                "Set a secure SECRET_KEY in your environment variables."
+            )
+        return v
+
+    @field_validator("POSTGRES_PASSWORD")
+    @classmethod
+    def validate_postgres_password(cls, v: str, info) -> str:
+        env = info.data.get("ENVIRONMENT", "development")
+        if env == "production" and not v:
+            raise ValueError(
+                "POSTGRES_PASSWORD must be set in production environment"
+            )
+        return v
 
     # AI Providers
     AI_PROVIDERS: str = "[]"
@@ -96,19 +125,27 @@ class Settings(BaseSettings):
     AI_COST_PER_1K_COMPLETION: float = 0.06
 
     # AI Cache
-    AI_CACHE_ENABLED: bool = False
+    AI_CACHE_ENABLED: bool = True
     AI_CACHE_TTL_SECONDS: int = 21600
 
     # Redis
     REDIS_URL: str = "redis://localhost:6379"
 
-    # Security
-    ALLOWED_ORIGINS: List[str] = [
-        "https://orbitron.pro",
-        "http://localhost",
-        "http://localhost:5173",
-        "http://localhost:3000",
-    ]
+    # Security — environment-aware CORS
+    @property
+    def allowed_origins(self) -> List[str]:
+        if self.ENVIRONMENT == "production":
+            return [
+                "https://orbitron.pro",
+                "https://api.orbitron.pro",
+            ]
+        return [
+            "http://localhost:5173",
+            "http://localhost:3000",
+            "http://localhost",
+        ]
+
+    ALLOWED_ORIGINS: List[str] = []
 
     # Cookies
     COOKIE_DOMAIN: Optional[str] = None
@@ -117,6 +154,9 @@ class Settings(BaseSettings):
     # Subscription limits
     FREE_AI_REQUESTS_PER_MONTH: int = 3
     FREE_CHARTS_LIMIT: int = 1
+
+    # Migrations
+    RUN_MIGRATIONS: bool = False
 
     # Logging
     LOG_LEVEL: str = "INFO"

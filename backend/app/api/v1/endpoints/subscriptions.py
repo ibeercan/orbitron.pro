@@ -14,10 +14,10 @@ from app.subscriptions.schemas import SubscribeRequest, SubscribeResponse
 from app.subscriptions.crud import early_subscriber as early_subscriber_crud
 from app.core.logging import logger
 from slowapi import Limiter
-from slowapi.util import get_remote_address
+from app.middleware.proxy_headers import get_real_ip
 
 router = APIRouter()
-limiter = Limiter(key_func=get_remote_address)
+limiter = Limiter(key_func=get_real_ip)
 
 
 class CheckEmailRequest(BaseModel):
@@ -59,7 +59,7 @@ async def get_subscription(
 
 
 @router.post("/check-email", response_model=CheckEmailResponse)
-@limiter.limit(AUTH_RATE_LIMIT)
+@limiter.limit("10/minute")
 async def check_email(
     request: Request,
     body: CheckEmailRequest,
@@ -73,23 +73,15 @@ async def check_email(
     existing_subscriber = await early_subscriber_crud.get_by_email(db, email=email)
     existing_user = await user_crud.get_by_email(db, email=email)
 
-    if existing_user or existing_subscriber:
-        message = "Continue" if existing_user else "Already subscribed"
-        return CheckEmailResponse(
-            exists=existing_user is not None,
-            is_subscriber=existing_subscriber is not None,
-            message=message,
-        )
-
     return CheckEmailResponse(
-        exists=False,
-        is_subscriber=False,
-        message="Continue",
+        exists=existing_user is not None,
+        is_subscriber=existing_subscriber is not None,
+        message="Check completed",
     )
 
 
 @router.post("/check-invite", response_model=CheckInviteResponse)
-@limiter.limit(AUTH_RATE_LIMIT)
+@limiter.limit("10/minute")
 async def check_invite(
     request: Request,
     body: CheckInviteRequest,

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { chartsApi, chatApi } from '@/lib/api/client'
+import { sanitizeSvg } from '@/lib/utils/sanitize'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { ProfileSlideOver } from '@/components/layout/ProfileSlideOver'
@@ -654,7 +655,7 @@ const loadChartSvg = async (chart: Chart) => {
                     <div className="chart-glow-container">
                       <div
                         className="chart-svg-wrapper"
-                        dangerouslySetInnerHTML={{ __html: svgContent }}
+                        dangerouslySetInnerHTML={{ __html: sanitizeSvg(svgContent) }}
                       />
                     </div>
                   ) : (
@@ -836,7 +837,7 @@ const loadChartSvg = async (chart: Chart) => {
                     <div className="chart-glow-container flex-1">
                       <div
                         className="chart-svg-wrapper"
-                        dangerouslySetInnerHTML={{ __html: svgContent }}
+                        dangerouslySetInnerHTML={{ __html: sanitizeSvg(svgContent) }}
                       />
                     </div>
                   ) : (

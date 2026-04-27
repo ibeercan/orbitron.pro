@@ -1,4 +1,5 @@
 import uuid
+import logging
 from contextlib import asynccontextmanager
 
 import structlog
@@ -8,7 +9,6 @@ from fastapi.responses import JSONResponse
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
-from slowapi.util import get_remote_address
 from starlette.middleware.base import BaseHTTPMiddleware
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,15 +16,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.core.logging import logger
 from app.db.session import engine, get_db
-from app.models.base import Base
-import app.models  # noqa: F401 — ensure all models registered for create_all
+from app.middleware.proxy_headers import get_real_ip
+from app.middleware.security_headers import SecurityHeadersMiddleware
+import app.models  # noqa: F401
 from app.api.v1.api import api_router
 
-cors_origins = list(settings.ALLOWED_ORIGINS)
+cors_origins = list(settings.allowed_origins)
 
 
 class RequestIDMiddleware(BaseHTTPMiddleware):
-    """Middleware to add unique request ID for tracing."""
     async def dispatch(self, request: Request, call_next):
         request_id = str(uuid.uuid4())
         request.state.request_id = request_id
@@ -33,18 +33,12 @@ class RequestIDMiddleware(BaseHTTPMiddleware):
         return response
 
 
-limiter = Limiter(key_func=get_remote_address, default_limits=["100/minute"])
+limiter = Limiter(key_func=get_real_ip, default_limits=["100/minute"])
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Application lifespan manager."""
-    logger.info("Starting Orbitron Backend")
-
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    logger.info("Database tables ensured")
-
+    logger.info("Starting Orbitron Backend", environment=settings.ENVIRONMENT)
     yield
     logger.info("Shutting down Orbitron Backend")
 
@@ -68,26 +62,20 @@ app.add_middleware(
     allow_headers=["Authorization", "Content-Type"],
 )
 
+app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(RequestIDMiddleware)
 
 app.include_router(api_router, prefix="/api/v1")
 
 
 @app.get("/health")
-async def health_check():
-    """Health check endpoint."""
-    return {"status": "healthy", "service": "orbitron-backend"}
-
-
-@app.get("/health/db")
-async def db_health_check(db: AsyncSession = Depends(get_db)):
-    """Database health check endpoint."""
+async def health_check(db: AsyncSession = Depends(get_db)):
     try:
         await db.execute(text("SELECT 1"))
-        return {"status": "healthy", "database": "connected"}
-    except Exception as e:
-        logger.error("database_health_check_failed", error=str(e))
+        return {"status": "healthy", "service": "orbitron-backend"}
+    except Exception:
+        logger.error("Health check failed: database unreachable")
         return JSONResponse(
             status_code=503,
-            content={"status": "unhealthy", "database": "disconnected", "detail": str(e)}
+            content={"status": "unhealthy", "service": "orbitron-backend"},
         )

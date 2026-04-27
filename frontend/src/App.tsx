@@ -3,6 +3,7 @@ import { useAuth } from '@/contexts/auth-context'
 import Landing from '@/pages/Landing'
 import Dashboard from '@/pages/Dashboard'
 import AdminPage from '@/pages/AdminPage'
+import { AdminRoute } from '@/components/auth/AdminRoute'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth()
@@ -55,11 +56,12 @@ export default function App() {
       <Route
         path="/admin"
         element={
-          <ProtectedRoute>
+          <AdminRoute>
             <AdminPage />
-          </ProtectedRoute>
+          </AdminRoute>
         }
       />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
 }

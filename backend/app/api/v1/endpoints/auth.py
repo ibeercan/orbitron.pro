@@ -1,40 +1,89 @@
 """Authentication endpoints."""
 
-from datetime import timedelta
-from typing import Annotated, Any
+import hashlib
+from datetime import timedelta, timezone, datetime
+from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Response, Request, status
 from fastapi.security import OAuth2PasswordRequestForm
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
 from app.core.config import settings
-from app.core.constants import COOKIE_NAME
-from app.core.security import create_access_token
-from app.auth.schemas import Token, UserCreate, User
+from app.core.constants import COOKIE_NAME, REFRESH_COOKIE_NAME
+from app.core.security import create_access_token, create_refresh_token, decode_token
+from app.auth.schemas import LoginResponse, UserCreate, User
 from app.auth.crud import user as user_crud
 from app.auth.deps import get_current_active_user
+from app.models.refresh_token import RefreshToken
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 router = APIRouter()
 
-COOKIE_MAX_AGE = 60 * settings.ACCESS_TOKEN_EXPIRE_MINUTES
+limiter = Limiter(key_func=get_remote_address)
+
+ACCESS_COOKIE_MAX_AGE = 60 * settings.ACCESS_TOKEN_EXPIRE_MINUTES
+REFRESH_COOKIE_MAX_AGE = 60 * 60 * 24 * settings.REFRESH_TOKEN_EXPIRE_DAYS
 
 
-def create_cookie_response(token: str, response: Response) -> Response:
+def _set_access_cookie(token: str, response: Response) -> None:
     response.set_cookie(
         key=COOKIE_NAME,
         value=token,
-        max_age=COOKIE_MAX_AGE,
+        max_age=ACCESS_COOKIE_MAX_AGE,
         httponly=True,
         samesite="lax",
         secure=settings.COOKIE_SECURE,
         domain=settings.COOKIE_DOMAIN,
+        path="/",
     )
-    return response
+
+
+def _set_refresh_cookie(token: str, response: Response) -> None:
+    response.set_cookie(
+        key=REFRESH_COOKIE_NAME,
+        value=token,
+        max_age=REFRESH_COOKIE_MAX_AGE,
+        httponly=True,
+        samesite="lax",
+        secure=settings.COOKIE_SECURE,
+        domain=settings.COOKIE_DOMAIN,
+        path="/api/v1/auth",
+    )
+
+
+def _clear_cookies(response: Response) -> None:
+    response.delete_cookie(key=COOKIE_NAME, domain=settings.COOKIE_DOMAIN, path="/")
+    response.delete_cookie(key=REFRESH_COOKIE_NAME, domain=settings.COOKIE_DOMAIN, path="/api/v1/auth")
+
+
+async def _create_tokens_and_cookies(user_email: str, response: Response, db: AsyncSession) -> LoginResponse:
+    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(user_email, expires_delta=access_token_expires)
+    refresh_token_str = create_refresh_token(user_email)
+
+    token_hash = hashlib.sha256(refresh_token_str.encode()).hexdigest()
+    user_obj = await user_crud.get_by_email(db, email=user_email)
+    refresh_token = RefreshToken(
+        user_id=user_obj.id,
+        token_hash=token_hash,
+        expires_at=datetime.now(timezone.utc) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS),
+    )
+    db.add(refresh_token)
+    await db.flush()
+
+    _set_access_cookie(access_token, response)
+    _set_refresh_cookie(refresh_token_str, response)
+
+    return LoginResponse(message="Login successful")
 
 
 @router.post("/register", response_model=User)
+@limiter.limit("5/minute")
 async def register(
+    request: Request,
     *,
     db: Annotated[AsyncSession, Depends(get_db)],
     user_in: UserCreate,
@@ -71,20 +120,21 @@ async def register(
     if is_premium and invite:
         await invite_code_crud.mark_used_with_email(db, invite, user.email)
 
-    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    token = create_access_token(user.email, expires_delta=access_token_expires)
-    create_cookie_response(token, response)
+    await _create_tokens_and_cookies(user.email, response, db)
+    await db.commit()
 
     return user
 
 
-@router.post("/login", response_model=Token)
+@router.post("/login", response_model=LoginResponse)
+@limiter.limit("5/minute")
 async def login(
+    request: Request,
     db: Annotated[AsyncSession, Depends(get_db)],
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     response: Response,
-) -> Token:
-    """OAuth2 compatible token login."""
+) -> LoginResponse:
+    """OAuth2 compatible token login. Sets httpOnly cookies for access and refresh tokens."""
     user = await user_crud.authenticate(db, email=form_data.username, password=form_data.password)
     if not user:
         raise HTTPException(
@@ -97,19 +147,78 @@ async def login(
             detail="Inactive user",
         )
 
-    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    token = create_access_token(user.email, expires_delta=access_token_expires)
-    create_cookie_response(token, response)
-    return Token(access_token=token, token_type="bearer")
+    result = await _create_tokens_and_cookies(user.email, response, db)
+    await db.commit()
+    return result
 
 
-@router.post("/refresh", response_model=Token)
+@router.post("/refresh", response_model=LoginResponse)
 async def refresh_token(
-    current_user: Annotated[User, Depends(get_current_active_user)],
-) -> Token:
-    """Refresh access token."""
-    token = create_access_token(current_user.email)
-    return Token(access_token=token, token_type="bearer")
+    request: Request,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    response: Response,
+) -> LoginResponse:
+    """Refresh access token using refresh token cookie."""
+    refresh_token_str = request.cookies.get(REFRESH_COOKIE_NAME)
+    if not refresh_token_str:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token missing",
+        )
+
+    try:
+        payload = decode_token(refresh_token_str)
+        if payload.get("type") != "refresh":
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token type",
+            )
+        email = payload.get("sub")
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid refresh token",
+        )
+
+    token_hash = hashlib.sha256(refresh_token_str.encode()).hexdigest()
+    result = await db.execute(
+        select(RefreshToken).where(
+            RefreshToken.token_hash == token_hash,
+            RefreshToken.revoked_at.is_(None),
+        )
+    )
+    stored_token = result.scalar_one_or_none()
+
+    if not stored_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token not found or revoked",
+        )
+
+    now = datetime.now(timezone.utc)
+    if stored_token.expires_at.replace(tzinfo=timezone.utc) < now:
+        stored_token.revoked_at = now
+        await db.flush()
+        await db.commit()
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token expired",
+        )
+
+    stored_token.revoked_at = now
+    await db.flush()
+
+    user = await user_crud.get_by_email(db, email=email)
+    if not user or not user_crud.is_active(user):
+        await db.commit()
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found or inactive",
+        )
+
+    result = await _create_tokens_and_cookies(user.email, response, db)
+    await db.commit()
+    return result
 
 
 @router.get("/me", response_model=User)
@@ -134,10 +243,22 @@ async def complete_onboarding(
 
 
 @router.post("/logout")
-async def logout(response: Response) -> dict:
-    """Logout user by clearing the cookie."""
-    response.delete_cookie(
-        key=COOKIE_NAME,
-        domain=settings.COOKIE_DOMAIN,
-    )
+async def logout(
+    request: Request,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    response: Response,
+) -> dict:
+    """Logout user by clearing cookies and revoking refresh token."""
+    refresh_token_str = request.cookies.get(REFRESH_COOKIE_NAME)
+    if refresh_token_str:
+        token_hash = hashlib.sha256(refresh_token_str.encode()).hexdigest()
+        result = await db.execute(
+            select(RefreshToken).where(RefreshToken.token_hash == token_hash)
+        )
+        stored_token = result.scalar_one_or_none()
+        if stored_token and stored_token.revoked_at is None:
+            stored_token.revoked_at = datetime.now(timezone.utc)
+            await db.commit()
+
+    _clear_cookies(response)
     return {"message": "Logged out successfully"}

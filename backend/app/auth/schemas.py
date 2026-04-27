@@ -5,11 +5,11 @@ from datetime import datetime
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
-__all__ = ["Token", "TokenData", "UserCreate", "UserLogin", "User"]
+__all__ = ["LoginResponse", "TokenData", "UserCreate", "UserLogin", "User"]
 
 
-class Token(BaseModel):
-    access_token: str
+class LoginResponse(BaseModel):
+    message: str = "Login successful"
     token_type: str = "bearer"
 
 

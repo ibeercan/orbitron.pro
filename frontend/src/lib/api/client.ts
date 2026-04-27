@@ -5,6 +5,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'https://api.orbitron.pro/api/v1
 export const api = axios.create({
   baseURL: API_URL,
   withCredentials: true,
+  timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
   },

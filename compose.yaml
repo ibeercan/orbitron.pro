@@ -3,59 +3,88 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: backend
+    container_name: orbitron-backend
     environment:
+      - ENVIRONMENT=${ENVIRONMENT:-production}
+      - DATABASE_URL=${DATABASE_URL:-postgresql://user:pass@postgres:5432/astrology}
       - POSTGRES_DB=${POSTGRES_DB:-astrology}
       - POSTGRES_USER=${POSTGRES_USER:-user}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
-      - AI_API_KEY=${AI_API_KEY}
-      - AI_BASE_URL=${AI_BASE_URL}
-      - AI_MODEL=${AI_MODEL}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      - SECRET_KEY=${SECRET_KEY:?SECRET_KEY is required}
+      - AI_PROVIDERS=${AI_PROVIDERS:-[]}
+      - AI_CACHE_ENABLED=${AI_CACHE_ENABLED:-true}
       - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
-      - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - COOKIE_DOMAIN=${COOKIE_DOMAIN:-orbitron.pro}
       - COOKIE_SECURE=${COOKIE_SECURE:-true}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - RUN_MIGRATIONS=${RUN_MIGRATIONS:-true}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-https://orbitron.pro,https://api.orbitron.pro}
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.backend.rule=Host(`api.orbitron.pro`)"
       - "traefik.http.routers.backend.entrypoints=websecure"
       - "traefik.http.routers.backend.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.backend.middlewares=security-headers@docker"
       - "traefik.http.services.backend.loadbalancer.server.port=8000"
+      - "traefik.http.middlewares.security-headers.headers.customresponseheaders.X-Content-Type-Options=nosniff"
+      - "traefik.http.middlewares.security-headers.headers.customresponseheaders.X-Frame-Options=DENY"
+      - "traefik.http.middlewares.security-headers.headers.customresponseheaders.Referrer-Policy=strict-origin-when-cross-origin"
+      - "traefik.http.middlewares.security-headers.headers.customresponseheaders.Permissions-Policy=camera=(), microphone=(), geolocation=()"
     networks:
       - proxy
       - internal
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
     restart: unless-stopped
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: frontend
+    container_name: orbitron-frontend
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.frontend.rule=Host(`orbitron.pro`)"
       - "traefik.http.routers.frontend.entrypoints=websecure"
       - "traefik.http.routers.frontend.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.frontend.middlewares=security-headers@docker"
       - "traefik.http.services.frontend.loadbalancer.server.port=80"
     networks:
       - proxy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
     restart: unless-stopped
 
   postgres:
-    image: postgres:15
+    image: postgres:15-alpine
     container_name: orbitron-postgres
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-astrology}
       POSTGRES_USER: ${POSTGRES_USER:-user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-user} -d ${POSTGRES_DB:-astrology}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     restart: unless-stopped
 
   redis:
@@ -66,6 +95,11 @@ services:
       - redis_data:/data
     networks:
       - internal
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
     restart: unless-stopped
 
 volumes:
