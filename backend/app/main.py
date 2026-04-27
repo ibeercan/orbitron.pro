@@ -43,11 +43,16 @@ async def lifespan(app: FastAPI):
     logger.info("Shutting down Orbitron Backend")
 
 
+is_production = settings.ENVIRONMENT == "production"
+
 app = FastAPI(
     title="Orbitron Astrology API",
     description="AI-powered astrological chart analysis service",
     version="1.0.0",
     lifespan=lifespan,
+    docs_url=None if is_production else "/docs",
+    redoc_url=None if is_production else "/redoc",
+    openapi_url=None if is_production else "/openapi.json",
 )
 
 app.state.limiter = limiter
@@ -79,3 +84,15 @@ async def health_check(db: AsyncSession = Depends(get_db)):
             status_code=503,
             content={"status": "unhealthy", "service": "orbitron-backend"},
         )
+
+
+if not is_production:
+
+    @app.get("/")
+    async def root():
+        return {
+            "service": "orbitron-backend",
+            "version": "1.0.0",
+            "environment": settings.ENVIRONMENT,
+            "docs": "/docs",
+        }
