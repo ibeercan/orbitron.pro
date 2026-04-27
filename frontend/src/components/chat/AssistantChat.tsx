@@ -423,30 +423,31 @@ function ChatContent({ showWelcome, onWelcomeDismiss, chartType }: { showWelcome
           </div>
         ) : messages.length === 0 ? (
           <div className="flex flex-col h-full justify-center">
-            {showWelcome && onWelcomeDismiss && (
-              <div className="mb-4">
-                <WelcomeMessage onDismiss={onWelcomeDismiss} />
-              </div>
+            {showWelcome && onWelcomeDismiss ? (
+              <WelcomeMessage onDismiss={onWelcomeDismiss} />
+            ) : (
+              <>
+                <div className="text-center mb-6">
+                  <div className="w-12 h-12 rounded-2xl bg-[rgba(212,175,55,0.08)] border border-[rgba(212,175,55,0.12)] flex items-center justify-center mx-auto mb-3">
+                    <Sparkles className="w-5 h-5 text-[#D4AF37]" />
+                  </div>
+                  <p className="text-sm font-medium text-[#F0EAD6] mb-1">{(CHART_SUGGESTIONS[chartType || 'natal'] ?? CHART_SUGGESTIONS.natal).title}</p>
+                  <p className="text-xs text-[#8B7FA8]">{(CHART_SUGGESTIONS[chartType || 'natal'] ?? CHART_SUGGESTIONS.natal).subtitle}</p>
+                </div>
+                <div className="space-y-2">
+                  {(CHART_SUGGESTIONS[chartType || 'natal'] ?? CHART_SUGGESTIONS.natal).questions.map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => sendMessage(s)}
+                      className="w-full text-left px-3.5 py-2.5 rounded-xl text-sm text-[#8B7FA8] border border-[rgba(212,175,55,0.08)] bg-[rgba(212,175,55,0.03)] hover:bg-[rgba(212,175,55,0.07)] hover:border-[rgba(212,175,55,0.18)] hover:text-[#D4AF37] transition-all duration-200"
+                    >
+                      <span className="text-[#4A3F6A] mr-2">→</span>
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </>
             )}
-            <div className="text-center mb-6">
-              <div className="w-12 h-12 rounded-2xl bg-[rgba(212,175,55,0.08)] border border-[rgba(212,175,55,0.12)] flex items-center justify-center mx-auto mb-3">
-                <Sparkles className="w-5 h-5 text-[#D4AF37]" />
-              </div>
-              <p className="text-sm font-medium text-[#F0EAD6] mb-1">{(CHART_SUGGESTIONS[chartType || 'natal'] ?? CHART_SUGGESTIONS.natal).title}</p>
-              <p className="text-xs text-[#8B7FA8]">{(CHART_SUGGESTIONS[chartType || 'natal'] ?? CHART_SUGGESTIONS.natal).subtitle}</p>
-            </div>
-            <div className="space-y-2">
-              {(CHART_SUGGESTIONS[chartType || 'natal'] ?? CHART_SUGGESTIONS.natal).questions.map((s) => (
-                <button
-                  key={s}
-                  onClick={() => sendMessage(s)}
-                  className="w-full text-left px-3.5 py-2.5 rounded-xl text-sm text-[#8B7FA8] border border-[rgba(212,175,55,0.08)] bg-[rgba(212,175,55,0.03)] hover:bg-[rgba(212,175,55,0.07)] hover:border-[rgba(212,175,55,0.18)] hover:text-[#D4AF37] transition-all duration-200"
-                >
-                  <span className="text-[#4A3F6A] mr-2">→</span>
-                  {s}
-                </button>
-              ))}
-            </div>
           </div>
         ) : (
           messages.map((msg: ThreadMessage, idx: number) => {
