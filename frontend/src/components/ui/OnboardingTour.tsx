@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { X, ChevronRight, Star, Sparkles, Target, Heart, MessageCircle, MapPin, BookOpen } from 'lucide-react'
+import { X, ChevronRight, Star, Sparkles, Target, Heart, MessageCircle, MapPin, BookOpen, Plus } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/contexts/auth-context'
 
@@ -51,15 +51,17 @@ const STEPS = [
 
 interface OnboardingTourProps {
   onComplete: () => void
+  onCreateChart: () => void
 }
 
-export function OnboardingTour({ onComplete }: OnboardingTourProps) {
+export function OnboardingTour({ onComplete, onCreateChart }: OnboardingTourProps) {
   const [step, setStep] = useState(0)
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null)
   const [visible, setVisible] = useState(false)
   const { completeOnboarding } = useAuth()
 
   const current = STEPS[step]
+  const isLastStep = step === STEPS.length - 1
 
   const updateTargetRect = useCallback(() => {
     if (!current.target) {
@@ -104,11 +106,20 @@ export function OnboardingTour({ onComplete }: OnboardingTourProps) {
     finish()
   }
 
-  const finish = async () => {
+  const finish = () => {
     setVisible(false)
     setTimeout(() => {
       onComplete()
       completeOnboarding()
+    }, 200)
+  }
+
+  const finishAndCreate = () => {
+    setVisible(false)
+    setTimeout(() => {
+      onComplete()
+      completeOnboarding()
+      onCreateChart()
     }, 200)
   }
 
@@ -246,30 +257,39 @@ export function OnboardingTour({ onComplete }: OnboardingTourProps) {
                 ))}
               </div>
 
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={skip}
-                  className="text-xs text-[#4A3F6A] hover:text-[#8B7FA8] transition-colors"
-                >
-                  Пропустить
-                </button>
-                <button
-                  onClick={next}
-                  className="btn-gold h-9 px-5 text-sm flex items-center gap-1.5"
-                >
-                  {step === STEPS.length - 1 ? (
-                    <>
-                      <Star className="w-3.5 h-3.5" />
-                      Начать
-                    </>
-                  ) : (
-                    <>
-                      Далее
-                      <ChevronRight className="w-3.5 h-3.5" />
-                    </>
-                  )}
-                </button>
-              </div>
+              {isLastStep ? (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={finish}
+                    className="text-xs text-[#4A3F6A] hover:text-[#8B7FA8] transition-colors"
+                  >
+                    Позже
+                  </button>
+                  <button
+                    onClick={finishAndCreate}
+                    className="btn-gold h-9 px-5 text-sm flex items-center gap-1.5"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    Создать карту
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={skip}
+                    className="text-xs text-[#4A3F6A] hover:text-[#8B7FA8] transition-colors"
+                  >
+                    Пропустить
+                  </button>
+                  <button
+                    onClick={next}
+                    className="btn-gold h-9 px-5 text-sm flex items-center gap-1.5"
+                  >
+                    Далее
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
