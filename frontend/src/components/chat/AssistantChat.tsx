@@ -232,7 +232,7 @@ const CHART_SUGGESTIONS: Record<string, { title: string; subtitle: string; quest
     ],
   },
   solar_arc: {
-    title: 'Солярные дирекции',
+    title: 'Дирекции',
     subtitle: 'Я интерпретирую дирекционные аспекты и ключевые события',
     questions: [
       'Какие события активируют дирекции?',

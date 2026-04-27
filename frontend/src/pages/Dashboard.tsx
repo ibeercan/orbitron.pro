@@ -36,7 +36,7 @@ const CHART_TYPE_LABELS: Record<string, string> = {
   solar_return: 'Солярный возврат',
   lunar_return: 'Лунарный возврат',
   profection: 'Профекция',
-  solar_arc: 'Солярные дуги',
+  solar_arc: 'Дирекции',
   progression: 'Вторичные прогрессии',
   composite: 'Композит',
   davison: 'Давидсон',
@@ -624,7 +624,7 @@ const loadChartSvg = async (chart: Chart) => {
                 {selectedChart && (selectedChart.chart_type || 'natal') === 'natal' && (
                   <div className="flex items-center gap-1.5 px-5 py-2 border-b border-[rgba(212,175,55,0.06)] shrink-0 overflow-x-auto" data-onboarding="actions">
                     <ChartActionButton icon={Heart} label="Отношения" premium onClick={() => setActiveModal('relationships')} />
-                    <ChartActionButton icon={Clock} label="Транзиты" onClick={() => setActiveModal('transit')} />
+                    <ChartActionButton icon={Clock} label="Транзиты" premium onClick={() => setActiveModal('transit')} />
                     <ChartActionButton icon={Sun} label="Соляр" premium onClick={() => setActiveModal('solar_return')} />
                     <ChartActionButton icon={Moon} label="Лунар" premium onClick={() => setActiveModal('lunar_return')} />
                     <ChartActionButton icon={RotateCcw} label="Возврат" premium onClick={() => setActiveModal('planetary_return')} />
