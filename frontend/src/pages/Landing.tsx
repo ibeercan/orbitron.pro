@@ -11,8 +11,8 @@ import {
 
 function parseApiError(error: unknown, fallback: string): string {
   const detail = (error as { response?: { data?: { detail?: string | Array<{ msg: string }> } } })?.response?.data?.detail
-  if (Array.isArray(detail)) return detail.map(d => d.msg).join(', ')
-  if (typeof detail === 'string') return detail
+  if (Array.isArray(detail)) return detail.map(d => d.msg.replace(/^Value error, /, '')).join(', ')
+  if (typeof detail === 'string') return detail.replace(/^Value error, /, '')
   return fallback
 }
 

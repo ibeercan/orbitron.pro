@@ -23,6 +23,7 @@ import { PlannerForm } from '@/components/ui/PlannerForm'
 import { TransitTimeline } from '@/components/ui/TransitTimeline'
 import { AstroTwinsPanel } from '@/components/ui/AstroTwinsPanel'
 import { OnboardingTour } from '@/components/ui/OnboardingTour'
+import { PremiumUpgradeModal } from '@/components/ui/PremiumUpgradeModal'
 import { Loader2, Calendar, MapPin, Sparkles, Star, Trash2, AlertTriangle, Maximize2, Heart, Clock, Sun, Moon, Target, FileText, Lock, Crown, ArrowLeft, Crosshair, Navigation, Zap, Compass, BookOpen, RotateCcw } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/contexts/auth-context'
@@ -45,18 +46,19 @@ const CHART_TYPE_LABELS: Record<string, string> = {
   planetary_return: 'Планетарный возврат',
 }
 
-function ChartActionButton({ icon: Icon, label, premium, onClick }: {
+function ChartActionButton({ icon: Icon, label, premium, onClick, onPremiumLock }: {
   icon: React.ComponentType<{ className?: string }>
   label: string
   premium?: boolean
   onClick: () => void
+  onPremiumLock?: () => void
 }) {
   const { user } = useAuth()
   const locked = premium && !user?.is_subscription_active && !user?.is_admin
 
   return (
     <button
-      onClick={locked ? () => alert('Доступно на Premium') : onClick}
+      onClick={locked ? (onPremiumLock || (() => {})) : onClick}
       className={cn(
         'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap',
         locked
@@ -345,6 +347,7 @@ export default function Dashboard() {
   const [svgContent, setSvgContent] = useState<string>('')
   const [svgLoading, setSvgLoading] = useState(false)
   const [showProfile, setShowProfile] = useState(false)
+  const [showPremiumModal, setShowPremiumModal] = useState(false)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [chatSessionId, setChatSessionId] = useState<number | null>(null)
   const handleSessionCreated = useCallback((id: number) => setChatSessionId(id), [])
@@ -580,6 +583,7 @@ const loadChartSvg = async (chart: Chart) => {
           collapsed={sidebarCollapsed}
           onToggleCollapse={() => setSidebarCollapsed((v) => !v)}
           onAstrologerMode={() => selectedChart && setAstrologerMode(true)}
+          onPremiumLock={() => setShowPremiumModal(true)}
           activeMobileTab={activeMobileNav}
           onMobileTabChange={(tab) => {
             setActiveMobileNav(tab)
@@ -617,16 +621,16 @@ const loadChartSvg = async (chart: Chart) => {
 
                 {selectedChart && (selectedChart.chart_type || 'natal') === 'natal' && (
                   <div className="flex items-center gap-1.5 px-5 py-2 border-b border-[rgba(212,175,55,0.06)] shrink-0 overflow-x-auto" data-onboarding="actions">
-                    <ChartActionButton icon={Heart} label="Отношения" premium onClick={() => setActiveModal('relationships')} />
-                    <ChartActionButton icon={Clock} label="Транзиты" premium onClick={() => setActiveModal('transit')} />
-                    <ChartActionButton icon={Sun} label="Соляр" premium onClick={() => setActiveModal('solar_return')} />
-                    <ChartActionButton icon={Moon} label="Лунар" premium onClick={() => setActiveModal('lunar_return')} />
-                    <ChartActionButton icon={RotateCcw} label="Возврат" premium onClick={() => setActiveModal('planetary_return')} />
-                    <ChartActionButton icon={Target} label="Профекция" premium onClick={() => setActiveModal('profection')} />
-                    <ChartActionButton icon={Navigation} label="Дирекции" premium onClick={() => setActiveModal('solar_arc')} />
-                    <ChartActionButton icon={Zap} label="Прогрессии" premium onClick={() => setActiveModal('progression')} />
-                    <ChartActionButton icon={BookOpen} label="Плэннер" premium onClick={() => setActiveModal('planner')} />
-                    <ChartActionButton icon={FileText} label="PDF" premium onClick={handlePdfDownload} />
+                    <ChartActionButton icon={Heart} label="Отношения" premium onClick={() => setActiveModal('relationships')} onPremiumLock={() => setShowPremiumModal(true)} />
+                    <ChartActionButton icon={Clock} label="Транзиты" onClick={() => setActiveModal('transit')} />
+                    <ChartActionButton icon={Sun} label="Соляр" premium onClick={() => setActiveModal('solar_return')} onPremiumLock={() => setShowPremiumModal(true)} />
+                    <ChartActionButton icon={Moon} label="Лунар" premium onClick={() => setActiveModal('lunar_return')} onPremiumLock={() => setShowPremiumModal(true)} />
+                    <ChartActionButton icon={RotateCcw} label="Возврат" premium onClick={() => setActiveModal('planetary_return')} onPremiumLock={() => setShowPremiumModal(true)} />
+                    <ChartActionButton icon={Target} label="Профекция" premium onClick={() => setActiveModal('profection')} onPremiumLock={() => setShowPremiumModal(true)} />
+                    <ChartActionButton icon={Navigation} label="Дирекции" premium onClick={() => setActiveModal('solar_arc')} onPremiumLock={() => setShowPremiumModal(true)} />
+                    <ChartActionButton icon={Zap} label="Прогрессии" premium onClick={() => setActiveModal('progression')} onPremiumLock={() => setShowPremiumModal(true)} />
+                    <ChartActionButton icon={BookOpen} label="Плэннер" premium onClick={() => setActiveModal('planner')} onPremiumLock={() => setShowPremiumModal(true)} />
+                    <ChartActionButton icon={FileText} label="PDF" premium onClick={handlePdfDownload} onPremiumLock={() => setShowPremiumModal(true)} />
                   </div>
                 )}
 
@@ -859,6 +863,9 @@ const loadChartSvg = async (chart: Chart) => {
 
         {/* Profile slide-over */}
         <ProfileSlideOver isOpen={showProfile} onClose={() => setShowProfile(false)} data-onboarding="profile" />
+
+        {/* Premium upgrade modal */}
+        <PremiumUpgradeModal open={showPremiumModal} onClose={() => setShowPremiumModal(false)} />
 
         {/* Create chart modal */}
         <CreateChartModal

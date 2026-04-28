@@ -33,6 +33,7 @@ import {
   Crosshair,
   RotateCcw,
   ChevronDown,
+  Lock,
 } from 'lucide-react'
 
 const CHART_TYPE_LABELS: Record<string, string> = {
@@ -94,6 +95,7 @@ interface SidebarProps {
   collapsed?: boolean
   onToggleCollapse?: () => void
   onAstrologerMode?: () => void
+  onPremiumLock?: () => void
   activeMobileTab?: 'charts' | 'profile'
   onMobileTabChange?: (tab: 'charts' | 'profile') => void
 }
@@ -151,6 +153,32 @@ function formatLocation(location: string) {
   return location.split(',')[0].trim()
 }
 
+const CREATE_TYPE_META: Record<string, { icon: React.ComponentType<{ className?: string }>; label: string }> = {
+  horary: { icon: Compass, label: 'Хорарная карта' },
+  electional: { icon: Sparkles, label: 'Элективная карта' },
+  rectification: { icon: Crosshair, label: 'Ректификация' },
+}
+
+function PremiumCreateItem({ type, onCreateChart, isPremium, onPremiumLock }: {
+  type: 'horary' | 'electional' | 'rectification'
+  onCreateChart: (type: 'natal' | 'horary' | 'electional' | 'rectification') => void
+  isPremium: boolean
+  onPremiumLock?: () => void
+}) {
+  const meta = CREATE_TYPE_META[type]
+  if (!meta) return null
+  const locked = !isPremium
+  return (
+    <DropdownMenuItem
+      onClick={locked ? (onPremiumLock || (() => {})) : () => onCreateChart(type)}
+      className={locked ? 'opacity-50 cursor-not-allowed' : ''}
+    >
+      {locked ? <Lock className="w-4 h-4 text-[#4A3F6A]" /> : <meta.icon className="w-4 h-4 text-[#D4AF37]" />}
+      <span>{meta.label}</span>
+    </DropdownMenuItem>
+  )
+}
+
 export function Sidebar({
   onProfileClick,
   onCreateChart,
@@ -161,6 +189,7 @@ export function Sidebar({
   collapsed = false,
   onToggleCollapse,
   onAstrologerMode,
+  onPremiumLock,
   activeMobileTab = 'charts',
   onMobileTabChange,
 }: SidebarProps) {
@@ -291,18 +320,9 @@ export function Sidebar({
                       <Star className="w-4 h-4 text-[#D4AF37]" />
                       <span>Натальная карта</span>
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => onCreateChart?.('horary')}>
-                      <Compass className="w-4 h-4 text-[#D4AF37]" />
-                      <span>Хорарная карта</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => onCreateChart?.('electional')}>
-                      <Sparkles className="w-4 h-4 text-[#D4AF37]" />
-                      <span>Элективная карта</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => onCreateChart?.('rectification')}>
-                      <Crosshair className="w-4 h-4 text-[#D4AF37]" />
-                      <span>Ректификация</span>
-                    </DropdownMenuItem>
+                    <PremiumCreateItem type="horary" onCreateChart={onCreateChart!} isPremium={!!isPremium} onPremiumLock={onPremiumLock} />
+                    <PremiumCreateItem type="electional" onCreateChart={onCreateChart!} isPremium={!!isPremium} onPremiumLock={onPremiumLock} />
+                    <PremiumCreateItem type="rectification" onCreateChart={onCreateChart!} isPremium={!!isPremium} onPremiumLock={onPremiumLock} />
                   </DropdownMenuContent>
                 </DropdownMenu>
 
@@ -351,18 +371,9 @@ export function Sidebar({
                         <Star className="w-4 h-4 text-[#D4AF37]" />
                         <span>Натальная карта</span>
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => onCreateChart?.('horary')}>
-                        <Compass className="w-4 h-4 text-[#D4AF37]" />
-                        <span>Хорарная карта</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => onCreateChart?.('electional')}>
-                        <Sparkles className="w-4 h-4 text-[#D4AF37]" />
-                        <span>Элективная карта</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => onCreateChart?.('rectification')}>
-                        <Crosshair className="w-4 h-4 text-[#D4AF37]" />
-                        <span>Ректификация</span>
-                      </DropdownMenuItem>
+                      <PremiumCreateItem type="horary" onCreateChart={onCreateChart!} isPremium={!!isPremium} onPremiumLock={onPremiumLock} />
+                      <PremiumCreateItem type="electional" onCreateChart={onCreateChart!} isPremium={!!isPremium} onPremiumLock={onPremiumLock} />
+                      <PremiumCreateItem type="rectification" onCreateChart={onCreateChart!} isPremium={!!isPremium} onPremiumLock={onPremiumLock} />
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
@@ -543,18 +554,9 @@ export function Sidebar({
                 <Star className="w-4 h-4 text-[#D4AF37]" />
                 <span>Натальная карта</span>
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onCreateChart?.('horary')}>
-                <Compass className="w-4 h-4 text-[#D4AF37]" />
-                <span>Хорарная карта</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onCreateChart?.('electional')}>
-                <Sparkles className="w-4 h-4 text-[#D4AF37]" />
-                <span>Элективная карта</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onCreateChart?.('rectification')}>
-                <Crosshair className="w-4 h-4 text-[#D4AF37]" />
-                <span>Ректификация</span>
-              </DropdownMenuItem>
+              <PremiumCreateItem type="horary" onCreateChart={onCreateChart!} isPremium={!!isPremium} onPremiumLock={onPremiumLock} />
+              <PremiumCreateItem type="electional" onCreateChart={onCreateChart!} isPremium={!!isPremium} onPremiumLock={onPremiumLock} />
+              <PremiumCreateItem type="rectification" onCreateChart={onCreateChart!} isPremium={!!isPremium} onPremiumLock={onPremiumLock} />
             </DropdownMenuContent>
           </DropdownMenu>
 
