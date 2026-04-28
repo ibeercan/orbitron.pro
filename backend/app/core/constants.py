@@ -18,6 +18,8 @@ MAX_PAGE_LIMIT = 1000
 FREE_CHARTS_LIMIT = 1
 PREMIUM_CHARTS_LIMIT = None
 
+REGISTRATION_OPEN_KEY = "registration_open"
+
 PREMIUM_FEATURES = {
     "synastry_ai",
     "transit_custom_date",

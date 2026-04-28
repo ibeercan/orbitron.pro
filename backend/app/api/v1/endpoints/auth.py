@@ -11,12 +11,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
 from app.core.config import settings
-from app.core.constants import COOKIE_NAME, REFRESH_COOKIE_NAME
+from app.core.constants import COOKIE_NAME, REFRESH_COOKIE_NAME, REGISTRATION_OPEN_KEY
 from app.core.security import create_access_token, create_refresh_token, decode_token
 from app.auth.schemas import LoginResponse, UserCreate, User
 from app.auth.crud import user as user_crud
 from app.auth.deps import get_current_active_user
+from app.admin.settings import is_registration_open, get_setting
 from app.models.refresh_token import RefreshToken
+from app.subscriptions.crud import early_subscriber as early_subscriber_crud
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
@@ -89,16 +91,32 @@ async def register(
     user_in: UserCreate,
     response: Response,
 ) -> User:
-    """Register a new user. Optional invite_code gives Premium subscription."""
+    """Register a new user.
+
+    - If registration is closed (registration_open=false), invite_code is required.
+    - If registration is open and no invite_code: Free account, or Premium 1 month
+      if email is in early_subscribers.
+    - With valid invite_code: Premium account (no expiry).
+    """
+    registration_open = await is_registration_open(db)
+
+    if not registration_open and not user_in.invite_code:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Регистрация сейчас только по приглашению.",
+        )
+
     user = await user_crud.get_by_email(db, email=user_in.email)
     if user:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="A user with this email already exists.",
+            detail="Пользователь с таким email уже существует.",
         )
 
     is_premium = False
+    premium_days = None
     invite = None
+
     if user_in.invite_code:
         from app.invites.crud import invite_code_crud
 
@@ -106,19 +124,25 @@ async def register(
         if not invite:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid invite code.",
+                detail="Неверный код приглашения.",
             )
         if invite.used:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invite code already used.",
+                detail="Код приглашения уже использован.",
             )
         is_premium = True
+    elif registration_open:
+        early_sub = await early_subscriber_crud.get_by_email(db, email=user_in.email.lower().strip())
+        if early_sub and not early_sub.deleted_at:
+            is_premium = True
+            premium_days = 30
 
-    user = await user_crud.create(db, obj_in=user_in, is_premium=is_premium)
+    user = await user_crud.create(db, obj_in=user_in, is_premium=is_premium, premium_days=premium_days)
 
-    if is_premium and invite:
-        await invite_code_crud.mark_used_with_email(db, invite, user.email)
+    if invite:
+        from app.invites.crud import invite_code_crud as ic_crud
+        await ic_crud.mark_used_with_email(db, invite, user.email)
 
     await _create_tokens_and_cookies(user.email, response, db)
     await db.commit()
@@ -139,12 +163,12 @@ async def login(
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid credentials",
+            detail="Неверный email или пароль",
         )
     if not user_crud.is_active(user):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Inactive user",
+            detail="Аккаунт деактивирован",
         )
 
     result = await _create_tokens_and_cookies(user.email, response, db)

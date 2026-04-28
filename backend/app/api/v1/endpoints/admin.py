@@ -19,6 +19,8 @@ from app.admin.schemas import (
     AdminEarlySubscriberOut,
     AdminEarlySubscriberListResponse,
     AdminInviteSubscriberResponse,
+    AdminSettingsResponse,
+    AdminSettingsUpdate,
 )
 from app.invites.crud import invite_code_crud
 from app.invites.schemas import InviteCodeListResponse
@@ -208,3 +210,29 @@ async def list_token_usage(
         entries=[AdminTokenUsageOut(**e) for e in entries],
         total=total,
     )
+
+
+@router.get("/settings", response_model=AdminSettingsResponse)
+async def get_settings(
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(get_current_admin_user),
+) -> Any:
+    from app.admin.settings import get_all_settings
+    settings = await get_all_settings(db)
+    return AdminSettingsResponse(settings=settings)
+
+
+@router.patch("/settings", response_model=AdminSettingsResponse)
+async def update_settings(
+    *,
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(get_current_admin_user),
+    body: AdminSettingsUpdate,
+) -> Any:
+    from app.admin.settings import set_setting, get_all_settings
+    from app.core.constants import REGISTRATION_OPEN_KEY
+
+    await set_setting(db, REGISTRATION_OPEN_KEY, "true" if body.registration_open else "false")
+    await db.commit()
+    settings = await get_all_settings(db)
+    return AdminSettingsResponse(settings=settings)

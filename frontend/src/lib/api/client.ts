@@ -414,4 +414,10 @@ export const adminApi = {
   listTokenUsage: async (params?: { skip?: number; limit?: number }) => {
     return api.get('/admin/token-usage', { params })
   },
+  getSettings: async () => {
+    return api.get('/admin/settings')
+  },
+  updateSettings: async (data: { registration_open: boolean }) => {
+    return api.patch('/admin/settings', data)
+  },
 }

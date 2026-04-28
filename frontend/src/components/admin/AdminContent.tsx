@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { adminApi } from '@/lib/api/client'
-import { Loader2, Crown, ChevronDown, Key, Users, BarChart3, ScrollText, Mail } from 'lucide-react'
+import { Loader2, Crown, ChevronDown, Key, Users, BarChart3, ScrollText, Mail, Settings } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-type Tab = 'analytics' | 'users' | 'invites' | 'subscribers' | 'audit'
+type Tab = 'analytics' | 'users' | 'invites' | 'subscribers' | 'audit' | 'settings'
 
 const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'analytics', label: 'Аналитика', icon: BarChart3 },
@@ -11,6 +11,7 @@ const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'invites', label: 'Коды', icon: Key },
   { id: 'subscribers', label: 'Подписчики', icon: Mail },
   { id: 'audit', label: 'Аудит', icon: ScrollText },
+  { id: 'settings', label: 'Настройки', icon: Settings },
 ]
 
 export function AdminContent() {
@@ -40,6 +41,7 @@ export function AdminContent() {
                   : t.id === 'users' ? 'bg-[rgba(59,130,246,0.1)] border border-[rgba(59,130,246,0.2)] text-[#60A5FA]'
                   : t.id === 'invites' ? 'bg-[rgba(123,47,190,0.1)] border border-[rgba(123,47,190,0.2)] text-[#9D50E0]'
                   : t.id === 'subscribers' ? 'bg-[rgba(16,185,129,0.1)] border border-[rgba(16,185,129,0.2)] text-[#34D399]'
+                  : t.id === 'settings' ? 'bg-[rgba(147,130,220,0.1)] border border-[rgba(147,130,220,0.2)] text-[#9382DC]'
                   : 'bg-[rgba(139,92,246,0.1)] border border-[rgba(139,92,246,0.2)] text-[#A78BFA]'
                 : 'text-[#8B7FA8] hover:text-[#F0EAD6]',
             )}
@@ -56,6 +58,7 @@ export function AdminContent() {
         {tab === 'invites' && <InvitesTab />}
         {tab === 'subscribers' && <SubscribersTab />}
         {tab === 'audit' && <AuditTab />}
+        {tab === 'settings' && <SettingsTab />}
       </div>
     </div>
   )
@@ -427,6 +430,79 @@ function AuditTab() {
           ))}
           {logs.length === 0 && <p className="text-center text-sm text-[#8B7FA8] py-8">Нет записей</p>}
         </div>
+      )}
+    </div>
+  )
+}
+
+function SettingsTab() {
+  const [registrationOpen, setRegistrationOpen] = useState(true)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [message, setMessage] = useState('')
+
+  useEffect(() => {
+    adminApi.getSettings().then(r => {
+      const reg = r.data.settings?.find((s: { key: string; value: string }) => s.key === 'registration_open')
+      setRegistrationOpen(reg?.value !== 'false')
+    }).catch(() => {}).finally(() => setLoading(false))
+  }, [])
+
+  const handleSave = async () => {
+    setSaving(true)
+    setMessage('')
+    try {
+      await adminApi.updateSettings({ registration_open: registrationOpen })
+      setMessage('Настройки сохранены')
+      setTimeout(() => setMessage(''), 3000)
+    } catch {
+      setMessage('Ошибка сохранения')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (loading) return <div className="flex items-center justify-center py-20"><Loader2 className="w-6 h-6 text-[#9382DC] animate-spin" /></div>
+
+  return (
+    <div className="p-6 space-y-6">
+      <h2 className="font-serif text-lg font-semibold text-[#F0EAD6]">Настройки регистрации</h2>
+
+      <div className="luxury-card p-5">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm font-medium text-[#F0EAD6]">Открытая регистрация</p>
+            <p className="text-xs text-[#8B7FA8] mt-1">
+              {registrationOpen
+                ? 'Любой email может зарегистрироваться без кода приглашения'
+                : 'Регистрация только по коду приглашения'}
+            </p>
+          </div>
+          <button
+            onClick={() => setRegistrationOpen(!registrationOpen)}
+            className={cn(
+              'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
+              registrationOpen ? 'bg-[#34D399]' : 'bg-[#4A3F6A]'
+            )}
+          >
+            <span className={cn(
+              'inline-block h-4 w-4 transform rounded-full bg-white transition-transform',
+              registrationOpen ? 'translate-x-6' : 'translate-x-1'
+            )} />
+          </button>
+        </div>
+      </div>
+
+      <button
+        onClick={handleSave}
+        disabled={saving}
+        className="btn-gold h-10 px-6 flex items-center justify-center gap-2 text-sm"
+      >
+        {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Сохранить'}
+      </button>
+
+      {message && (
+        <p className={cn('text-sm', message.includes('Ошибка') ? 'text-red-400' : 'text-[#34D399]')}>{message}</p>
       )}
     </div>
   )

@@ -26,11 +26,11 @@ class UserCreate(BaseModel):
     @classmethod
     def validate_password_strength(cls, v: str) -> str:
         if not re.search(r"[A-Z]", v):
-            raise ValueError("Password must contain at least one uppercase letter")
+            raise ValueError("Пароль должен содержать хотя бы одну заглавную букву")
         if not re.search(r"[a-z]", v):
-            raise ValueError("Password must contain at least one lowercase letter")
+            raise ValueError("Пароль должен содержать хотя бы одну строчную букву")
         if not re.search(r"\d", v):
-            raise ValueError("Password must contain at least one digit")
+            raise ValueError("Пароль должен содержать хотя бы одну цифру")
         return v
 
 

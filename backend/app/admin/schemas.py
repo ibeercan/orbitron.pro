@@ -134,3 +134,19 @@ class AdminEarlySubscriberListResponse(BaseModel):
 class AdminInviteSubscriberResponse(BaseModel):
     code: str
     subscriber_email: str
+
+
+class AppSettingOut(BaseModel):
+    key: str
+    value: str
+    updated_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+class AdminSettingsResponse(BaseModel):
+    settings: list[AppSettingOut]
+
+
+class AdminSettingsUpdate(BaseModel):
+    registration_open: bool

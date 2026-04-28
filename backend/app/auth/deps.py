@@ -51,5 +51,5 @@ async def get_current_active_user(
 ) -> User:
     """Verify that the current user is active."""
     if not user_crud.is_active(current_user):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Inactive user")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Аккаунт деактивирован")
     return current_user

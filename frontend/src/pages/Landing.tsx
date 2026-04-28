@@ -9,6 +9,13 @@ import {
   Sun, Zap, RotateCcw, BookOpen, MessageCircle, Crown, Check, X,
 } from 'lucide-react'
 
+function parseApiError(error: unknown, fallback: string): string {
+  const detail = (error as { response?: { data?: { detail?: string | Array<{ msg: string }> } } })?.response?.data?.detail
+  if (Array.isArray(detail)) return detail.map(d => d.msg).join(', ')
+  if (typeof detail === 'string') return detail
+  return fallback
+}
+
 interface SubscribeFormData {
   email: string
   invite_code?: string
@@ -246,37 +253,30 @@ export default function Landing() {
 
     try {
       const res = await subscriptionApi.checkEmail(data.email)
-      const { exists, is_subscriber, message: emailMsg } = res.data
+      const { exists, is_subscriber, registration_open: regOpen } = res.data
 
       if (exists) {
         setStep('login')
+      } else if (data.invite_code) {
+        const inviteRes = await subscriptionApi.checkInvite(data.email, data.invite_code)
+        const { can_register, is_premium, message: inviteMsg } = inviteRes.data
+        setMessage(inviteMsg)
+        setIsPremium(is_premium)
+        if (can_register) setStep('register')
+        else setStep('check')
+      } else if (!regOpen) {
+        setStep('check')
+        setMessage('Регистрация сейчас только по приглашению. Введите код приглашения.')
       } else if (is_subscriber) {
-        setMessage(emailMsg)
-        if (data.invite_code) {
-          const inviteRes = await subscriptionApi.checkInvite(data.email, data.invite_code)
-          const { can_register, is_premium, message: inviteMsg } = inviteRes.data
-          setMessage(inviteMsg)
-          setIsPremium(is_premium)
-          if (can_register) setStep('register')
-        } else {
-          setStep('email')
-        }
+        setIsPremium(true)
+        setMessage('Вы получите Premium на 1 месяц')
+        setStep('register')
       } else {
-        if (data.invite_code) {
-          const inviteRes = await subscriptionApi.checkInvite(data.email, data.invite_code)
-          const { can_register, is_premium, message: inviteMsg } = inviteRes.data
-          setMessage(inviteMsg)
-          setIsPremium(is_premium)
-          if (can_register) setStep('register')
-          else setStep('check')
-        } else {
-          setStep('check')
-          setMessage('Подпишитесь на рассылку, чтобы получить ранний доступ')
-        }
+        setIsPremium(false)
+        setStep('register')
       }
     } catch (error: unknown) {
-      const err = error as { response?: { data?: { detail?: string } } }
-      setMessage(err.response?.data?.detail || 'Ошибка проверки')
+      setMessage(parseApiError(error, 'Ошибка проверки'))
       setStep('check')
     } finally {
       setIsLoading(false)
@@ -292,8 +292,7 @@ export default function Landing() {
       setMessage('Спасибо за подписку!')
       setTimeout(() => goBack(), 2500)
     } catch (error: unknown) {
-      const err = error as { response?: { data?: { detail?: string } } }
-      setMessage(err.response?.data?.detail || 'Ошибка подписки')
+      setMessage(parseApiError(error, 'Ошибка подписки'))
     } finally {
       setIsLoading(false)
     }
@@ -306,8 +305,7 @@ export default function Landing() {
       await login(email, data.password)
       navigate('/dashboard')
     } catch (error: unknown) {
-      const err = error as { response?: { data?: { detail?: string } } }
-      setMessage(err.response?.data?.detail || 'Неверный пароль')
+      setMessage(parseApiError(error, 'Неверный пароль'))
     } finally {
       setIsLoading(false)
     }
@@ -321,8 +319,7 @@ export default function Landing() {
       setStep('success')
       setTimeout(() => navigate('/dashboard'), 1500)
     } catch (error: unknown) {
-      const err = error as { response?: { data?: { detail?: string } } }
-      setMessage(err.response?.data?.detail || 'Ошибка регистрации')
+      setMessage(parseApiError(error, 'Ошибка регистрации'))
     } finally {
       setIsLoading(false)
     }
@@ -456,16 +453,16 @@ export default function Landing() {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-medium text-[#8B7FA8] mb-1.5 uppercase tracking-wide">
-                        Код приглашения <span className="text-[#4A3F6A] normal-case tracking-normal font-normal">(если есть)</span>
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="XXXX-XXXX"
-                        {...registerEmail('invite_code')}
-                        className="luxury-input w-full h-11 px-4"
-                      />
-                    </div>
+<label className="block text-xs font-medium text-[#8B7FA8] mb-1.5 uppercase tracking-wide">
+                         Код приглашения <span className="text-[#4A3F6A] normal-case tracking-normal font-normal">(если есть)</span>
+                       </label>
+<input
+                         type="text"
+                         placeholder="XXXX-XXXX"
+                         {...registerEmail('invite_code')}
+                         className="luxury-input w-full h-11 px-4"
+                       />
+                     </div>
 
                     {message && (
                       <div className="px-4 py-3 rounded-lg bg-[rgba(212,175,55,0.06)] border border-[rgba(212,175,55,0.2)] text-sm text-[#D4AF37]">
@@ -537,19 +534,21 @@ export default function Landing() {
                       <label className="block text-xs font-medium text-[#8B7FA8] mb-1.5 uppercase tracking-wide">
                         Придумайте пароль
                       </label>
-                      <input
-                        type="password"
-                        placeholder="Минимум 6 символов"
-                        autoFocus
-                        {...registerPassword('password', {
-                          required: 'Пароль обязателен',
-                          minLength: { value: 6, message: 'Минимум 6 символов' },
-                        })}
-                        className={cn('luxury-input w-full h-11 px-4', passwordErrors.password && 'error')}
-                      />
-                      {passwordErrors.password && (
-                        <p className="text-xs text-red-400 mt-1.5">{passwordErrors.password.message}</p>
-                      )}
+<input
+                         type="password"
+                         placeholder="Минимум 8 символов"
+                         autoFocus
+                         {...registerPassword('password', {
+                           required: 'Пароль обязателен',
+                           minLength: { value: 8, message: 'Минимум 8 символов' },
+                         })}
+                         className={cn('luxury-input w-full h-11 px-4', passwordErrors.password && 'error')}
+                       />
+                       {passwordErrors.password ? (
+                         <p className="text-xs text-red-400 mt-1.5">{passwordErrors.password.message}</p>
+                       ) : (
+                         <p className="text-xs text-[#4A3F6A] mt-1.5">Заглавная и строчная буква, цифра</p>
+                       )}
                     </div>
 
                     {message && (

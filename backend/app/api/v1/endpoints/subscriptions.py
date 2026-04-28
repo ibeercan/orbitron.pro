@@ -33,12 +33,14 @@ class CheckInviteResponse(BaseModel):
     can_register: bool
     is_premium: bool
     message: str
+    registration_open: bool
 
 
 class CheckEmailResponse(BaseModel):
     exists: bool
     is_subscriber: bool
     message: str
+    registration_open: bool
 
 
 class UpgradeRequest(BaseModel):
@@ -65,10 +67,12 @@ async def check_email(
     body: CheckEmailRequest,
     db: AsyncSession = Depends(get_db),
 ) -> Any:
-    """Check if email exists. Returns generic response to prevent enumeration."""
+    """Check if email exists. Returns registration status."""
     from app.auth.crud import user as user_crud
+    from app.admin.settings import is_registration_open
 
     email = body.email.strip().lower()
+    registration_open = await is_registration_open(db)
 
     existing_subscriber = await early_subscriber_crud.get_by_email(db, email=email)
     existing_user = await user_crud.get_by_email(db, email=email)
@@ -77,6 +81,7 @@ async def check_email(
         exists=existing_user is not None,
         is_subscriber=existing_subscriber is not None,
         message="Check completed",
+        registration_open=registration_open,
     )
 
 
@@ -87,9 +92,11 @@ async def check_invite(
     body: CheckInviteRequest,
     db: AsyncSession = Depends(get_db),
 ) -> Any:
-    """Check if invite code is valid for the given email."""
+    """Check if invite code is valid for the given email. Returns registration_open status."""
     from app.auth.crud import user as user_crud
+    from app.admin.settings import is_registration_open
 
+    registration_open = await is_registration_open(db)
     email = body.email.strip().lower()
     invite_code = body.invite_code
 
@@ -99,13 +106,22 @@ async def check_invite(
             can_register=False,
             is_premium=False,
             message="Account already exists",
+            registration_open=registration_open,
         )
 
     if not invite_code:
+        if registration_open:
+            return CheckInviteResponse(
+                can_register=True,
+                is_premium=False,
+                message="Registration open",
+                registration_open=True,
+            )
         return CheckInviteResponse(
             can_register=False,
             is_premium=False,
             message="Invite code required",
+            registration_open=False,
         )
 
     from app.invites import crud as invite_crud
@@ -117,6 +133,7 @@ async def check_invite(
             can_register=False,
             is_premium=False,
             message="Invalid invite code",
+            registration_open=registration_open,
         )
 
     if code_record.used:
@@ -124,12 +141,14 @@ async def check_invite(
             can_register=False,
             is_premium=False,
             message="Invite code already used",
+            registration_open=registration_open,
         )
 
     return CheckInviteResponse(
         can_register=True,
         is_premium=True,
         message="Valid invite code",
+        registration_open=registration_open,
     )
 
 

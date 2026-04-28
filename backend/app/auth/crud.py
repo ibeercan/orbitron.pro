@@ -1,5 +1,3 @@
-"""User CRUD operations."""
-
 from typing import Optional
 
 from sqlalchemy import select
@@ -15,7 +13,7 @@ __all__ = ["user", "CRUDUser"]
 
 
 class CRUDUser:
-    """CRUD operations for User model."""
+    """CRUD operations for User."""
 
     def __init__(self) -> None:
         self.logger = get_logger(__name__)
@@ -39,15 +37,39 @@ class CRUDUser:
             )
             return result.scalars().first()
         except (InterfaceError, DBAPIError) as e:
+            self.logger.error("database_error", operation="get_by_email", email=email, error=str(e))
+            raise
+
+    async def get_by_id(self, db: AsyncSession, *, id: int) -> Optional[User]:
+        """Get active (non-deleted) user by ID."""
+        try:
+            result = await db.execute(
+                select(User).where(User.id == id, User.deleted_at.is_(None))
+            )
+            return result.scalars().first()
+        except (InterfaceError, DBAPIError) as e:
             self.logger.error("database_error", operation="get_by_id", id=id, error=str(e))
             raise
 
-    async def create(self, db: AsyncSession, *, obj_in: UserCreate, is_premium: bool = False) -> User:
-        """Create new user."""
+    async def create(self, db: AsyncSession, *, obj_in: UserCreate, is_premium: bool = False, premium_days: int | None = None) -> User:
+        """Create new user.
+
+        Args:
+            is_premium: If True, set subscription_type to PREMIUM.
+            premium_days: If set and is_premium=True, set subscription_end to N days from now.
+                          If None and is_premium=True, subscription has no end date (forever).
+        """
+        from datetime import datetime, timezone, timedelta
+
+        subscription_end = None
+        if is_premium and premium_days:
+            subscription_end = datetime.now(timezone.utc) + timedelta(days=premium_days)
+
         db_obj = User(
             email=obj_in.email,
             hashed_password=get_password_hash(obj_in.password),
             subscription_type=SubscriptionType.PREMIUM.value if is_premium else SubscriptionType.FREE.value,
+            subscription_end=subscription_end,
         )
         db.add(db_obj)
         try:

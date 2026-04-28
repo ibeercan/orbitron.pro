@@ -39,6 +39,18 @@ limiter = Limiter(key_func=get_real_ip, default_limits=["100/minute"])
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Starting Orbitron Backend", environment=settings.ENVIRONMENT)
+    from app.db.session import AsyncSessionLocal
+    from app.admin.settings import set_setting
+    from app.core.constants import REGISTRATION_OPEN_KEY
+    from sqlalchemy import select
+    from app.models.app_settings import AppSettings
+
+    async with AsyncSessionLocal() as db:
+        result = await db.execute(select(AppSettings).where(AppSettings.key == REGISTRATION_OPEN_KEY))
+        if not result.scalars().first():
+            await set_setting(db, REGISTRATION_OPEN_KEY, "true")
+            await db.commit()
+            logger.info("Initialized app_settings", key=REGISTRATION_OPEN_KEY, value="true")
     yield
     logger.info("Shutting down Orbitron Backend")
 

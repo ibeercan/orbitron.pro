@@ -21,6 +21,7 @@ from app.models.rectification_cache import RectificationCache, RectificationStat
 from app.models.electional_cache import ElectionalCache, ElectionalStatus
 from app.models.planner_cache import PlannerCache, PlannerStatus
 from app.models.refresh_token import RefreshToken
+from app.models.app_settings import AppSettings
 from app.ai.token_usage import TokenUsage
 
 __all__ = [
@@ -58,5 +59,6 @@ __all__ = [
     "PlannerCache",
     "PlannerStatus",
     "RefreshToken",
+    "AppSettings",
     "TokenUsage",
 ]
