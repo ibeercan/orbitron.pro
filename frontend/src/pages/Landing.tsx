@@ -117,6 +117,7 @@ export default function Landing() {
   const [inviteCode, setInviteCode] = useState('')
   const [isPremium, setIsPremium] = useState(false)
   const [message, setMessage] = useState('')
+  const [messageType, setMessageType] = useState<'info' | 'error'>('info')
   const [isLoading, setIsLoading] = useState(false)
 
   const { login } = useAuth()
@@ -264,14 +265,17 @@ export default function Landing() {
         if (can_register) {
           setStep('register')
         } else {
+          setMessageType('error')
           setMessage(parseApiError(inviteRes.data.message || 'Неверный код', 'Неверный код приглашения'))
           setStep('check')
         }
       } else if (!regOpen) {
-        setStep('check')
+        setMessageType('info')
         setMessage('Регистрация сейчас только по приглашению. Введите код приглашения.')
+        setStep('check')
       } else if (is_subscriber) {
         setIsPremium(true)
+        setMessageType('info')
         setMessage('Вы получите Premium на 1 месяц')
         setStep('register')
       } else {
@@ -279,6 +283,7 @@ export default function Landing() {
         setStep('register')
       }
     } catch (error: unknown) {
+      setMessageType('error')
       setMessage(parseApiError(error, 'Ошибка проверки'))
       setStep('check')
     } finally {
@@ -291,10 +296,12 @@ export default function Landing() {
     setMessage('')
     try {
       await subscriptionApi.earlyAccess(email)
-      setStep('success')
+      setMessageType('info')
       setMessage('Спасибо за подписку!')
+      setStep('success')
       setTimeout(() => goBack(), 2500)
     } catch (error: unknown) {
+      setMessageType('error')
       setMessage(parseApiError(error, 'Ошибка подписки'))
     } finally {
       setIsLoading(false)
@@ -308,6 +315,7 @@ export default function Landing() {
       await login(email, data.password)
       navigate('/dashboard')
     } catch (error: unknown) {
+      setMessageType('error')
       setMessage(parseApiError(error, 'Неверный пароль'))
     } finally {
       setIsLoading(false)
@@ -322,6 +330,7 @@ export default function Landing() {
       setStep('success')
       setTimeout(() => navigate('/dashboard'), 1500)
     } catch (error: unknown) {
+      setMessageType('error')
       setMessage(parseApiError(error, 'Ошибка регистрации'))
     } finally {
       setIsLoading(false)
@@ -467,13 +476,18 @@ export default function Landing() {
                        />
                      </div>
 
-                    {message && (
-                      <div className="px-4 py-3 rounded-lg bg-[rgba(212,175,55,0.06)] border border-[rgba(212,175,55,0.2)] text-sm text-[#D4AF37]">
-                        {message}
-                      </div>
-                    )}
+{message && (
+                       <div className={cn(
+                         'px-4 py-3 rounded-lg border text-sm',
+                         messageType === 'info'
+                           ? 'bg-[rgba(212,175,55,0.06)] border-[rgba(212,175,55,0.2)] text-[#D4AF37]'
+                           : 'bg-red-500/10 border-red-500/20 text-red-400'
+                       )}>
+                         {message}
+                       </div>
+                     )}
 
-                    <button type="submit" disabled={isLoading} className="btn-gold h-11 w-full flex items-center justify-center gap-2 mt-1">
+                     <button type="submit" disabled={isLoading} className="btn-gold h-11 w-full flex items-center justify-center gap-2 mt-1">
                       {isLoading ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
                       ) : (
@@ -504,14 +518,19 @@ export default function Landing() {
                       )}
                     </div>
 
-                    {message && (
-                      <div className="px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 text-sm text-red-400">
-                        {message}
-                      </div>
-                    )}
+{message && (
+                       <div className={cn(
+                         'px-4 py-3 rounded-lg border text-sm',
+                         messageType === 'info'
+                           ? 'bg-[rgba(212,175,55,0.06)] border-[rgba(212,175,55,0.2)] text-[#D4AF37]'
+                           : 'bg-red-500/10 border-red-500/20 text-red-400'
+                       )}>
+                         {message}
+                       </div>
+                     )}
 
-                    <button type="submit" disabled={isLoading} className="btn-gold h-11 w-full flex items-center justify-center gap-2">
-                      {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Войти'}
+                     <button type="submit" disabled={isLoading} className="btn-gold h-11 w-full flex items-center justify-center gap-2">
+                       {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Войти'}
                     </button>
                   </form>
                 )}
@@ -519,7 +538,14 @@ export default function Landing() {
                 {step === 'check' && (
                   <div className="flex flex-col gap-4">
                     {message && (
-                      <p className="text-sm text-[#8B7FA8] leading-relaxed">{message}</p>
+                      <div className={cn(
+                        'px-4 py-3 rounded-lg border text-sm',
+                        messageType === 'info'
+                          ? 'bg-[rgba(212,175,55,0.06)] border-[rgba(212,175,55,0.2)] text-[#D4AF37]'
+                          : 'bg-red-500/10 border-red-500/20 text-red-400'
+                      )}>
+                        {message}
+                      </div>
                     )}
                     <button
                       onClick={onSubscribe}
@@ -554,14 +580,19 @@ export default function Landing() {
                        )}
                     </div>
 
-                    {message && (
-                      <div className="px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 text-sm text-red-400">
-                        {message}
-                      </div>
-                    )}
+{message && (
+                       <div className={cn(
+                         'px-4 py-3 rounded-lg border text-sm',
+                         messageType === 'info'
+                           ? 'bg-[rgba(212,175,55,0.06)] border-[rgba(212,175,55,0.2)] text-[#D4AF37]'
+                           : 'bg-red-500/10 border-red-500/20 text-red-400'
+                       )}>
+                         {message}
+                       </div>
+                     )}
 
-                    <button type="submit" disabled={isLoading} className="btn-gold h-11 w-full flex items-center justify-center gap-2">
-                      {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Создать аккаунт'}
+                     <button type="submit" disabled={isLoading} className="btn-gold h-11 w-full flex items-center justify-center gap-2">
+                       {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Создать аккаунт'}
                     </button>
                   </form>
                 )}
