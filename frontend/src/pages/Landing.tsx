@@ -263,6 +263,8 @@ export default function Landing() {
         const { can_register, is_premium } = inviteRes.data
         setIsPremium(is_premium)
         if (can_register) {
+          setMessageType('info')
+          setMessage('Вы получите Premium навсегда')
           setStep('register')
         } else {
           setMessageType('error')
