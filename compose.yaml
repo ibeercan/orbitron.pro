@@ -13,12 +13,24 @@ services:
       - SECRET_KEY=${SECRET_KEY:?SECRET_KEY is required}
       - AI_PROVIDERS=${AI_PROVIDERS:-[]}
       - AI_CACHE_ENABLED=${AI_CACHE_ENABLED:-true}
+      - AI_CACHE_TTL_SECONDS=${AI_CACHE_TTL_SECONDS:-21600}
+      - AI_TOKEN_TRACKING_ENABLED=${AI_TOKEN_TRACKING_ENABLED:-true}
+      - AI_COST_PER_1M_INPUT_RUB=${AI_COST_PER_1M_INPUT_RUB:-300.0}
+      - AI_COST_PER_1M_OUTPUT_RUB=${AI_COST_PER_1M_OUTPUT_RUB:-600.0}
       - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
+      - SMTP_HOST=${SMTP_HOST:-}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASSWORD=${SMTP_PASSWORD:-}
+      - SMTP_FROM=${SMTP_FROM:-Orbitron <noreply@orbitron.pro>}
+      - FRONTEND_URL=${FRONTEND_URL:-https://orbitron.pro}
       - COOKIE_DOMAIN=${COOKIE_DOMAIN:-orbitron.pro}
       - COOKIE_SECURE=${COOKIE_SECURE:-true}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - RUN_MIGRATIONS=${RUN_MIGRATIONS:-true}
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-https://orbitron.pro,https://api.orbitron.pro}
+      - FREE_AI_REQUESTS_PER_MONTH=${FREE_AI_REQUESTS_PER_MONTH:-3}
+      - FREE_CHARTS_LIMIT=${FREE_CHARTS_LIMIT:-1}
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.backend.rule=Host(`api.orbitron.pro`)"
@@ -30,6 +42,7 @@ services:
       - "traefik.http.middlewares.security-headers.headers.customresponseheaders.X-Frame-Options=DENY"
       - "traefik.http.middlewares.security-headers.headers.customresponseheaders.Referrer-Policy=strict-origin-when-cross-origin"
       - "traefik.http.middlewares.security-headers.headers.customresponseheaders.Permissions-Policy=camera=(), microphone=(), geolocation=()"
+      - "traefik.http.middlewares.security-headers.headers.customresponseheaders.Strict-Transport-Security=max-age=31536000; includeSubDomains"
     networks:
       - proxy
       - internal
