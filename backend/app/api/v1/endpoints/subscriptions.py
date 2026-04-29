@@ -126,7 +126,7 @@ async def check_invite(
 
     from app.invites import crud as invite_crud
 
-    code_record = await invite_crud.invite_code.get_by_code(db, code=invite_code)
+    code_record = await invite_crud.invite_code_crud.get_by_code(db, code=invite_code)
 
     if not code_record:
         return CheckInviteResponse(
@@ -189,7 +189,7 @@ async def _process_subscription(
         return "error", "Invalid email"
 
     if invite_code:
-        code_record = await invite_crud.invite_code.get_by_code(db, code=invite_code)
+        code_record = await invite_crud.invite_code_crud.get_by_code(db, code=invite_code)
 
         if not code_record:
             logger.info("Invalid invite code", code=invite_code)
@@ -203,7 +203,7 @@ async def _process_subscription(
             logger.info("Invite code email mismatch", code=invite_code, provided_email=email, code_email=code_record.used_email)
             return "error", "Invite code does not match email"
 
-        await invite_crud.invite_code.mark_used(db, code_record)
+        await invite_crud.invite_code_crud.mark_used(db, code_record)
         logger.info("Invite code activated", code=invite_code, email=email)
 
         existing = await early_subscriber_crud.get_by_email(db, email=email)
