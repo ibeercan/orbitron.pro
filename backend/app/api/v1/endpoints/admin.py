@@ -1,11 +1,14 @@
 from typing import Any
-from datetime import date as date_type
+from datetime import date as date_type, datetime, timezone, timedelta
+import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
 from app.auth.admin_deps import get_current_admin_user
+from app.models.user import User as UserModel
 from app.models.user import User
 from app.admin import crud
 from app.admin.schemas import (
@@ -128,6 +131,36 @@ async def delete_user(
 
     await db.commit()
     logger.info("Admin deleted user", admin_id=admin.id, user_id=user_id)
+
+
+@router.post("/users/{user_id}/resend-verification")
+async def resend_verification(
+    user_id: int,
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(get_current_admin_user),
+) -> Any:
+    result = await db.execute(
+        select(UserModel).where(UserModel.id == user_id, UserModel.deleted_at.is_(None))
+    )
+    user = result.scalars().first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Пользователь не найден")
+
+    if user.email_verified:
+        raise HTTPException(status_code=400, detail="Email уже подтверждён")
+
+    token = str(uuid.uuid4())
+    user.verification_token = token
+    user.verification_token_expires = datetime.now(timezone.utc) + timedelta(hours=24)
+    await db.commit()
+
+    from app.email.service import send_verification_email
+    try:
+        await send_verification_email(user.email, token, db=db)
+    except Exception:
+        logger.exception("Admin resend: failed to send verification email to %s", user.email)
+
+    return {"success": True, "message": f"Письмо отправлено на {user.email}"}
 
 
 @router.get("/early-subscribers", response_model=AdminEarlySubscriberListResponse)

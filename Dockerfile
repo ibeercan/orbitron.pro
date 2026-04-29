@@ -28,6 +28,9 @@ COPY --from=builder /usr/local/bin/uvicorn /usr/local/bin/uvicorn
 COPY --from=builder /usr/local/bin/alembic /usr/local/bin/alembic
 COPY --from=builder /app/backend/ ./backend/
 
+COPY backend/scripts/entrypoint.sh /app/backend/scripts/entrypoint.sh
+RUN chmod +x /app/backend/scripts/entrypoint.sh
+
 RUN chown -R app:app /app
 
 USER app
@@ -40,4 +43,5 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 --start-period=10s \
     CMD curl -f http://localhost:8000/health || exit 1
 
+ENTRYPOINT ["/app/backend/scripts/entrypoint.sh"]
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

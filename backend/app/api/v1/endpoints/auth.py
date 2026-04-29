@@ -1,9 +1,12 @@
 """Authentication endpoints."""
 
 import hashlib
+import logging
 import uuid
 from datetime import timedelta, timezone, datetime
 from typing import Annotated
+
+logger = logging.getLogger(__name__)
 
 from fastapi import APIRouter, Depends, HTTPException, Response, Request, status
 from fastapi.security import OAuth2PasswordRequestForm
@@ -29,11 +32,12 @@ from app.models.user import User as UserModel
 from app.subscriptions.crud import early_subscriber as early_subscriber_crud
 from app.email.service import send_verification_email
 from slowapi import Limiter
-from slowapi.util import get_remote_address
+
+from app.middleware.proxy_headers import get_real_ip
 
 router = APIRouter()
 
-limiter = Limiter(key_func=get_remote_address)
+limiter = Limiter(key_func=get_real_ip)
 
 ACCESS_COOKIE_MAX_AGE = 60 * settings.ACCESS_TOKEN_EXPIRE_MINUTES
 REFRESH_COOKIE_MAX_AGE = 60 * 60 * 24 * settings.REFRESH_TOKEN_EXPIRE_DAYS
@@ -156,7 +160,7 @@ async def register(
     try:
         await send_verification_email(user.email, token, db=db)
     except Exception:
-        pass
+        logger.exception("Failed to send verification email to %s", user.email)
 
     return RegisterResponse(
         message="Проверьте вашу почту для подтверждения email.",
@@ -235,7 +239,7 @@ async def resend_verification(
     try:
         await send_verification_email(user.email, token, db=db)
     except Exception:
-        pass
+        logger.exception("Failed to resend verification email to %s", user.email)
 
     return RegisterResponse(
         message="Если аккаунт существует, письмо отправлено повторно.",

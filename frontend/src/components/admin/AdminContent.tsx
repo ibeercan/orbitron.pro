@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { adminApi } from '@/lib/api/client'
-import { Loader2, Crown, ChevronDown, Key, Users, BarChart3, ScrollText, Mail, Settings, X, MailCheck, MailX, Zap } from 'lucide-react'
+import { Loader2, Crown, ChevronDown, Key, Users, BarChart3, ScrollText, Mail, Settings, X, MailCheck, MailX, Zap, SendHorizonal } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 type Tab = 'analytics' | 'users' | 'invites' | 'subscribers' | 'audit' | 'tokens' | 'settings'
@@ -117,6 +117,7 @@ function UsersTab() {
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<string>('all')
   const [confirmAction, setConfirmAction] = useState<{ userId: number; action: string; label: string } | null>(null)
+  const [resendingId, setResendingId] = useState<number | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -151,6 +152,18 @@ function UsersTab() {
       load()
     } catch (e: any) {
       alert(e?.response?.data?.detail || 'Ошибка')
+    }
+  }
+
+  const handleResend = async (userId: number, email: string) => {
+    setResendingId(userId)
+    try {
+      await adminApi.resendVerification(userId)
+      alert(`Письмо отправлено на ${email}`)
+    } catch (e: any) {
+      alert(e?.response?.data?.detail || 'Ошибка отправки письма')
+    } finally {
+      setResendingId(null)
     }
   }
 
@@ -191,7 +204,15 @@ function UsersTab() {
                   {u.email_verified ? (
                     <MailCheck className="w-3.5 h-3.5 text-[#34D399] shrink-0" />
                   ) : (
-                    <MailX className="w-3.5 h-3.5 text-[#8B7FA8] shrink-0" />
+                    <button
+                      onClick={() => handleResend(u.id, u.email)}
+                      disabled={resendingId === u.id}
+                      className="flex items-center gap-1 text-[#8B7FA8] hover:text-[#D4AF37] transition-colors"
+                      title="Отправить письмо повторно"
+                    >
+                      <MailX className="w-3.5 h-3.5 shrink-0" />
+                      {resendingId === u.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <SendHorizonal className="w-3 h-3" />}
+                    </button>
                   )}
                   {u.is_admin && <span className="text-[8px] px-1.5 py-0.5 rounded bg-[rgba(123,47,190,0.1)] text-[#9D50E0] border border-[rgba(123,47,190,0.2)]">Admin</span>}
                   <span className={cn('text-[8px] px-1.5 py-0.5 rounded border',

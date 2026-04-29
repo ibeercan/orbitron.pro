@@ -404,6 +404,9 @@ export const adminApi = {
   deleteUser: async (id: number) => {
     return api.delete(`/admin/users/${id}`)
   },
+  resendVerification: async (id: number) => {
+    return api.post(`/admin/users/${id}/resend-verification`)
+  },
   listInvites: async () => {
     return api.get('/admin/invites')
   },
