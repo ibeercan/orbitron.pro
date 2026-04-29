@@ -342,6 +342,8 @@ export default function Landing() {
   const goBack = () => {
     setStep('email')
     setMessage('')
+    setMessageType('info')
+    setIsPremium(false)
     resetEmail()
     resetPassword()
   }
