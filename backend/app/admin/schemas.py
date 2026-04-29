@@ -46,7 +46,11 @@ class AdminStats(BaseModel):
     total_charts: int = 0
     ai_requests_today: int = 0
     ai_requests_month: int = 0
-    ai_cost_month: float = 0.0
+    ai_cost_month_rub: float = 0.0
+    ai_input_tokens_month: int = 0
+    ai_output_tokens_month: int = 0
+    cost_per_1m_input_rub: float = 0.0
+    cost_per_1m_output_rub: float = 0.0
     invites_generated: int = 0
     invites_used: int = 0
 
@@ -151,3 +155,37 @@ class AdminSettingsResponse(BaseModel):
 
 class AdminSettingsUpdate(BaseModel):
     registration_open: bool
+
+
+class AdminTokenUsageSummary(BaseModel):
+    total_prompt_tokens: int = 0
+    total_completion_tokens: int = 0
+    total_tokens: int = 0
+    total_cost_rub: float = 0.0
+    total_requests: int = 0
+    avg_cost_per_request: float = 0.0
+
+
+class AdminTokenUsageByUser(BaseModel):
+    user_id: int
+    user_email: str = ""
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+    total_tokens: int = 0
+    cost_rub: float = 0.0
+    requests: int = 0
+
+
+class AdminTokenUsageByDate(BaseModel):
+    date: str
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+    total_tokens: int = 0
+    cost_rub: float = 0.0
+    requests: int = 0
+
+
+class AdminTokenAnalyticsResponse(BaseModel):
+    summary: AdminTokenUsageSummary
+    by_user: list[AdminTokenUsageByUser] = []
+    by_date: list[AdminTokenUsageByDate] = []

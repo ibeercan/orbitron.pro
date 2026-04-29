@@ -1,7 +1,7 @@
-from datetime import datetime, timezone
+from datetime import datetime, timezone, date as date_type
 from typing import Any, Optional
 
-from sqlalchemy import select, func, case, and_
+from sqlalchemy import select, func, case, and_, cast, Date as SaDate
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.user import User, SubscriptionType
@@ -10,6 +10,7 @@ from app.models.audit import AuditLog, serialize_for_audit
 from app.models.early_subscriber import EarlySubscriber
 from app.models.request import RequestLog
 from app.ai.token_usage import TokenUsage
+from app.ai.service import AI_COST_PER_1M_INPUT_RUB, AI_COST_PER_1M_OUTPUT_RUB
 from app.models.invite_code import InviteCode
 from app.invites.crud import invite_code_crud
 from app.core.logging import logger
@@ -190,6 +191,18 @@ async def get_stats(db: AsyncSession) -> dict:
         )
     )).scalar() or 0.0
 
+    ai_input_tokens_month = (await db.execute(
+        select(func.coalesce(func.sum(TokenUsage.prompt_tokens), 0)).where(
+            TokenUsage.created_at >= month_start
+        )
+    )).scalar() or 0
+
+    ai_output_tokens_month = (await db.execute(
+        select(func.coalesce(func.sum(TokenUsage.completion_tokens), 0)).where(
+            TokenUsage.created_at >= month_start
+        )
+    )).scalar() or 0
+
     invites_generated = (await db.execute(
         select(func.count(InviteCode.id)).where(InviteCode.deleted_at.is_(None))
     )).scalar() or 0
@@ -208,7 +221,11 @@ async def get_stats(db: AsyncSession) -> dict:
         "total_charts": total_charts,
         "ai_requests_today": ai_requests_today,
         "ai_requests_month": ai_requests_month,
-        "ai_cost_month": float(ai_cost_month),
+        "ai_cost_month_rub": float(ai_cost_month),
+        "ai_input_tokens_month": ai_input_tokens_month,
+        "ai_output_tokens_month": ai_output_tokens_month,
+        "cost_per_1m_input_rub": AI_COST_PER_1M_INPUT_RUB,
+        "cost_per_1m_output_rub": AI_COST_PER_1M_OUTPUT_RUB,
         "invites_generated": invites_generated,
         "invites_used": invites_used,
     }
@@ -320,3 +337,109 @@ async def list_token_usage(
         })
 
     return entries, total
+
+
+async def get_token_analytics(
+    db: AsyncSession,
+    *,
+    start_date: date_type | None = None,
+    end_date: date_type | None = None,
+    user_id: int | None = None,
+) -> dict:
+    from app.ai.service import AI_COST_PER_1M_INPUT_RUB, AI_COST_PER_1M_OUTPUT_RUB
+
+    base_where = [TokenUsage.deleted_at.is_(None)] if hasattr(TokenUsage, 'deleted_at') else [True]
+    filters = list(base_where)
+
+    dt_start = datetime(start_date.year, start_date.month, start_date.day, tzinfo=timezone.utc) if start_date else None
+    dt_end = datetime(end_date.year, end_date.month, end_date.day, 23, 59, 59, tzinfo=timezone.utc) if end_date else None
+
+    if dt_start:
+        filters.append(TokenUsage.created_at >= dt_start)
+    if dt_end:
+        filters.append(TokenUsage.created_at <= dt_end)
+    if user_id is not None:
+        filters.append(TokenUsage.user_id == user_id)
+
+    where_clause = and_(*filters) if filters else True
+
+    summary_q = select(
+        func.coalesce(func.sum(TokenUsage.prompt_tokens), 0),
+        func.coalesce(func.sum(TokenUsage.completion_tokens), 0),
+        func.coalesce(func.sum(TokenUsage.total_tokens), 0),
+        func.coalesce(func.sum(TokenUsage.cost_usd), 0.0),
+        func.count(TokenUsage.id),
+    ).where(where_clause)
+
+    s_prompt, s_completion, s_total, s_cost, s_count = (await db.execute(summary_q)).one()
+
+    summary = {
+        "total_prompt_tokens": s_prompt or 0,
+        "total_completion_tokens": s_completion or 0,
+        "total_tokens": s_total or 0,
+        "total_cost_rub": float(s_cost or 0),
+        "total_requests": s_count or 0,
+        "avg_cost_per_request": round(float((s_cost or 0) / (s_count or 1)), 4),
+    }
+
+    by_user_q = select(
+        TokenUsage.user_id,
+        User.email,
+        func.sum(TokenUsage.prompt_tokens),
+        func.sum(TokenUsage.completion_tokens),
+        func.sum(TokenUsage.total_tokens),
+        func.sum(TokenUsage.cost_usd),
+        func.count(TokenUsage.id),
+    ).where(where_clause).outerjoin(
+        User, TokenUsage.user_id == User.id
+    ).group_by(
+        TokenUsage.user_id, User.email
+    ).order_by(
+        func.sum(TokenUsage.cost_usd).desc()
+    )
+
+    by_user_rows = (await db.execute(by_user_q)).all()
+    by_user = [
+        {
+            "user_id": r[0],
+            "user_email": r[1] or "",
+            "prompt_tokens": r[2] or 0,
+            "completion_tokens": r[3] or 0,
+            "total_tokens": r[4] or 0,
+            "cost_rub": float(r[5] or 0),
+            "requests": r[6] or 0,
+        }
+        for r in by_user_rows
+    ]
+
+    by_date_q = select(
+        cast(TokenUsage.created_at, SaDate).label("d"),
+        func.sum(TokenUsage.prompt_tokens),
+        func.sum(TokenUsage.completion_tokens),
+        func.sum(TokenUsage.total_tokens),
+        func.sum(TokenUsage.cost_usd),
+        func.count(TokenUsage.id),
+    ).where(where_clause).group_by(
+        cast(TokenUsage.created_at, SaDate)
+    ).order_by(
+        cast(TokenUsage.created_at, SaDate)
+    )
+
+    by_date_rows = (await db.execute(by_date_q)).all()
+    by_date = [
+        {
+            "date": str(r[0]),
+            "prompt_tokens": r[1] or 0,
+            "completion_tokens": r[2] or 0,
+            "total_tokens": r[3] or 0,
+            "cost_rub": float(r[4] or 0),
+            "requests": r[5] or 0,
+        }
+        for r in by_date_rows
+    ]
+
+    return {
+        "summary": summary,
+        "by_user": by_user,
+        "by_date": by_date,
+    }

@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { adminApi } from '@/lib/api/client'
-import { Loader2, Crown, ChevronDown, Key, Users, BarChart3, ScrollText, Mail, Settings, X, MailCheck, MailX } from 'lucide-react'
+import { Loader2, Crown, ChevronDown, Key, Users, BarChart3, ScrollText, Mail, Settings, X, MailCheck, MailX, Zap } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-type Tab = 'analytics' | 'users' | 'invites' | 'subscribers' | 'audit' | 'settings'
+type Tab = 'analytics' | 'users' | 'invites' | 'subscribers' | 'audit' | 'tokens' | 'settings'
 
 const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'analytics', label: 'Аналитика', icon: BarChart3 },
@@ -12,6 +12,7 @@ const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'invites', label: 'Коды', icon: Key },
   { id: 'subscribers', label: 'Подписчики', icon: Mail },
   { id: 'audit', label: 'Аудит', icon: ScrollText },
+  { id: 'tokens', label: 'Токены', icon: Zap },
   { id: 'settings', label: 'Настройки', icon: Settings },
 ]
 
@@ -42,13 +43,14 @@ export function AdminContent() {
             onClick={() => setTab(t.id)}
             className={cn(
               'flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap',
-              tab === t.id
-                ? t.id === 'analytics' ? 'bg-[rgba(212,175,55,0.1)] border border-[rgba(212,175,55,0.2)] text-[#D4AF37]'
-                  : t.id === 'users' ? 'bg-[rgba(59,130,246,0.1)] border border-[rgba(59,130,246,0.2)] text-[#60A5FA]'
-                  : t.id === 'invites' ? 'bg-[rgba(123,47,190,0.1)] border border-[rgba(123,47,190,0.2)] text-[#9D50E0]'
-                  : t.id === 'subscribers' ? 'bg-[rgba(16,185,129,0.1)] border border-[rgba(16,185,129,0.2)] text-[#34D399]'
-                  : t.id === 'settings' ? 'bg-[rgba(147,130,220,0.1)] border border-[rgba(147,130,220,0.2)] text-[#9382DC]'
-                  : 'bg-[rgba(139,92,246,0.1)] border border-[rgba(139,92,246,0.2)] text-[#A78BFA]'
+tab === t.id
+                 ? t.id === 'analytics' ? 'bg-[rgba(212,175,55,0.1)] border border-[rgba(212,175,55,0.2)] text-[#D4AF37]'
+                   : t.id === 'users' ? 'bg-[rgba(59,130,246,0.1)] border border-[rgba(59,130,246,0.2)] text-[#60A5FA]'
+                   : t.id === 'invites' ? 'bg-[rgba(123,47,190,0.1)] border border-[rgba(123,47,190,0.2)] text-[#9D50E0]'
+                   : t.id === 'subscribers' ? 'bg-[rgba(16,185,129,0.1)] border border-[rgba(16,185,129,0.2)] text-[#34D399]'
+                   : t.id === 'tokens' ? 'bg-[rgba(245,158,11,0.1)] border border-[rgba(245,158,11,0.2)] text-[#F59E0B]'
+                   : t.id === 'settings' ? 'bg-[rgba(147,130,220,0.1)] border border-[rgba(147,130,220,0.2)] text-[#9382DC]'
+                   : 'bg-[rgba(139,92,246,0.1)] border border-[rgba(139,92,246,0.2)] text-[#A78BFA]'
                 : 'text-[#8B7FA8] hover:text-[#F0EAD6]',
             )}
           >
@@ -64,6 +66,7 @@ export function AdminContent() {
         {tab === 'invites' && <InvitesTab />}
         {tab === 'subscribers' && <SubscribersTab />}
         {tab === 'audit' && <AuditTab />}
+        {tab === 'tokens' && <TokensTab />}
         {tab === 'settings' && <SettingsTab />}
       </div>
     </div>
@@ -89,7 +92,9 @@ function AnalyticsTab() {
     { label: 'Карт создано', value: stats.total_charts, color: '#60A5FA', bg: 'rgba(59,130,246,0.06)', border: 'rgba(59,130,246,0.12)' },
     { label: 'AI-запросов сегодня', value: stats.ai_requests_today, color: '#9D50E0', bg: 'rgba(157,80,224,0.06)', border: 'rgba(157,80,224,0.12)' },
     { label: 'AI-запросов / мес', value: stats.ai_requests_month, color: '#A78BFA', bg: 'rgba(167,139,250,0.06)', border: 'rgba(167,139,250,0.12)' },
-    { label: 'Стоимость AI / мес', value: `$${stats.ai_cost_month.toFixed(2)}`, color: '#F59E0B', bg: 'rgba(245,158,11,0.06)', border: 'rgba(245,158,11,0.12)' },
+    { label: 'Стоимость AI / мес', value: `${stats.ai_cost_month_rub.toFixed(2)}₽`, color: '#F59E0B', bg: 'rgba(245,158,11,0.06)', border: 'rgba(245,158,11,0.12)' },
+    { label: 'Вх. токены / 1М₽', value: `${stats.cost_per_1m_input_rub.toFixed(2)}₽`, color: '#38BDF8', bg: 'rgba(56,189,248,0.06)', border: 'rgba(56,189,248,0.12)' },
+    { label: 'Исх. токены / 1М₽', value: `${stats.cost_per_1m_output_rub.toFixed(2)}₽`, color: '#FB923C', bg: 'rgba(251,146,60,0.06)', border: 'rgba(251,146,60,0.12)' },
     { label: 'Инвайтов создано', value: stats.invites_generated, color: '#EC4899', bg: 'rgba(236,72,153,0.06)', border: 'rgba(236,72,153,0.12)' },
     { label: 'Инвайтов использовано', value: stats.invites_used, color: '#10B981', bg: 'rgba(16,185,129,0.06)', border: 'rgba(16,185,129,0.12)' },
   ]
@@ -443,6 +448,165 @@ function AuditTab() {
           ))}
           {logs.length === 0 && <p className="text-center text-sm text-[#8B7FA8] py-8">Нет записей</p>}
         </div>
+      )}
+    </div>
+  )
+}
+
+function TokensTab() {
+  const [data, setData] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [period, setPeriod] = useState<string>('month')
+  const [userId, setUserId] = useState<number | null>(null)
+
+  const getDates = (p: string) => {
+    const now = new Date()
+    const end = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    let start: Date
+    switch (p) {
+      case 'today': start = new Date(end); break
+      case '7d': start = new Date(end.getTime() - 7 * 86400000); break
+      case '30d': start = new Date(end.getTime() - 30 * 86400000); break
+      case 'month': start = new Date(now.getFullYear(), now.getMonth(), 1); break
+      default: start = new Date(2024, 0, 1); break
+    }
+    return {
+      start_date: start.toISOString().split('T')[0],
+      end_date: new Date(end.getTime() + 86400000).toISOString().split('T')[0],
+    }
+  }
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    try {
+      const dates = getDates(period)
+      const params: any = dates
+      if (userId !== null) params.user_id = userId
+      const r = await adminApi.getTokenAnalytics(params)
+      setData(r.data)
+    } catch { setData(null) }
+    finally { setLoading(false) }
+  }, [period, userId])
+
+  useEffect(() => { load() }, [load])
+
+  const fmt = (n: number) => {
+    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}М`
+    if (n >= 1_000) return `${(n / 1_000).toFixed(1)}К`
+    return n.toFixed(0)
+  }
+
+  const fmtRub = (n: number) => {
+    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(2)}М`
+    if (n >= 1_000) return `${(n / 1_000).toFixed(1)}К`
+    return n.toFixed(2)
+  }
+
+  const PERIODS = [
+    { id: 'today', label: 'Сегодня' },
+    { id: '7d', label: '7 дней' },
+    { id: '30d', label: '30 дней' },
+    { id: 'month', label: 'Этот месяц' },
+    { id: 'all', label: 'Всё время' },
+  ]
+
+  const s = data?.summary
+  const byDate: any[] = data?.by_date || []
+  const byUser: any[] = data?.by_user || []
+  const maxCost = Math.max(...byDate.map((d: any) => d.cost_rub), 1)
+
+  return (
+    <div className="p-6 space-y-6">
+      <div className="flex items-center gap-1">
+        {PERIODS.map(p => (
+          <button key={p.id} onClick={() => setPeriod(p.id)}
+            className={cn('px-2.5 py-1.5 rounded-lg text-[10px] font-medium transition-all',
+              period === p.id ? 'bg-[rgba(245,158,11,0.1)] text-[#F59E0B] border border-[rgba(245,158,11,0.2)]' : 'text-[#8B7FA8] hover:text-[#F0EAD6]'
+            )}>{p.label}</button>
+        ))}
+        {byUser.length > 0 && (
+          <>
+            <div className="flex-1" />
+            <select value={userId ?? ''} onChange={e => setUserId(e.target.value ? Number(e.target.value) : null)}
+              className="text-[10px] px-2 py-1.5 rounded-lg bg-[rgba(245,158,11,0.06)] border border-[rgba(245,158,11,0.1)] text-[#F0EAD6] outline-none">
+              <option value="">Все пользователи</option>
+              {byUser.map((u: any) => (
+                <option key={u.user_id} value={u.user_id}>{u.user_email || `User #${u.user_id}`}</option>
+              ))}
+            </select>
+          </>
+        )}
+      </div>
+
+      {loading ? <div className="flex items-center justify-center py-20"><Loader2 className="w-6 h-6 text-[#F59E0B] animate-spin" /></div> : !data ? <div className="text-center text-[#8B7FA8]">Не удалось загрузить данные</div> : (
+        <>
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+            {[
+              { label: 'Вх. токены', value: fmt(s?.total_prompt_tokens || 0), color: '#38BDF8', bg: 'rgba(56,189,248,0.06)', border: 'rgba(56,189,248,0.12)' },
+              { label: 'Исх. токены', value: fmt(s?.total_completion_tokens || 0), color: '#FB923C', bg: 'rgba(251,146,60,0.06)', border: 'rgba(251,146,60,0.12)' },
+              { label: 'Всего токенов', value: fmt(s?.total_tokens || 0), color: '#A78BFA', bg: 'rgba(167,139,250,0.06)', border: 'rgba(167,139,250,0.12)' },
+              { label: 'Стоимость', value: `${fmtRub(s?.total_cost_rub || 0)}₽`, color: '#F59E0B', bg: 'rgba(245,158,11,0.06)', border: 'rgba(245,158,11,0.12)' },
+              { label: 'Запросов', value: fmt(s?.total_requests || 0), color: '#9D50E0', bg: 'rgba(157,80,224,0.06)', border: 'rgba(157,80,224,0.12)' },
+              { label: 'Ср. стоимость / запрос', value: `${(s?.avg_cost_per_request || 0).toFixed(2)}₽`, color: '#EC4899', bg: 'rgba(236,72,153,0.06)', border: 'rgba(236,72,153,0.12)' },
+            ].map(c => (
+              <div key={c.label} className="rounded-xl border p-4 transition-colors hover:border-opacity-30" style={{ background: c.bg, borderColor: c.border }}>
+                <p className="text-[10px] text-[#8B7FA8] mb-1.5">{c.label}</p>
+                <p className="text-2xl font-bold" style={{ color: c.color }}>{c.value}</p>
+              </div>
+            ))}
+          </div>
+
+          {byDate.length > 0 && (
+            <div className="rounded-xl border border-[rgba(212,175,55,0.08)] bg-[rgba(10,6,18,0.4)] p-4">
+              <p className="text-[10px] text-[#8B7FA8] mb-3 uppercase tracking-wider">Стоимость по дням</p>
+              <div className="flex items-end gap-[2px] h-32">
+                {byDate.map((d: any) => {
+                  const h = maxCost > 0 ? (d.cost_rub / maxCost) * 100 : 0
+                  const label = d.date.slice(5)
+                  return (
+                    <div key={d.date} className="flex-1 min-w-0 flex flex-col items-center gap-0.5 group relative">
+                      <div className="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity text-[9px] text-[#F0EAD6] whitespace-nowrap bg-[#1a1630] px-2 py-1 rounded shadow-lg border border-[rgba(212,175,55,0.1)] z-10">
+                        {d.cost_rub.toFixed(2)}₽
+                      </div>
+                      <div className="w-full rounded-t-sm bg-[rgba(245,158,11,0.3)] group-hover:bg-[rgba(245,158,11,0.5)] transition-colors" style={{ height: `${Math.max(h, 2)}%` }} />
+                      <span className="text-[8px] text-[#4A3F6A] truncate w-full text-center">{label}</span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {byUser.length > 0 && (
+            <div className="space-y-1">
+              <p className="text-[10px] text-[#8B7FA8] uppercase tracking-wider mb-2">По пользователям</p>
+              {byUser.map((u: any) => {
+                const pct = s?.total_cost_rub ? (u.cost_rub / s.total_cost_rub) * 100 : 0
+                return (
+                  <div key={u.user_id} className="flex items-center gap-3 px-4 py-2.5 rounded-xl hover:bg-[rgba(245,158,11,0.03)] transition-colors">
+                    <div className="w-7 h-7 rounded-lg bg-[rgba(245,158,11,0.06)] flex items-center justify-center shrink-0">
+                      <span className="text-[10px] font-semibold text-[#F59E0B]">{(u.user_email as string)[0]?.toUpperCase() || '?'}</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <span className="text-sm text-[#F0EAD6] truncate block">{u.user_email || `User #${u.user_id}`}</span>
+                      <div className="text-[10px] text-[#4A3F6A] mt-0.5">
+                        Вх: {fmt(u.prompt_tokens)} · Исх: {fmt(u.completion_tokens)} · {u.requests} запр.
+                      </div>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <span className="text-sm font-semibold text-[#F59E0B]">{u.cost_rub.toFixed(2)}₽</span>
+                      <div className="text-[10px] text-[#4A3F6A]">
+                        <div className="w-16 h-1 rounded-full bg-[rgba(245,158,11,0.1)] mt-0.5">
+                          <div className="h-full rounded-full bg-[rgba(245,158,11,0.4)]" style={{ width: `${Math.min(pct, 100)}%` }} />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </>
       )}
     </div>
   )

@@ -1,4 +1,5 @@
 from typing import Any
+from datetime import date as date_type
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,6 +17,7 @@ from app.admin.schemas import (
     AdminAuditLogListResponse,
     AdminTokenUsageOut,
     AdminTokenUsageListResponse,
+    AdminTokenAnalyticsResponse,
     AdminEarlySubscriberOut,
     AdminEarlySubscriberListResponse,
     AdminInviteSubscriberResponse,
@@ -211,6 +213,29 @@ async def list_token_usage(
     return AdminTokenUsageListResponse(
         entries=[AdminTokenUsageOut(**e) for e in entries],
         total=total,
+    )
+
+
+@router.get("/token-analytics", response_model=AdminTokenAnalyticsResponse)
+async def get_token_analytics(
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(get_current_admin_user),
+    start_date: date_type | None = None,
+    end_date: date_type | None = None,
+    user_id: int | None = None,
+) -> Any:
+    from app.admin.schemas import (
+        AdminTokenUsageSummary,
+        AdminTokenUsageByUser,
+        AdminTokenUsageByDate,
+    )
+    result = await crud.get_token_analytics(
+        db, start_date=start_date, end_date=end_date, user_id=user_id,
+    )
+    return AdminTokenAnalyticsResponse(
+        summary=AdminTokenUsageSummary(**result["summary"]),
+        by_user=[AdminTokenUsageByUser(**u) for u in result["by_user"]],
+        by_date=[AdminTokenUsageByDate(**d) for d in result["by_date"]],
     )
 
 

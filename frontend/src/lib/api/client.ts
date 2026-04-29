@@ -422,6 +422,9 @@ export const adminApi = {
   listTokenUsage: async (params?: { skip?: number; limit?: number }) => {
     return api.get('/admin/token-usage', { params })
   },
+  getTokenAnalytics: async (params?: { start_date?: string; end_date?: string; user_id?: number }) => {
+    return api.get('/admin/token-analytics', { params })
+  },
   getSettings: async () => {
     return api.get('/admin/settings')
   },

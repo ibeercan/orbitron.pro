@@ -121,8 +121,8 @@ class Settings(BaseSettings):
 
     # AI Token Tracking
     AI_TOKEN_TRACKING_ENABLED: bool = True
-    AI_COST_PER_1K_PROMPT: float = 0.03
-    AI_COST_PER_1K_COMPLETION: float = 0.06
+    AI_COST_PER_1M_INPUT_RUB: float = 300.0
+    AI_COST_PER_1M_OUTPUT_RUB: float = 600.0
 
     # AI Cache
     AI_CACHE_ENABLED: bool = True

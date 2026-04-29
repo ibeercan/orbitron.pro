@@ -30,8 +30,8 @@ AI_RETRY_MAX_ATTEMPTS = settings.AI_RETRY_MAX_ATTEMPTS
 AI_RETRY_MIN_WAIT = settings.AI_RETRY_MIN_WAIT
 AI_RETRY_MAX_WAIT = settings.AI_RETRY_MAX_WAIT
 AI_TOKEN_TRACKING_ENABLED = settings.AI_TOKEN_TRACKING_ENABLED
-AI_COST_PER_1K_PROMPT = settings.AI_COST_PER_1K_PROMPT
-AI_COST_PER_1K_COMPLETION = settings.AI_COST_PER_1K_COMPLETION
+AI_COST_PER_1M_INPUT_RUB = settings.AI_COST_PER_1M_INPUT_RUB
+AI_COST_PER_1M_OUTPUT_RUB = settings.AI_COST_PER_1M_OUTPUT_RUB
 
 _redis_pool = None
 
@@ -72,9 +72,9 @@ def get_cache_key(chart_id: int, prompt_text: str, question: str) -> str:
 
 
 def calculate_cost(prompt_tokens: int, completion_tokens: int) -> float:
-    """Calculate API cost in USD."""
-    return (prompt_tokens / 1000 * AI_COST_PER_1K_PROMPT) + \
-           (completion_tokens / 1000 * AI_COST_PER_1K_COMPLETION)
+    """Calculate API cost in RUB per 1M tokens."""
+    return (prompt_tokens / 1_000_000 * AI_COST_PER_1M_INPUT_RUB) + \
+           (completion_tokens / 1_000_000 * AI_COST_PER_1M_OUTPUT_RUB)
 
 
 async def call_with_fallback(prompt: str) -> tuple:
