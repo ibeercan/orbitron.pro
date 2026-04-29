@@ -6,7 +6,7 @@ COPY package.json package-lock.json* ./
 RUN npm ci
 
 COPY . .
-RUN npm run build
+RUN npm run build:docker
 
 
 FROM public.ecr.aws/docker/library/nginx:1.27-alpine
