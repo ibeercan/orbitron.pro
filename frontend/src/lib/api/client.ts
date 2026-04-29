@@ -40,6 +40,14 @@ export const authApi = {
     return api.post('/auth/register', { email, password, invite_code: inviteCode })
   },
 
+  verifyEmail: async (token: string) => {
+    return api.get(`/auth/verify-email?token=${token}`)
+  },
+
+  resendVerification: async (email: string) => {
+    return api.post('/auth/resend-verification', { email })
+  },
+
   logout: async () => {
     return api.post('/auth/logout')
   },

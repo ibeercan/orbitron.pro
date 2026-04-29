@@ -34,6 +34,7 @@ async def create_admin(email: str, password: str, premium: bool = False) -> None
             hashed_password=get_password_hash(password),
             is_admin=True,
             is_active=True,
+            email_verified=True,
             subscription_type=SubscriptionType.PREMIUM.value if premium else SubscriptionType.FREE.value,
         )
         db.add(user)

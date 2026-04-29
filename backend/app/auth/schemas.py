@@ -5,7 +5,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
-__all__ = ["LoginResponse", "TokenData", "UserCreate", "UserLogin", "User"]
+__all__ = ["LoginResponse", "TokenData", "UserCreate", "UserLogin", "User",
+           "RegisterResponse", "ResendVerificationRequest"]
 
 
 class LoginResponse(BaseModel):
@@ -39,6 +40,15 @@ class UserLogin(BaseModel):
     password: str
 
 
+class RegisterResponse(BaseModel):
+    message: str
+    email: str
+
+
+class ResendVerificationRequest(BaseModel):
+    email: EmailStr
+
+
 class User(BaseModel):
     id: int
     email: EmailStr
@@ -48,6 +58,7 @@ class User(BaseModel):
     is_admin: bool = False
     onboarding_completed: bool = False
     is_subscription_active: bool = False
+    email_verified: bool = False
     created_at: datetime
 
     model_config = {"from_attributes": True}

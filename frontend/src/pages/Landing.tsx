@@ -1,12 +1,12 @@
 import { useRef, useEffect, useState, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
-import { subscriptionApi } from '@/lib/api/client'
+import { subscriptionApi, authApi } from '@/lib/api/client'
 import { useAuth } from '@/contexts/auth-context'
 import { cn } from '@/lib/utils'
 import {
   ArrowRight, Sparkles, Heart, Compass, Users, Loader2, ChevronLeft,
-  Sun, Zap, RotateCcw, BookOpen, MessageCircle, Crown, Check, X,
+  Sun, Zap, RotateCcw, BookOpen, MessageCircle, Crown, Check, X, Mail,
 } from 'lucide-react'
 
 function parseApiError(error: unknown, fallback: string): string {
@@ -25,7 +25,7 @@ interface PasswordFormData {
   password: string
 }
 
-type Step = 'email' | 'login' | 'check' | 'register' | 'success'
+type Step = 'email' | 'login' | 'check' | 'register' | 'success' | 'verify_email'
 
 function OrbitronLogo({ size = 64 }: { size?: number }) {
   return (
@@ -109,6 +109,7 @@ const FEATURES = [
 
 export default function Landing() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const animationRef = useRef<number>(0)
 
@@ -119,11 +120,18 @@ export default function Landing() {
   const [message, setMessage] = useState('')
   const [messageType, setMessageType] = useState<'info' | 'error'>('info')
   const [isLoading, setIsLoading] = useState(false)
+  const [resendStatus, setResendStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
+  const verifiedFromUrl = searchParams.get('verified') === 'true'
 
-  const { login, register: authRegister } = useAuth()
+  const { login } = useAuth()
 
   useEffect(() => {
     document.body.classList.add('landing-page')
+    if (verifiedFromUrl && step === 'email') {
+      setStep('login')
+      setMessageType('info')
+      setMessage('')
+    }
     return () => document.body.classList.remove('landing-page')
   }, [])
 
@@ -328,16 +336,15 @@ export default function Landing() {
     setIsLoading(true)
     setMessage('')
     try {
-      await authRegister(email, data.password, inviteCode || undefined)
-      setStep('success')
-      setTimeout(() => navigate('/dashboard'), 1500)
+      await authApi.register(email, data.password, inviteCode || undefined)
+      setStep('verify_email')
     } catch (error: unknown) {
       setMessageType('error')
       setMessage(parseApiError(error, 'Ошибка регистрации'))
     } finally {
       setIsLoading(false)
     }
-  }, [email, inviteCode, navigate])
+  }, [email, inviteCode])
 
   const goBack = () => {
     setStep('email')
@@ -348,12 +355,23 @@ export default function Landing() {
     resetPassword()
   }
 
+  const handleResend = useCallback(async () => {
+    setResendStatus('sending')
+    try {
+      await authApi.resendVerification(email)
+      setResendStatus('sent')
+    } catch {
+      setResendStatus('error')
+    }
+  }, [email])
+
   const formTitle = {
-    email:    { title: 'Добро пожаловать',   subtitle: 'Войдите или зарегистрируйтесь' },
-    login:    { title: 'С возвращением',      subtitle: 'Введите пароль от аккаунта' },
-    check:    { title: 'Ранний доступ',       subtitle: 'Подпишитесь, чтобы не пропустить запуск' },
-    register: { title: 'Создать аккаунт',     subtitle: isPremium ? 'Вы получите Premium навсегда' : 'Добро пожаловать в Orbitron' },
-    success:  { title: 'Добро пожаловать!',   subtitle: 'Переходим в личный кабинет...' },
+    email:        { title: 'Добро пожаловать',   subtitle: 'Войдите или зарегистрируйтесь' },
+    login:        { title: 'С возвращением',      subtitle: 'Введите пароль от аккаунта' },
+    check:        { title: 'Ранний доступ',       subtitle: 'Подпишитесь, чтобы не пропустить запуск' },
+    register:     { title: 'Создать аккаунт',     subtitle: isPremium ? 'Вы получите Premium навсегда' : 'Добро пожаловать в Orbitron' },
+    success:      { title: 'Добро пожаловать!',   subtitle: 'Переходим в личный кабинет...' },
+    verify_email: { title: 'Проверьте почту',    subtitle: `Мы отправили письмо на ${email}` },
   }[step]
 
   const COMPARISON = [
@@ -411,6 +429,51 @@ export default function Landing() {
                       <div className="w-2 h-2 rounded-full bg-[#D4AF37] animate-typing-2" />
                       <div className="w-2 h-2 rounded-full bg-[#D4AF37] animate-typing-3" />
                     </div>
+                  </div>
+                </div>
+              ) : step === 'verify_email' ? (
+                <div className="luxury-card p-8 text-center">
+                  <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-[rgba(139,92,246,0.15)] flex items-center justify-center">
+                    <Mail className="w-8 h-8 text-[#A78BFA]" />
+                  </div>
+                  <h2 className="font-serif text-2xl font-semibold text-[#F0EAD6] mb-2">
+                    Проверьте почту
+                  </h2>
+                  <p className="text-[#8B7FA8] text-sm mb-6">
+                    Мы отправили письмо на <span className="text-[#D4AF37]">{email}</span>
+                  </p>
+                  <p className="text-[#4A3F6A] text-xs mb-6">
+                    Перейдите по ссылке в письме, чтобы подтвердить email
+                  </p>
+                  {resendStatus === 'idle' && (
+                    <button
+                      onClick={handleResend}
+                      className="text-sm text-[#8B7FA8] hover:text-[#D4AF37] transition-colors underline underline-offset-2"
+                    >
+                      Отправить письмо повторно
+                    </button>
+                  )}
+                  {resendStatus === 'sending' && (
+                    <p className="text-sm text-[#8B7FA8]">Отправка...</p>
+                  )}
+                  {resendStatus === 'sent' && (
+                    <p className="text-sm text-[#34D399]">Письмо отправлено повторно</p>
+                  )}
+                  {resendStatus === 'error' && (
+                    <button
+                      onClick={handleResend}
+                      className="text-sm text-red-400 hover:text-red-300 transition-colors underline underline-offset-2"
+                    >
+                      Ошибка. Попробуйте снова
+                    </button>
+                  )}
+                  <div className="mt-6 pt-5 border-t border-[rgba(212,175,55,0.08)]">
+                    <button
+                      onClick={goBack}
+                      className="text-sm text-[#8B7FA8] hover:text-[#F0EAD6] transition-colors"
+                    >
+                      ← Вернуться
+                    </button>
                   </div>
                 </div>
               ) : (
@@ -506,6 +569,11 @@ export default function Landing() {
 
                 {step === 'login' && (
                   <form onSubmit={handlePasswordSubmit(onLogin)} className="flex flex-col gap-4">
+                    {verifiedFromUrl && (
+                      <div className="px-4 py-3 rounded-lg bg-[rgba(52,211,153,0.08)] border border-[rgba(52,211,153,0.2)] text-sm text-[#34D399]">
+                        Email подтверждён. Теперь вы можете войти.
+                      </div>
+                    )}
                     <div>
                       <label className="block text-xs font-medium text-[#8B7FA8] mb-1.5 uppercase tracking-wide">
                         Пароль

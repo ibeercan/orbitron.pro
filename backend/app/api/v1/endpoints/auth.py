@@ -1,6 +1,7 @@
 """Authentication endpoints."""
 
 import hashlib
+import uuid
 from datetime import timedelta, timezone, datetime
 from typing import Annotated
 
@@ -13,12 +14,20 @@ from app.db.session import get_db
 from app.core.config import settings
 from app.core.constants import COOKIE_NAME, REFRESH_COOKIE_NAME, REGISTRATION_OPEN_KEY
 from app.core.security import create_access_token, create_refresh_token, decode_token
-from app.auth.schemas import LoginResponse, UserCreate, User
+from app.auth.schemas import (
+    LoginResponse,
+    UserCreate,
+    User,
+    RegisterResponse,
+    ResendVerificationRequest,
+)
 from app.auth.crud import user as user_crud
 from app.auth.deps import get_current_active_user
-from app.admin.settings import is_registration_open, get_setting
+from app.admin.settings import is_registration_open
 from app.models.refresh_token import RefreshToken
+from app.models.user import User as UserModel
 from app.subscriptions.crud import early_subscriber as early_subscriber_crud
+from app.email.service import send_verification_email
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
@@ -82,22 +91,15 @@ async def _create_tokens_and_cookies(user_email: str, response: Response, db: As
     return LoginResponse(message="Login successful")
 
 
-@router.post("/register", response_model=User)
+@router.post("/register", response_model=RegisterResponse, status_code=status.HTTP_200_OK)
 @limiter.limit("5/minute")
 async def register(
     request: Request,
     *,
     db: Annotated[AsyncSession, Depends(get_db)],
     user_in: UserCreate,
-    response: Response,
-) -> User:
-    """Register a new user.
-
-    - If registration is closed (registration_open=false), invite_code is required.
-    - If registration is open and no invite_code: Free account, or Premium 1 month
-      if email is in early_subscribers.
-    - With valid invite_code: Premium account (no expiry).
-    """
+) -> RegisterResponse:
+    """Register a new user. Sends verification email. No auto-login."""
     registration_open = await is_registration_open(db)
 
     if not registration_open and not user_in.invite_code:
@@ -144,10 +146,101 @@ async def register(
         from app.invites.crud import invite_code_crud as ic_crud
         await ic_crud.mark_used_with_email(db, invite, user.email)
 
-    await _create_tokens_and_cookies(user.email, response, db)
+    token = str(uuid.uuid4())
+    user.verification_token = token
+    user.verification_token_expires = datetime.now(timezone.utc) + timedelta(hours=24)
+    await db.flush()
+    await db.commit()
+    await db.refresh(user)
+
+    try:
+        await send_verification_email(user.email, token)
+    except Exception:
+        pass
+
+    return RegisterResponse(
+        message="Проверьте вашу почту для подтверждения email.",
+        email=user.email,
+    )
+
+
+@router.get("/verify-email")
+async def verify_email(
+    token: str,
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> dict:
+    """Verify user email via token. Redirects to frontend."""
+    result = await db.execute(
+        select(UserModel).where(
+            UserModel.verification_token == token,
+            UserModel.deleted_at.is_(None),
+        )
+    )
+    user = result.scalars().first()
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Недействительная ссылка подтверждения.",
+        )
+
+    if user.email_verified:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email уже подтверждён.",
+        )
+
+    if user.verification_token_expires and user.verification_token_expires.replace(tzinfo=timezone.utc) < datetime.now(timezone.utc):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Ссылка подтверждения устарела. Запросите новую.",
+        )
+
+    user.email_verified = True
+    user.verification_token = None
+    user.verification_token_expires = None
     await db.commit()
 
-    return user
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url=f"{settings.FRONTEND_URL}/?verified=true", status_code=302)
+
+
+@router.post("/resend-verification", response_model=RegisterResponse)
+@limiter.limit("3/minute")
+async def resend_verification(
+    request: Request,
+    *,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    body: ResendVerificationRequest,
+) -> RegisterResponse:
+    """Resend verification email."""
+    user = await user_crud.get_by_email(db, email=body.email)
+    if not user:
+        return RegisterResponse(
+            message="Если аккаунт существует, письмо отправлено повторно.",
+            email=body.email,
+        )
+
+    if user.email_verified:
+        return RegisterResponse(
+            message="Email уже подтверждён.",
+            email=body.email,
+        )
+
+    token = str(uuid.uuid4())
+    user.verification_token = token
+    user.verification_token_expires = datetime.now(timezone.utc) + timedelta(hours=24)
+    await db.commit()
+
+    try:
+        await send_verification_email(user.email, token)
+    except Exception:
+        pass
+
+    return RegisterResponse(
+        message="Если аккаунт существует, письмо отправлено повторно.",
+        email=body.email,
+    )
 
 
 @router.post("/login", response_model=LoginResponse)
@@ -169,6 +262,11 @@ async def login(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Аккаунт деактивирован",
+        )
+    if not user.email_verified:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Подтвердите email перед входом. Проверьте почту.",
         )
 
     result = await _create_tokens_and_cookies(user.email, response, db)

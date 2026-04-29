@@ -151,6 +151,14 @@ class Settings(BaseSettings):
     COOKIE_DOMAIN: Optional[str] = None
     COOKIE_SECURE: bool = True
 
+    # Email (SMTP)
+    SMTP_HOST: str = ""
+    SMTP_PORT: int = 587
+    SMTP_USER: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_FROM: str = "Orbitron <noreply@orbitron.pro>"
+    FRONTEND_URL: str = "http://localhost:5173"
+
     # Subscription limits
     FREE_AI_REQUESTS_PER_MONTH: int = 3
     FREE_CHARTS_LIMIT: int = 1
