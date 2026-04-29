@@ -131,9 +131,11 @@ class Settings(BaseSettings):
     # Redis
     REDIS_URL: str = "redis://localhost:6379"
 
-    # Security — environment-aware CORS
+    # Security — CORS origins (comma-separated in env, falls back to defaults)
     @property
     def allowed_origins(self) -> List[str]:
+        if self.ALLOWED_ORIGINS:
+            return self.ALLOWED_ORIGINS
         if self.ENVIRONMENT == "production":
             return [
                 "https://orbitron.pro",
@@ -146,6 +148,13 @@ class Settings(BaseSettings):
         ]
 
     ALLOWED_ORIGINS: List[str] = []
+
+    @field_validator("ALLOWED_ORIGINS", mode="before")
+    @classmethod
+    def parse_allowed_origins(cls, v):
+        if isinstance(v, str):
+            return [o.strip() for o in v.split(",") if o.strip()]
+        return v
 
     # Cookies
     COOKIE_DOMAIN: Optional[str] = None
