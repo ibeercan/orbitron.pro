@@ -15,5 +15,6 @@ pydantic-ai[openai]==1.85.1
 stellium==0.17.0
 rich==15.0.0
 structlog==25.5.0
+aiosmtplib==5.1.0
 slowapi==0.1.9
 tenacity==9.1.4
