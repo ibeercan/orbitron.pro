@@ -1,7 +1,7 @@
 import { useRef, useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
-import { subscriptionApi, authApi } from '@/lib/api/client'
+import { subscriptionApi } from '@/lib/api/client'
 import { useAuth } from '@/contexts/auth-context'
 import { cn } from '@/lib/utils'
 import {
@@ -120,7 +120,7 @@ export default function Landing() {
   const [messageType, setMessageType] = useState<'info' | 'error'>('info')
   const [isLoading, setIsLoading] = useState(false)
 
-  const { login } = useAuth()
+  const { login, register: authRegister } = useAuth()
 
   useEffect(() => {
     document.body.classList.add('landing-page')
@@ -328,7 +328,7 @@ export default function Landing() {
     setIsLoading(true)
     setMessage('')
     try {
-      await authApi.register(email, data.password, inviteCode || undefined)
+      await authRegister(email, data.password, inviteCode || undefined)
       setStep('success')
       setTimeout(() => navigate('/dashboard'), 1500)
     } catch (error: unknown) {
