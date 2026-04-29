@@ -229,9 +229,7 @@ export function Sidebar({
                 <span className="font-serif text-xl font-semibold gold-gradient-text leading-none tracking-wide block">
                   Orbitron
                 </span>
-                <p className="text-[10px] text-[#4A3F6A] uppercase tracking-[0.18em] mt-0.5 font-medium">
-                  ИИ Астролог
-                </p>
+                
               </div>
             )}
             {/* Action buttons — shown only in expanded mode */}

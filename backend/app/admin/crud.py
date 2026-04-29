@@ -21,6 +21,7 @@ async def list_users(
     subscription: str | None = None,
     is_admin: bool | None = None,
     is_active: bool | None = None,
+    email_verified: bool | None = None,
     skip: int = 0,
     limit: int = 50,
 ) -> tuple[list[dict], int]:
@@ -36,6 +37,9 @@ async def list_users(
     if is_active is not None:
         base_q = base_q.where(User.is_active == is_active)
         count_q = count_q.where(User.is_active == is_active)
+    if email_verified is not None:
+        base_q = base_q.where(User.email_verified == email_verified)
+        count_q = count_q.where(User.email_verified == email_verified)
 
     total = (await db.execute(count_q)).scalar() or 0
 
@@ -73,6 +77,7 @@ async def list_users(
         rows.append({
             "id": u.id,
             "email": u.email,
+            "email_verified": u.email_verified,
             "subscription_type": u.subscription_type,
             "subscription_end": u.subscription_end,
             "is_admin": u.is_admin,

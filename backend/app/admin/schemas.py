@@ -6,6 +6,7 @@ from pydantic import BaseModel, field_validator
 class AdminUserOut(BaseModel):
     id: int
     email: str
+    email_verified: bool = False
     subscription_type: str
     subscription_end: Optional[datetime] = None
     is_admin: bool

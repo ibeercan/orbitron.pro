@@ -44,6 +44,7 @@ async def list_users(
     subscription: str | None = None,
     is_admin: bool | None = None,
     is_active: bool | None = None,
+    email_verified: bool | None = None,
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
 ) -> Any:
@@ -52,6 +53,7 @@ async def list_users(
         subscription=subscription,
         is_admin=is_admin,
         is_active=is_active,
+        email_verified=email_verified,
         skip=skip,
         limit=limit,
     )

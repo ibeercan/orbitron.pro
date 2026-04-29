@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { adminApi } from '@/lib/api/client'
-import { Loader2, Crown, ChevronDown, Key, Users, BarChart3, ScrollText, Mail, Settings } from 'lucide-react'
+import { Loader2, Crown, ChevronDown, Key, Users, BarChart3, ScrollText, Mail, Settings, X, MailCheck, MailX } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 type Tab = 'analytics' | 'users' | 'invites' | 'subscribers' | 'audit' | 'settings'
@@ -15,6 +16,7 @@ const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
 ]
 
 export function AdminContent() {
+  const navigate = useNavigate()
   const [tab, setTab] = useState<Tab>('analytics')
 
   return (
@@ -27,6 +29,10 @@ export function AdminContent() {
           <h1 className="font-serif text-xl font-semibold text-[#F0EAD6]">Управление</h1>
           <p className="text-xs text-[#8B7FA8]">Панель администратора</p>
         </div>
+        <div className="flex-1" />
+        <button onClick={() => navigate('/dashboard')} className="w-8 h-8 rounded-lg flex items-center justify-center text-[#8B7FA8] hover:text-[#F0EAD6] hover:bg-[rgba(212,175,55,0.08)] transition-all">
+          <X className="w-5 h-5" />
+        </button>
       </div>
 
       <div className="flex items-center gap-1 px-6 py-2.5 border-b border-[rgba(212,175,55,0.06)] shrink-0 overflow-x-auto scrollbar-none">
@@ -117,6 +123,7 @@ function UsersTab() {
       if (filter === 'free') params.subscription = 'free'
       if (filter === 'admin') params.is_admin = true
       if (filter === 'inactive') params.is_active = false
+      if (filter === 'unverified') params.email_verified = false
       const r = await adminApi.listUsers(params)
       setUsers(r.data.users || [])
       setTotal(r.data.total || 0)
@@ -150,6 +157,7 @@ function UsersTab() {
     { id: 'free', label: 'Free' },
     { id: 'admin', label: 'Admin' },
     { id: 'inactive', label: 'Неактивные' },
+    { id: 'unverified', label: 'Не подтверждён' },
   ]
 
   return (
@@ -177,6 +185,11 @@ function UsersTab() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-sm text-[#F0EAD6] truncate">{u.email}</span>
+                  {u.email_verified ? (
+                    <MailCheck className="w-3.5 h-3.5 text-[#34D399] shrink-0" />
+                  ) : (
+                    <MailX className="w-3.5 h-3.5 text-[#8B7FA8] shrink-0" />
+                  )}
                   {u.is_admin && <span className="text-[8px] px-1.5 py-0.5 rounded bg-[rgba(123,47,190,0.1)] text-[#9D50E0] border border-[rgba(123,47,190,0.2)]">Admin</span>}
                   <span className={cn('text-[8px] px-1.5 py-0.5 rounded border',
                     u.subscription_type === 'premium' ? 'bg-[rgba(212,175,55,0.08)] text-[#D4AF37] border-[rgba(212,175,55,0.15)]' : 'bg-[rgba(139,127,168,0.06)] text-[#8B7FA8] border-[rgba(139,127,168,0.1)]'
