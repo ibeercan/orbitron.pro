@@ -80,7 +80,7 @@ async def check_email(
     return CheckEmailResponse(
         exists=existing_user is not None,
         is_subscriber=existing_subscriber is not None,
-        message="Check completed",
+        message="Проверка завершена",
         registration_open=registration_open,
     )
 
@@ -105,7 +105,7 @@ async def check_invite(
         return CheckInviteResponse(
             can_register=False,
             is_premium=False,
-            message="Account already exists",
+            message="Аккаунт с таким email уже существует",
             registration_open=registration_open,
         )
 
@@ -114,13 +114,13 @@ async def check_invite(
             return CheckInviteResponse(
                 can_register=True,
                 is_premium=False,
-                message="Registration open",
+                message="Регистрация открыта",
                 registration_open=True,
             )
         return CheckInviteResponse(
             can_register=False,
             is_premium=False,
-            message="Invite code required",
+            message="Код приглашения обязателен",
             registration_open=False,
         )
 
@@ -132,7 +132,7 @@ async def check_invite(
         return CheckInviteResponse(
             can_register=False,
             is_premium=False,
-            message="Invalid invite code",
+            message="Неверный код приглашения",
             registration_open=registration_open,
         )
 
@@ -140,14 +140,14 @@ async def check_invite(
         return CheckInviteResponse(
             can_register=False,
             is_premium=False,
-            message="Invite code already used",
+            message="Код приглашения уже использован",
             registration_open=registration_open,
         )
 
     return CheckInviteResponse(
         can_register=True,
         is_premium=True,
-        message="Valid invite code",
+        message="Код приглашения принят",
         registration_open=registration_open,
     )
 

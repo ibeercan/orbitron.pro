@@ -259,11 +259,14 @@ export default function Landing() {
         setStep('login')
       } else if (data.invite_code) {
         const inviteRes = await subscriptionApi.checkInvite(data.email, data.invite_code)
-        const { can_register, is_premium, message: inviteMsg } = inviteRes.data
-        setMessage(inviteMsg)
+        const { can_register, is_premium } = inviteRes.data
         setIsPremium(is_premium)
-        if (can_register) setStep('register')
-        else setStep('check')
+        if (can_register) {
+          setStep('register')
+        } else {
+          setMessage(parseApiError(inviteRes.data.message || 'Неверный код', 'Неверный код приглашения'))
+          setStep('check')
+        }
       } else if (!regOpen) {
         setStep('check')
         setMessage('Регистрация сейчас только по приглашению. Введите код приглашения.')
