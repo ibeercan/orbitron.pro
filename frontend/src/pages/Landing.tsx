@@ -264,7 +264,7 @@ export default function Landing() {
         setIsPremium(is_premium)
         if (can_register) {
           setMessageType('info')
-          setMessage('Вы получите Premium навсегда')
+          setMessage('Код приглашения принят')
           setStep('register')
         } else {
           setMessageType('error')
