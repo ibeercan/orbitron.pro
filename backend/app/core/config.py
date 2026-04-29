@@ -135,7 +135,7 @@ class Settings(BaseSettings):
     @property
     def allowed_origins(self) -> List[str]:
         if self.ALLOWED_ORIGINS:
-            return self.ALLOWED_ORIGINS
+            return [o.strip() for o in self.ALLOWED_ORIGINS.split(",") if o.strip()]
         if self.ENVIRONMENT == "production":
             return [
                 "https://orbitron.pro",
@@ -147,13 +147,15 @@ class Settings(BaseSettings):
             "http://localhost",
         ]
 
-    ALLOWED_ORIGINS: List[str] = []
+    ALLOWED_ORIGINS: str = ""
 
     @field_validator("ALLOWED_ORIGINS", mode="before")
     @classmethod
     def parse_allowed_origins(cls, v):
         if isinstance(v, str):
-            return [o.strip() for o in v.split(",") if o.strip()]
+            return v
+        if isinstance(v, list):
+            return ",".join(v) if v else ""
         return v
 
     # Cookies
