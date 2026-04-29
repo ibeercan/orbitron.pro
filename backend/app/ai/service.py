@@ -71,10 +71,12 @@ def get_cache_key(chart_id: int, prompt_text: str, question: str) -> str:
     return f"ai_cache:{hashlib.md5(data.encode()).hexdigest()}"
 
 
-def calculate_cost(prompt_tokens: int, completion_tokens: int) -> float:
+def calculate_cost(prompt_tokens: int, completion_tokens: int, input_rub: float | None = None, output_rub: float | None = None) -> float:
     """Calculate API cost in RUB per 1M tokens."""
-    return (prompt_tokens / 1_000_000 * AI_COST_PER_1M_INPUT_RUB) + \
-           (completion_tokens / 1_000_000 * AI_COST_PER_1M_OUTPUT_RUB)
+    inp = input_rub if input_rub is not None else AI_COST_PER_1M_INPUT_RUB
+    out = output_rub if output_rub is not None else AI_COST_PER_1M_OUTPUT_RUB
+    return (prompt_tokens / 1_000_000 * inp) + \
+           (completion_tokens / 1_000_000 * out)
 
 
 async def call_with_fallback(prompt: str) -> tuple:
@@ -187,8 +189,12 @@ class AIService:
             return
 
         try:
+            from app.admin.settings import get_cost_input_rub, get_cost_output_rub
+            input_rub = await get_cost_input_rub(db)
+            output_rub = await get_cost_output_rub(db)
+
             total_tokens = prompt_tokens + completion_tokens
-            cost = calculate_cost(prompt_tokens, completion_tokens)
+            cost = calculate_cost(prompt_tokens, completion_tokens, input_rub, output_rub)
 
             from app.ai.token_usage import TokenUsage
             usage = TokenUsage(

@@ -154,7 +154,15 @@ class AdminSettingsResponse(BaseModel):
 
 
 class AdminSettingsUpdate(BaseModel):
-    registration_open: bool
+    registration_open: bool | None = None
+    ai_cost_per_1m_input_rub: float | None = None
+    ai_cost_per_1m_output_rub: float | None = None
+    smtp_host: str | None = None
+    smtp_port: int | None = None
+    smtp_user: str | None = None
+    smtp_password: str | None = None
+    smtp_from: str | None = None
+    frontend_url: str | None = None
 
 
 class AdminTokenUsageSummary(BaseModel):

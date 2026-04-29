@@ -23,6 +23,19 @@ from app.admin.schemas import (
     AdminInviteSubscriberResponse,
     AdminSettingsResponse,
     AdminSettingsUpdate,
+    AppSettingOut,
+)
+from app.admin.settings import get_all_settings, set_setting, get_cost_input_rub, get_cost_output_rub
+from app.core.constants import (
+    REGISTRATION_OPEN_KEY,
+    AI_COST_PER_1M_INPUT_RUB_KEY,
+    AI_COST_PER_1M_OUTPUT_RUB_KEY,
+    SMTP_HOST_KEY,
+    SMTP_PORT_KEY,
+    SMTP_USER_KEY,
+    SMTP_PASSWORD_KEY,
+    SMTP_FROM_KEY,
+    FRONTEND_URL_KEY,
 )
 from app.invites.crud import invite_code_crud
 from app.invites.schemas import InviteCodeListResponse
@@ -36,7 +49,9 @@ async def get_admin_stats(
     db: AsyncSession = Depends(get_db),
     admin: User = Depends(get_current_admin_user),
 ) -> Any:
-    return await crud.get_stats(db)
+    input_rub = await get_cost_input_rub(db)
+    output_rub = await get_cost_output_rub(db)
+    return await crud.get_stats(db, input_rub=input_rub, output_rub=output_rub)
 
 
 @router.get("/users", response_model=AdminUserListResponse)
@@ -224,14 +239,10 @@ async def get_token_analytics(
     end_date: date_type | None = None,
     user_id: int | None = None,
 ) -> Any:
-    from app.admin.schemas import (
-        AdminTokenUsageSummary,
-        AdminTokenUsageByUser,
-        AdminTokenUsageByDate,
-    )
     result = await crud.get_token_analytics(
         db, start_date=start_date, end_date=end_date, user_id=user_id,
     )
+    from app.admin.schemas import AdminTokenUsageSummary, AdminTokenUsageByUser, AdminTokenUsageByDate
     return AdminTokenAnalyticsResponse(
         summary=AdminTokenUsageSummary(**result["summary"]),
         by_user=[AdminTokenUsageByUser(**u) for u in result["by_user"]],
@@ -244,9 +255,14 @@ async def get_settings(
     db: AsyncSession = Depends(get_db),
     admin: User = Depends(get_current_admin_user),
 ) -> Any:
-    from app.admin.settings import get_all_settings
     settings = await get_all_settings(db)
-    return AdminSettingsResponse(settings=settings)
+    masked = []
+    for s in settings:
+        if s.key == SMTP_PASSWORD_KEY and s.value:
+            masked.append(AppSettingOut(key=s.key, value=f"****{s.value[-4:]}" if len(s.value) >= 4 else "****", updated_at=s.updated_at))
+        else:
+            masked.append(AppSettingOut(key=s.key, value=s.value, updated_at=s.updated_at))
+    return AdminSettingsResponse(settings=masked)
 
 
 @router.patch("/settings", response_model=AdminSettingsResponse)
@@ -256,10 +272,49 @@ async def update_settings(
     admin: User = Depends(get_current_admin_user),
     body: AdminSettingsUpdate,
 ) -> Any:
-    from app.admin.settings import set_setting, get_all_settings
-    from app.core.constants import REGISTRATION_OPEN_KEY
-
-    await set_setting(db, REGISTRATION_OPEN_KEY, "true" if body.registration_open else "false")
+    if body.registration_open is not None:
+        await set_setting(db, REGISTRATION_OPEN_KEY, "true" if body.registration_open else "false")
+    if body.ai_cost_per_1m_input_rub is not None:
+        await set_setting(db, AI_COST_PER_1M_INPUT_RUB_KEY, str(body.ai_cost_per_1m_input_rub))
+    if body.ai_cost_per_1m_output_rub is not None:
+        await set_setting(db, AI_COST_PER_1M_OUTPUT_RUB_KEY, str(body.ai_cost_per_1m_output_rub))
+    if body.smtp_host is not None:
+        await set_setting(db, SMTP_HOST_KEY, body.smtp_host)
+    if body.smtp_port is not None:
+        await set_setting(db, SMTP_PORT_KEY, str(body.smtp_port))
+    if body.smtp_user is not None:
+        await set_setting(db, SMTP_USER_KEY, body.smtp_user)
+    if body.smtp_password is not None:
+        await set_setting(db, SMTP_PASSWORD_KEY, body.smtp_password)
+    if body.smtp_from is not None:
+        await set_setting(db, SMTP_FROM_KEY, body.smtp_from)
+    if body.frontend_url is not None:
+        await set_setting(db, FRONTEND_URL_KEY, body.frontend_url)
     await db.commit()
     settings = await get_all_settings(db)
-    return AdminSettingsResponse(settings=settings)
+    masked = []
+    for s in settings:
+        if s.key == SMTP_PASSWORD_KEY and s.value:
+            masked.append(AppSettingOut(key=s.key, value=f"****{s.value[-4:]}" if len(s.value) >= 4 else "****", updated_at=s.updated_at))
+        else:
+            masked.append(AppSettingOut(key=s.key, value=s.value, updated_at=s.updated_at))
+    return AdminSettingsResponse(settings=masked)
+
+
+@router.post("/test-smtp")
+async def test_smtp(
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(get_current_admin_user),
+) -> Any:
+    from app.email.service import send_email
+
+    try:
+        await send_email(
+            to=admin.email,
+            subject="Orbitron — тестовое письмо",
+            html_body="<div style='font-family:sans-serif;padding:40px;text-align:center'><h2>Тестовое письмо</h2><p>Если вы получили это письмо, настройки SMTP работают корректно.</p></div>",
+            db=db,
+        )
+        return {"success": True, "message": f"Письмо отправлено на {admin.email}"}
+    except Exception as e:
+        return {"success": False, "message": f"Ошибка: {str(e)}"}

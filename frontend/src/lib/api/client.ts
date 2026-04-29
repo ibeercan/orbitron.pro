@@ -428,7 +428,10 @@ export const adminApi = {
   getSettings: async () => {
     return api.get('/admin/settings')
   },
-  updateSettings: async (data: { registration_open: boolean }) => {
+  updateSettings: async (data: { registration_open?: boolean; ai_cost_per_1m_input_rub?: number; ai_cost_per_1m_output_rub?: number; smtp_host?: string; smtp_port?: number; smtp_user?: string; smtp_password?: string; smtp_from?: string; frontend_url?: string }) => {
     return api.patch('/admin/settings', data)
+  },
+  testSmtp: async () => {
+    return api.post('/admin/test-smtp')
   },
 }

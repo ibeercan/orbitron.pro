@@ -10,7 +10,6 @@ from app.models.audit import AuditLog, serialize_for_audit
 from app.models.early_subscriber import EarlySubscriber
 from app.models.request import RequestLog
 from app.ai.token_usage import TokenUsage
-from app.ai.service import AI_COST_PER_1M_INPUT_RUB, AI_COST_PER_1M_OUTPUT_RUB
 from app.models.invite_code import InviteCode
 from app.invites.crud import invite_code_crud
 from app.core.logging import logger
@@ -157,7 +156,7 @@ async def soft_delete_user(
     return True
 
 
-async def get_stats(db: AsyncSession) -> dict:
+async def get_stats(db: AsyncSession, *, input_rub: float = 0.0, output_rub: float = 0.0) -> dict:
     total_users = (await db.execute(
         select(func.count(User.id)).where(User.deleted_at.is_(None))
     )).scalar() or 0
@@ -224,8 +223,8 @@ async def get_stats(db: AsyncSession) -> dict:
         "ai_cost_month_rub": float(ai_cost_month),
         "ai_input_tokens_month": ai_input_tokens_month,
         "ai_output_tokens_month": ai_output_tokens_month,
-        "cost_per_1m_input_rub": AI_COST_PER_1M_INPUT_RUB,
-        "cost_per_1m_output_rub": AI_COST_PER_1M_OUTPUT_RUB,
+        "cost_per_1m_input_rub": input_rub,
+        "cost_per_1m_output_rub": output_rub,
         "invites_generated": invites_generated,
         "invites_used": invites_used,
     }

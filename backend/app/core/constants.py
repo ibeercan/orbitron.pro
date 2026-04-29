@@ -19,6 +19,14 @@ FREE_CHARTS_LIMIT = 1
 PREMIUM_CHARTS_LIMIT = None
 
 REGISTRATION_OPEN_KEY = "registration_open"
+AI_COST_PER_1M_INPUT_RUB_KEY = "ai_cost_per_1m_input_rub"
+AI_COST_PER_1M_OUTPUT_RUB_KEY = "ai_cost_per_1m_output_rub"
+SMTP_HOST_KEY = "smtp_host"
+SMTP_PORT_KEY = "smtp_port"
+SMTP_USER_KEY = "smtp_user"
+SMTP_PASSWORD_KEY = "smtp_password"
+SMTP_FROM_KEY = "smtp_from"
+FRONTEND_URL_KEY = "frontend_url"
 
 PREMIUM_FEATURES = {
     "synastry_ai",

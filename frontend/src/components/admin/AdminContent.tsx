@@ -93,8 +93,6 @@ function AnalyticsTab() {
     { label: 'AI-запросов сегодня', value: stats.ai_requests_today, color: '#9D50E0', bg: 'rgba(157,80,224,0.06)', border: 'rgba(157,80,224,0.12)' },
     { label: 'AI-запросов / мес', value: stats.ai_requests_month, color: '#A78BFA', bg: 'rgba(167,139,250,0.06)', border: 'rgba(167,139,250,0.12)' },
     { label: 'Стоимость AI / мес', value: `${stats.ai_cost_month_rub.toFixed(2)}₽`, color: '#F59E0B', bg: 'rgba(245,158,11,0.06)', border: 'rgba(245,158,11,0.12)' },
-    { label: 'Вх. токены / 1М₽', value: `${stats.cost_per_1m_input_rub.toFixed(2)}₽`, color: '#38BDF8', bg: 'rgba(56,189,248,0.06)', border: 'rgba(56,189,248,0.12)' },
-    { label: 'Исх. токены / 1М₽', value: `${stats.cost_per_1m_output_rub.toFixed(2)}₽`, color: '#FB923C', bg: 'rgba(251,146,60,0.06)', border: 'rgba(251,146,60,0.12)' },
     { label: 'Инвайтов создано', value: stats.invites_generated, color: '#EC4899', bg: 'rgba(236,72,153,0.06)', border: 'rgba(236,72,153,0.12)' },
     { label: 'Инвайтов использовано', value: stats.invites_used, color: '#10B981', bg: 'rgba(16,185,129,0.06)', border: 'rgba(16,185,129,0.12)' },
   ]
@@ -614,14 +612,41 @@ function TokensTab() {
 
 function SettingsTab() {
   const [registrationOpen, setRegistrationOpen] = useState(true)
+  const [costInput, setCostInput] = useState('')
+  const [costOutput, setCostOutput] = useState('')
+  const [smtpHost, setSmtpHost] = useState('')
+  const [smtpPort, setSmtpPort] = useState('')
+  const [smtpUser, setSmtpUser] = useState('')
+  const [smtpPassword, setSmtpPassword] = useState('')
+  const [smtpFrom, setSmtpFrom] = useState('')
+  const [frontendUrl, setFrontendUrl] = useState('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [testing, setTesting] = useState(false)
   const [message, setMessage] = useState('')
+  const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null)
 
   useEffect(() => {
     adminApi.getSettings().then(r => {
-      const reg = r.data.settings?.find((s: { key: string; value: string }) => s.key === 'registration_open')
+      const find = (key: string) => r.data.settings?.find((s: { key: string; value: string }) => s.key === key)
+      const reg = find('registration_open')
       setRegistrationOpen(reg?.value !== 'false')
+      const ci = find('ai_cost_per_1m_input_rub')
+      const co = find('ai_cost_per_1m_output_rub')
+      if (ci) setCostInput(ci.value)
+      if (co) setCostOutput(co.value)
+      const sh = find('smtp_host')
+      const sp = find('smtp_port')
+      const su = find('smtp_user')
+      const spw = find('smtp_password')
+      const sf = find('smtp_from')
+      const fu = find('frontend_url')
+      if (sh) setSmtpHost(sh.value)
+      if (sp) setSmtpPort(sp.value)
+      if (su) setSmtpUser(su.value)
+      if (spw) setSmtpPassword(spw.value)
+      if (sf) setSmtpFrom(sf.value)
+      if (fu) setFrontendUrl(fu.value)
     }).catch(() => {}).finally(() => setLoading(false))
   }, [])
 
@@ -629,7 +654,16 @@ function SettingsTab() {
     setSaving(true)
     setMessage('')
     try {
-      await adminApi.updateSettings({ registration_open: registrationOpen })
+      const data: any = { registration_open: registrationOpen }
+      if (costInput !== '') data.ai_cost_per_1m_input_rub = parseFloat(costInput)
+      if (costOutput !== '') data.ai_cost_per_1m_output_rub = parseFloat(costOutput)
+      if (smtpHost !== '') data.smtp_host = smtpHost
+      if (smtpPort !== '') data.smtp_port = parseInt(smtpPort, 10)
+      if (smtpUser !== '') data.smtp_user = smtpUser
+      if (smtpPassword !== '') data.smtp_password = smtpPassword
+      if (smtpFrom !== '') data.smtp_from = smtpFrom
+      if (frontendUrl !== '') data.frontend_url = frontendUrl
+      await adminApi.updateSettings(data)
       setMessage('Настройки сохранены')
       setTimeout(() => setMessage(''), 3000)
     } catch {
@@ -638,6 +672,21 @@ function SettingsTab() {
       setSaving(false)
     }
   }
+
+  const handleTestSmtp = async () => {
+    setTesting(true)
+    setTestResult(null)
+    try {
+      const r = await adminApi.testSmtp()
+      setTestResult({ success: r.data.success, message: r.data.message })
+    } catch (e: any) {
+      setTestResult({ success: false, message: e?.response?.data?.detail || 'Ошибка соединения' })
+    } finally {
+      setTesting(false)
+    }
+  }
+
+  const inputCls = 'w-full px-3 py-2 rounded-lg bg-[rgba(10,6,18,0.6)] border border-[rgba(212,175,55,0.12)] text-[#F0EAD6] text-sm focus:outline-none focus:border-[rgba(212,175,55,0.3)]'
 
   if (loading) return <div className="flex items-center justify-center py-20"><Loader2 className="w-6 h-6 text-[#9382DC] animate-spin" /></div>
 
@@ -667,6 +716,65 @@ function SettingsTab() {
               registrationOpen ? 'translate-x-6' : 'translate-x-1'
             )} />
           </button>
+        </div>
+      </div>
+
+      <h2 className="font-serif text-lg font-semibold text-[#F0EAD6] pt-2">Стоимость токенов</h2>
+
+      <div className="luxury-card p-5 space-y-4">
+        <div>
+          <label className="text-sm font-medium text-[#F0EAD6]">Входящие токены, ₽ за 1М</label>
+          <p className="text-xs text-[#8B7FA8] mt-0.5 mb-2">Цена за 1 миллион входящих (prompt) токенов в рублях</p>
+          <input type="text" inputMode="decimal" value={costInput} onChange={e => setCostInput(e.target.value)} placeholder="300.00" className={inputCls} />
+        </div>
+        <div>
+          <label className="text-sm font-medium text-[#F0EAD6]">Исходящие токены, ₽ за 1М</label>
+          <p className="text-xs text-[#8B7FA8] mt-0.5 mb-2">Цена за 1 миллион исходящих (completion) токенов в рублях</p>
+          <input type="text" inputMode="decimal" value={costOutput} onChange={e => setCostOutput(e.target.value)} placeholder="600.00" className={inputCls} />
+        </div>
+      </div>
+
+      <h2 className="font-serif text-lg font-semibold text-[#F0EAD6] pt-2">Почтовый сервер</h2>
+
+      <div className="luxury-card p-5 space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="text-sm font-medium text-[#F0EAD6]">SMTP Host</label>
+            <input type="text" value={smtpHost} onChange={e => setSmtpHost(e.target.value)} placeholder="smtp.example.com" className={inputCls} />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-[#F0EAD6]">SMTP Port</label>
+            <input type="text" inputMode="numeric" value={smtpPort} onChange={e => setSmtpPort(e.target.value)} placeholder="587" className={inputCls} />
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="text-sm font-medium text-[#F0EAD6]">SMTP User</label>
+            <input type="text" value={smtpUser} onChange={e => setSmtpUser(e.target.value)} placeholder="user@example.com" className={inputCls} />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-[#F0EAD6]">SMTP Password</label>
+            <input type="password" value={smtpPassword} onChange={e => setSmtpPassword(e.target.value)} placeholder="••••••••" className={inputCls} />
+          </div>
+        </div>
+        <div>
+          <label className="text-sm font-medium text-[#F0EAD6]">SMTP From</label>
+          <input type="text" value={smtpFrom} onChange={e => setSmtpFrom(e.target.value)} placeholder="Orbitron &lt;noreply@orbitron.pro&gt;" className={inputCls} />
+        </div>
+        <div>
+          <label className="text-sm font-medium text-[#F0EAD6]">Frontend URL</label>
+          <p className="text-xs text-[#8B7FA8] mt-0.5 mb-2">Используется для ссылок в письмах</p>
+          <input type="text" value={frontendUrl} onChange={e => setFrontendUrl(e.target.value)} placeholder="https://orbitron.pro" className={inputCls} />
+        </div>
+        <div className="flex items-center gap-3">
+          <button onClick={handleTestSmtp} disabled={testing}
+            className="px-4 py-2 rounded-lg bg-[rgba(52,211,153,0.1)] border border-[rgba(52,211,153,0.2)] text-[#34D399] text-sm font-medium hover:bg-[rgba(52,211,153,0.15)] transition-all disabled:opacity-50 flex items-center gap-2">
+            {testing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
+            Проверить соединение
+          </button>
+          {testResult && (
+            <span className={cn('text-sm', testResult.success ? 'text-[#34D399]' : 'text-red-400')}>{testResult.message}</span>
+          )}
         </div>
       </div>
 

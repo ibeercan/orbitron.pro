@@ -154,7 +154,7 @@ async def register(
     await db.refresh(user)
 
     try:
-        await send_verification_email(user.email, token)
+        await send_verification_email(user.email, token, db=db)
     except Exception:
         pass
 
@@ -233,7 +233,7 @@ async def resend_verification(
     await db.commit()
 
     try:
-        await send_verification_email(user.email, token)
+        await send_verification_email(user.email, token, db=db)
     except Exception:
         pass
 
