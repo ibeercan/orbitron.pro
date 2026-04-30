@@ -56,9 +56,36 @@ async def set_setting(db: AsyncSession, key: str, value: str) -> AppSettings:
     return row
 
 
+SETTINGS_DEFAULTS: dict[str, str] = {
+    REGISTRATION_OPEN_KEY: "true",
+    AI_COST_PER_1M_INPUT_RUB_KEY: str(settings.AI_COST_PER_1M_INPUT_RUB),
+    AI_COST_PER_1M_OUTPUT_RUB_KEY: str(settings.AI_COST_PER_1M_OUTPUT_RUB),
+    SMTP_HOST_KEY: settings.SMTP_HOST,
+    SMTP_PORT_KEY: str(settings.SMTP_PORT),
+    SMTP_USER_KEY: settings.SMTP_USER,
+    SMTP_PASSWORD_KEY: settings.SMTP_PASSWORD,
+    SMTP_FROM_KEY: settings.SMTP_FROM,
+    FRONTEND_URL_KEY: settings.FRONTEND_URL,
+}
+
+
 async def get_all_settings(db: AsyncSession) -> list[AppSettings]:
     result = await db.execute(select(AppSettings))
     return list(result.scalars().all())
+
+
+async def get_all_settings_with_defaults(db: AsyncSession) -> list[AppSettings]:
+    db_rows = await get_all_settings(db)
+    db_map = {s.key: s for s in db_rows}
+
+    result: list[AppSettings] = []
+    for key, default_value in SETTINGS_DEFAULTS.items():
+        if key in db_map:
+            result.append(db_map[key])
+        else:
+            row = AppSettings(key=key, value=default_value)
+            result.append(row)
+    return result
 
 
 async def is_registration_open(db: AsyncSession) -> bool:

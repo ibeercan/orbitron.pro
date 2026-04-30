@@ -28,7 +28,7 @@ from app.admin.schemas import (
     AdminSettingsUpdate,
     AppSettingOut,
 )
-from app.admin.settings import get_all_settings, set_setting, get_cost_input_rub, get_cost_output_rub
+from app.admin.settings import get_all_settings_with_defaults, set_setting, get_cost_input_rub, get_cost_output_rub
 from app.core.constants import (
     REGISTRATION_OPEN_KEY,
     AI_COST_PER_1M_INPUT_RUB_KEY,
@@ -288,7 +288,7 @@ async def get_settings(
     db: AsyncSession = Depends(get_db),
     admin: User = Depends(get_current_admin_user),
 ) -> Any:
-    settings = await get_all_settings(db)
+    settings = await get_all_settings_with_defaults(db)
     masked = []
     for s in settings:
         if s.key == SMTP_PASSWORD_KEY and s.value:
@@ -324,7 +324,7 @@ async def update_settings(
     if body.frontend_url is not None:
         await set_setting(db, FRONTEND_URL_KEY, body.frontend_url)
     await db.commit()
-    settings = await get_all_settings(db)
+    settings = await get_all_settings_with_defaults(db)
     masked = []
     for s in settings:
         if s.key == SMTP_PASSWORD_KEY and s.value:
