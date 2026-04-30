@@ -408,14 +408,14 @@ export default function Landing() {
 
   const COMPARISON = [
     { feature: 'Натальные карты', free: '1', premium: '∞' },
-    { feature: 'ИИ-астролог', free: '3 в месяц', premium: '∞' },
+    { feature: 'ИИ-интерпретация', free: '3 в месяц', premium: '∞' },
     { feature: 'Транзиты', free: 'Сегодня', premium: 'Любая дата + таймлайн' },
-    { feature: 'Синастрия и отношения', free: '—', premium: '✓' },
+    { feature: 'Синастрия, композит, давидсон', free: '—', premium: '✓' },
     { feature: 'Соляр, лунар, возвраты', free: '—', premium: '✓' },
     { feature: 'Профекции, дирекции, прогрессии', free: '—', premium: '✓' },
     { feature: 'Хорар и электив', free: '—', premium: '✓' },
-    { feature: 'Ректификация', free: '—', premium: '✓' },
-    { feature: 'Звёздный двойник', free: '—', premium: '✓' },
+    { feature: 'Ректификация времени рождения', free: '—', premium: '✓' },
+    { feature: 'Отчёт совместимости', free: '—', premium: '✓' },
     { feature: 'Плэннер и PDF-отчёты', free: '—', premium: '✓' },
   ]
 
@@ -847,6 +847,24 @@ export default function Landing() {
                     </div>
                   </div>
                 ))}
+              </div>
+
+              <div className="mt-6 luxury-card p-5 text-center relative overflow-hidden"
+                style={{ borderColor: 'rgba(139,92,246,0.2)', background: 'linear-gradient(135deg, rgba(139,92,246,0.06) 0%, rgba(16,11,30,0.95) 50%, rgba(139,92,246,0.04) 100%)' }}>
+                <div className="absolute inset-0 pointer-events-none opacity-20">
+                  <div className="absolute -top-6 -right-6 w-28 h-28 rounded-full"
+                    style={{ background: 'radial-gradient(circle, rgba(139,92,246,0.25) 0%, transparent 70%)' }} />
+                </div>
+                <div className="relative">
+                  <div className="flex items-center justify-center gap-2 mb-2.5">
+                    <Zap className="w-4 h-4 text-[#A78BFA]" />
+                    <span className="text-sm font-semibold text-[#C4B5FD]">API для разработчиков</span>
+                    <span className="text-[9px] px-2 py-0.5 rounded-md bg-[rgba(139,92,246,0.15)] text-[#A78BFA] border border-[rgba(139,92,246,0.2)] font-medium">Скоро</span>
+                  </div>
+                  <p className="text-xs text-[#8B7FA8] max-w-sm mx-auto leading-relaxed">
+                    REST API — натальные карты, транзиты, синастрия, соляры и другие техники. API-ключи, rate limiting, документация.
+                  </p>
+                </div>
               </div>
             </section>
 
