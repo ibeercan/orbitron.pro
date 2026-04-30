@@ -412,14 +412,11 @@ function SubscribersTab() {
               </div>
               <div className="flex-1 min-w-0">
                 <span className="text-sm text-[#F0EAD6] truncate block">{s.email}</span>
-                <div className="flex items-center gap-2">
-                  {s.source && <span className="text-[10px] text-[#4A3F6A]">{s.source}</span>}
-                  {s.is_registered && <span className="text-[10px] text-[#34D399] bg-[rgba(52,211,153,0.08)] px-1.5 py-0.5 rounded border border-[rgba(52,211,153,0.15)]">Зарегистрирован</span>}
-                </div>
+                {s.source && <span className="text-[10px] text-[#4A3F6A]">{s.source}</span>}
               </div>
               <span className="text-[9px] text-[#4A3F6A] shrink-0">{new Date(s.created_at).toLocaleDateString('ru')}</span>
               {s.is_registered ? (
-                <span className="text-[10px] px-3 py-1.5 rounded-lg bg-[rgba(107,114,128,0.08)] text-[#6B7280] border border-[rgba(107,114,128,0.1)] shrink-0">Уже в системе</span>
+                <span className="text-[10px] px-3 py-1.5 rounded-lg bg-[rgba(52,211,153,0.08)] text-[#34D399] border border-[rgba(52,211,153,0.15)] shrink-0">Зарегистрирован</span>
               ) : (
                 <button onClick={() => invite(s.id)} disabled={inviting === s.id}
                   className="text-[10px] px-3 py-1.5 rounded-lg bg-[rgba(16,185,129,0.08)] text-[#34D399] hover:bg-[rgba(16,185,129,0.15)] transition-all border border-[rgba(16,185,129,0.1)] shrink-0">
