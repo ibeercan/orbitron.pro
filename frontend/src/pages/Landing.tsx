@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/auth-context'
 import { cn } from '@/lib/utils'
 import {
   ArrowRight, Sparkles, Heart, Compass, Users, Loader2, ChevronLeft,
-  Sun, Zap, RotateCcw, BookOpen, MessageCircle, Crown, Check, X, Mail, Circle, Diamond, Star, Share2, CalendarDays, Trophy, Shield, TrendingUp,
+  Sun, Zap, RotateCcw, BookOpen, MessageCircle, Crown, Check, X, Mail, Circle, Diamond, Star, Share2, CalendarDays, Trophy, Shield, TrendingUp, Hexagon, Moon, Eye, Clock, ArrowUpRight, FlipHorizontal,
 } from 'lucide-react'
 
 function parseApiError(error: unknown, fallback: string): string {
@@ -850,7 +850,7 @@ export default function Landing() {
               </div>
             </section>
 
-            {/* ── Roadmap ── */}
+{/* ── Roadmap ── */}
             <section className="w-full max-w-2xl mt-20 animate-in animate-in-delay-5">
               <h2 className="font-serif text-2xl sm:text-3xl font-semibold text-center text-[#F0EAD6] mb-2">
                 Дорожная карта
@@ -860,24 +860,23 @@ export default function Landing() {
               </p>
 
               <div className="relative">
-                {/* Vertical timeline line */}
                 <div className="absolute left-5 top-8 bottom-8 w-px border-l border-dashed border-[rgba(212,175,55,0.15)]" />
 
-                <div className="space-y-6">
-                  {/* Phase 1: Available */}
+                <div className="space-y-4">
+                  {/* Phase 1 */}
                   <div className="relative flex gap-5">
                     <div className="flex flex-col items-center shrink-0 pt-1">
                       <div className="w-10 h-10 rounded-xl bg-[rgba(52,211,153,0.1)] border border-[rgba(52,211,153,0.2)] flex items-center justify-center z-10">
                         <Check className="w-4.5 h-4.5 text-[#34D399]" style={{ width: 18, height: 18 }} />
                       </div>
                     </div>
-                    <div className="flex-1 luxury-card p-5">
-                      <div className="flex items-center gap-2.5 mb-3">
+                    <div className="flex-1 luxury-card p-4 sm:p-5">
+                      <div className="flex items-center gap-2.5 mb-2.5">
                         <span className="text-[9px] px-2 py-1 rounded-md bg-[rgba(52,211,153,0.1)] text-[#34D399] border border-[rgba(52,211,153,0.2)] font-medium">Доступно</span>
                         <span className="text-xs text-[#8B7FA8]">Бета 2026</span>
                       </div>
-                      <h3 className="font-serif text-lg font-semibold text-[#F0EAD6] mb-3">Основа астрологии</h3>
-                      <div className="space-y-2">
+                      <h3 className="font-serif text-lg font-semibold text-[#F0EAD6] mb-2.5">Основа астрологии</h3>
+                      <div className="space-y-1.5">
                         {[
                           { icon: Star, text: 'Натальные карты + ИИ-интерпретация' },
                           { icon: Zap, text: 'Транзиты текущего момента' },
@@ -895,20 +894,20 @@ export default function Landing() {
                     </div>
                   </div>
 
-                  {/* Phase 2: Premium */}
+                  {/* Phase 2 */}
                   <div className="relative flex gap-5">
                     <div className="flex flex-col items-center shrink-0 pt-1">
                       <div className="w-10 h-10 rounded-xl bg-[rgba(212,175,55,0.1)] border border-[rgba(212,175,55,0.2)] flex items-center justify-center z-10">
                         <Diamond className="w-4.5 h-4.5 text-[#D4AF37]" style={{ width: 18, height: 18 }} />
                       </div>
                     </div>
-                    <div className="flex-1 luxury-card p-5">
-                      <div className="flex items-center gap-2.5 mb-3">
+                    <div className="flex-1 luxury-card p-4 sm:p-5">
+                      <div className="flex items-center gap-2.5 mb-2.5">
                         <span className="text-[9px] px-2 py-1 rounded-md bg-[rgba(212,175,55,0.1)] text-[#D4AF37] border border-[rgba(212,175,55,0.2)] font-medium">Premium</span>
                         <span className="text-xs text-[#8B7FA8]">Скоро</span>
                       </div>
-                      <h3 className="font-serif text-lg font-semibold text-[#F0EAD6] mb-3">Полный инструментарий</h3>
-                      <div className="space-y-2">
+                      <h3 className="font-serif text-lg font-semibold text-[#F0EAD6] mb-2.5">Полный инструментарий</h3>
+                      <div className="space-y-1.5">
                         {[
                           { icon: Heart, text: 'Синастрия, Композит и Давидсон' },
                           { icon: Sun, text: 'Соляр, Лунар, Планетарные возвраты' },
@@ -928,34 +927,118 @@ export default function Landing() {
                     </div>
                   </div>
 
-                  {/* Phase 3: In development */}
+                  {/* Phase 3 */}
                   <div className="relative flex gap-5">
                     <div className="flex flex-col items-center shrink-0 pt-1">
-                      <div className="w-10 h-10 rounded-xl bg-[rgba(139,127,168,0.08)] border border-[rgba(139,127,168,0.15)] flex items-center justify-center z-10">
-                        <Circle className="w-4.5 h-4.5 text-[#8B7FA8]" style={{ width: 18, height: 18 }} />
+                      <div className="w-10 h-10 rounded-xl bg-[rgba(45,212,191,0.08)] border border-[rgba(45,212,191,0.18)] flex items-center justify-center z-10">
+                        <Circle className="w-4.5 h-4.5 text-[#2DD4BF]" style={{ width: 18, height: 18 }} />
                       </div>
                     </div>
-                    <div className="flex-1 luxury-card p-5">
-                      <div className="flex items-center gap-2.5 mb-3">
-                        <span className="text-[9px] px-2 py-1 rounded-md bg-[rgba(139,127,168,0.08)] text-[#8B7FA8] border border-[rgba(139,127,168,0.15)] font-medium">План</span>
-                        <span className="text-xs text-[#4A3F6A]">В разработке</span>
+                    <div className="flex-1 luxury-card p-4 sm:p-5">
+                      <div className="flex items-center gap-2.5 mb-2.5">
+                        <span className="text-[9px] px-2 py-1 rounded-md bg-[rgba(45,212,191,0.08)] text-[#2DD4BF] border border-[rgba(45,212,191,0.18)] font-medium">План</span>
                       </div>
-                      <h3 className="font-serif text-lg font-semibold text-[#F0EAD6] mb-3">Следующий уровень</h3>
-                      <div className="space-y-2">
+                      <h3 className="font-serif text-lg font-semibold text-[#F0EAD6] mb-2.5">Глубина анализа</h3>
+                      <div className="space-y-1.5">
                         {[
-{ icon: Heart, text: 'Автоматический отчёт совместимости — развёрнутый ИИ-анализ пары' },
-                        { icon: CalendarDays, text: 'Астрологический дневник — персональный прогноз на каждый день' },
-                        { icon: Share2, text: 'Шаринг карт — красивые карточки для соцсетей' },
-                        { icon: Zap, text: 'Кармический индекс — визуализация напряжённости периода' },
-                        { icon: Trophy, text: 'Система достижений и наград — стрики, бейджи, бонусы' },
-                        { icon: Shield, text: 'Достоинства планет + Арабские части — глубина анализа' },
-                        { icon: TrendingUp, text: 'Зодиакальное высвобождение — таймлайн жизни' },
+                          { icon: Shield, text: 'Достоинства планет + Арабские части' },
+                          { icon: Hexagon, text: 'Паттерны аспектов — Yod, Большой трин, Тау-квадрат' },
+                          { icon: TrendingUp, text: 'Зодиакальное высвобождение — таймлайн жизни' },
                         ].map(item => (
                           <div key={item.text} className="flex items-center gap-2.5">
-                            <div className="w-4 h-4 rounded-full bg-[rgba(139,127,168,0.06)] flex items-center justify-center shrink-0">
-                              <item.icon className="w-2.5 h-2.5 text-[#6B5F8A]" />
+                            <div className="w-4 h-4 rounded-full bg-[rgba(45,212,191,0.08)] flex items-center justify-center shrink-0">
+                              <item.icon className="w-2.5 h-2.5 text-[#2DD4BF]" />
                             </div>
-                            <span className="text-sm text-[#6B5F8A]">{item.text}</span>
+                            <span className="text-sm text-[#8FBFBA]">{item.text}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Phase 4 */}
+                  <div className="relative flex gap-5">
+                    <div className="flex flex-col items-center shrink-0 pt-1">
+                      <div className="w-10 h-10 rounded-xl bg-[rgba(244,114,182,0.08)] border border-[rgba(244,114,182,0.18)] flex items-center justify-center z-10">
+                        <Circle className="w-4.5 h-4.5 text-[#F472B6]" style={{ width: 18, height: 18 }} />
+                      </div>
+                    </div>
+                    <div className="flex-1 luxury-card p-4 sm:p-5">
+                      <div className="flex items-center gap-2.5 mb-2.5">
+                        <span className="text-[9px] px-2 py-1 rounded-md bg-[rgba(244,114,182,0.08)] text-[#F472B6] border border-[rgba(244,114,182,0.18)] font-medium">План</span>
+                      </div>
+                      <h3 className="font-serif text-lg font-semibold text-[#F0EAD6] mb-2.5">Вовлечённость</h3>
+                      <div className="space-y-1.5">
+                        {[
+                          { icon: Heart, text: 'Отчёт совместимости — развёрнутый ИИ-анализ пары' },
+                          { icon: Users, text: 'Синастрия с знаменитостями — «Ваша совместимость с…»' },
+                          { icon: Share2, text: 'Шаринг карт — красивые карточки для соцсетей' },
+                          { icon: Trophy, text: 'Система наград — стрики, бейджи, бонусы' },
+                        ].map(item => (
+                          <div key={item.text} className="flex items-center gap-2.5">
+                            <div className="w-4 h-4 rounded-full bg-[rgba(244,114,182,0.08)] flex items-center justify-center shrink-0">
+                              <item.icon className="w-2.5 h-2.5 text-[#F472B6]" />
+                            </div>
+                            <span className="text-sm text-[#C09AAD]">{item.text}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Phase 5 */}
+                  <div className="relative flex gap-5">
+                    <div className="flex flex-col items-center shrink-0 pt-1">
+                      <div className="w-10 h-10 rounded-xl bg-[rgba(167,139,250,0.08)] border border-[rgba(167,139,250,0.18)] flex items-center justify-center z-10">
+                        <Circle className="w-4.5 h-4.5 text-[#A78BFA]" style={{ width: 18, height: 18 }} />
+                      </div>
+                    </div>
+                    <div className="flex-1 luxury-card p-4 sm:p-5">
+                      <div className="flex items-center gap-2.5 mb-2.5">
+                        <span className="text-[9px] px-2 py-1 rounded-md bg-[rgba(167,139,250,0.08)] text-[#A78BFA] border border-[rgba(167,139,250,0.18)] font-medium">План</span>
+                      </div>
+                      <h3 className="font-serif text-lg font-semibold text-[#F0EAD6] mb-2.5">На каждый день</h3>
+                      <div className="space-y-1.5">
+                        {[
+                          { icon: CalendarDays, text: 'Астрологический дневник — персональный прогноз' },
+                          { icon: Zap, text: 'Кармический индекс — напряжённость периода' },
+                          { icon: Eye, text: 'Персонализированные затмения' },
+                          { icon: Moon, text: 'Луна без курса — предупреждения о неблагоприятных периодах' },
+                        ].map(item => (
+                          <div key={item.text} className="flex items-center gap-2.5">
+                            <div className="w-4 h-4 rounded-full bg-[rgba(167,139,250,0.08)] flex items-center justify-center shrink-0">
+                              <item.icon className="w-2.5 h-2.5 text-[#A78BFA]" />
+                            </div>
+                            <span className="text-sm text-[#A59CBC]">{item.text}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Phase 6 */}
+                  <div className="relative flex gap-5">
+                    <div className="flex flex-col items-center shrink-0 pt-1">
+                      <div className="w-10 h-10 rounded-xl bg-[rgba(107,114,128,0.06)] border border-[rgba(107,114,128,0.15)] flex items-center justify-center z-10">
+                        <Circle className="w-4.5 h-4.5 text-[#6B7280]" style={{ width: 18, height: 18 }} />
+                      </div>
+                    </div>
+                    <div className="flex-1 luxury-card p-4 sm:p-5">
+                      <div className="flex items-center gap-2.5 mb-2.5">
+                        <span className="text-[9px] px-2 py-1 rounded-md bg-[rgba(107,114,128,0.06)] text-[#6B7280] border border-[rgba(107,114,128,0.15)] font-medium">План</span>
+                      </div>
+                      <h3 className="font-serif text-lg font-semibold text-[#F0EAD6] mb-2.5">Инструменты профи</h3>
+                      <div className="space-y-1.5">
+                        {[
+                          { icon: Clock, text: 'Планетарные часы — благоприятные часы для действий' },
+                          { icon: ArrowUpRight, text: 'Out-of-Bounds планеты — выход за границы' },
+                          { icon: FlipHorizontal, text: 'Зеркальные точки — скрытые связи между планетами' },
+                        ].map(item => (
+                          <div key={item.text} className="flex items-center gap-2.5">
+                            <div className="w-4 h-4 rounded-full bg-[rgba(107,114,128,0.06)] flex items-center justify-center shrink-0">
+                              <item.icon className="w-2.5 h-2.5 text-[#6B7280]" />
+                            </div>
+                            <span className="text-sm text-[#6B7280]">{item.text}</span>
                           </div>
                         ))}
                       </div>
