@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /admin
+Disallow: /api
+Disallow: /reset-password
+
+Sitemap: https://orbitron.pro/sitemap.xml

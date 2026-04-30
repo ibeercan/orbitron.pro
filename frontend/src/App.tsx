@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { useEffect } from 'react'
 import { useAuth } from '@/contexts/auth-context'
 import Landing from '@/pages/Landing'
 import Dashboard from '@/pages/Dashboard'
@@ -6,6 +7,21 @@ import AdminPage from '@/pages/AdminPage'
 import VerifyEmail from '@/pages/VerifyEmail'
 import ResetPassword from '@/pages/ResetPassword'
 import { AdminRoute } from '@/components/auth/AdminRoute'
+
+declare global {
+  interface Window {
+    ym: (id: number, method: string, ...args: unknown[]) => void
+  }
+}
+
+function useMetrikaHit() {
+  const location = useLocation()
+  useEffect(() => {
+    if (typeof window.ym === 'function') {
+      window.ym(108994348, 'hit', location.pathname + location.search)
+    }
+  }, [location.pathname, location.search])
+}
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth()
@@ -49,6 +65,7 @@ function FallbackRedirect() {
 }
 
 export default function App() {
+  useMetrikaHit()
   return (
     <Routes>
       <Route path="/" element={<AuthRedirect />} />
