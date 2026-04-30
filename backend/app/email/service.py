@@ -89,6 +89,6 @@ async def send_invite_email(to: str, code: str, db: Optional[AsyncSession] = Non
         config = await get_smtp_config(db)
         frontend_url = config["frontend_url"]
 
-    register_url = f"{frontend_url}/register?invite={code}"
+    register_url = f"{frontend_url}/?invite={code}"
     html = invite_email_html(code, register_url)
     await send_email(to=to, subject="Ваш инвайт-код — Orbitron", html_body=html, db=db)

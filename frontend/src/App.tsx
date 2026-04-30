@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@/contexts/auth-context'
 import Landing from '@/pages/Landing'
 import Dashboard from '@/pages/Dashboard'
@@ -42,6 +42,11 @@ function AuthRedirect() {
   return <Landing />
 }
 
+function FallbackRedirect() {
+  const location = useLocation()
+  return <Navigate to={{ pathname: '/', search: location.search }} replace />
+}
+
 export default function App() {
   return (
     <Routes>
@@ -63,7 +68,7 @@ export default function App() {
         }
       />
       <Route path="/verify-email" element={<VerifyEmail />} />
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<FallbackRedirect />} />
     </Routes>
   )
 }
