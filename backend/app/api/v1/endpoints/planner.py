@@ -40,12 +40,12 @@ async def planner_generate(
     if not native_data or "datetime" not in native_data or "location" not in native_data:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Chart has no birth data")
 
-    tz_str = ""
-    if isinstance(native_data.get("timezone"), str):
+    tz_str = "UTC"
+    if isinstance(native_data.get("timezone"), str) and native_data["timezone"]:
         tz_str = native_data["timezone"]
     elif chart.result_data and isinstance(chart.result_data, dict):
         tz_info = chart.result_data.get("timezone")
-        if isinstance(tz_info, str):
+        if isinstance(tz_info, str) and tz_info:
             tz_str = tz_info
 
     request_data = {

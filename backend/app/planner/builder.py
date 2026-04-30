@@ -19,7 +19,7 @@ def run_planner_generation(request_data: dict, progress_callback: Callable[[int]
     year = request_data["year"]
     page_size = request_data.get("page_size", "a4")
     week_starts_on = request_data.get("week_starts_on", "monday")
-    timezone_str = request_data.get("timezone", "UTC")
+    timezone_str = request_data.get("timezone") or "UTC"
 
     date_range_start = request_data.get("date_range_start")
     date_range_end = request_data.get("date_range_end")

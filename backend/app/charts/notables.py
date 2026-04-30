@@ -1,6 +1,7 @@
 """Notable people & events — Star Twins, Historical Parallels."""
 
 import asyncio
+from dataclasses import replace
 from typing import Any
 
 from stellium import (
@@ -170,7 +171,7 @@ def _get_planet_sign(chart: CalculatedChart, planet_name: str) -> str | None:
 
 def _fix_timezone_field(notable: Notable) -> None:
     if notable.location and notable.location.timezone in TZ_FIXES:
-        notable.location.timezone = TZ_FIXES[notable.location.timezone]
+        notable.location = replace(notable.location, timezone=TZ_FIXES[notable.location.timezone])
 
 
 def _build_all_notable_charts() -> None:
@@ -181,6 +182,7 @@ def _build_all_notable_charts() -> None:
     reg = get_notable_registry()
 
     for n in reg.get_births():
+        _fix_timezone_field(n)
         try:
             chart = (
                 ChartBuilder.from_native(n)
@@ -402,9 +404,10 @@ async def bg_compute_and_persist(
             await db.commit()
             logger.info("Insight computation done", insight_id=insight_id, insight_type=insight_type)
         except Exception as e:
+            error_msg = str(e) or type(e).__name__
             try:
-                await insight_crud.mark_error(db, id=insight_id, error_message=str(e))
+                await insight_crud.mark_error(db, id=insight_id, error_message=error_msg)
                 await db.commit()
             except Exception:
                 await db.rollback()
-            logger.error("Insight computation failed", insight_id=insight_id, insight_type=insight_type, error=str(e))
+            logger.error("Insight computation failed", insight_id=insight_id, insight_type=insight_type, error=error_msg)

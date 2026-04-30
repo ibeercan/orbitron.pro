@@ -32,9 +32,10 @@ async def bg_electional_and_persist(cache_id: int, request_data: dict) -> None:
             await db.commit()
             logger.info("Electional search done", cache_id=cache_id)
         except Exception as e:
+            error_msg = str(e) or type(e).__name__
             try:
-                await el_crud.mark_error(db, id=cache_id, error_message=str(e))
+                await el_crud.mark_error(db, id=cache_id, error_message=error_msg)
                 await db.commit()
             except Exception:
                 await db.rollback()
-            logger.error("Electional search failed", cache_id=cache_id, error=str(e))
+            logger.error("Electional search failed", cache_id=cache_id, error=error_msg)

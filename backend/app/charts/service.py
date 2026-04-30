@@ -147,7 +147,7 @@ class ChartService:
         return {
             "name": name,
             "chart_type": "natal",
-            "native_data": {"datetime": datetime_str, "location": location},
+            "native_data": {"datetime": datetime_str, "location": location, "timezone": chart.location.timezone},
             "result_data": chart.to_dict(),
             "svg_data": svg_b64,
             "prompt_text": chart.to_prompt_text(),
@@ -176,7 +176,7 @@ class ChartService:
         return {
             "name": name,
             "chart_type": "horary",
-            "native_data": {"datetime": datetime_str, "location": location, "question": question},
+            "native_data": {"datetime": datetime_str, "location": location, "question": question, "timezone": chart.location.timezone},
             "result_data": chart.to_dict(),
             "svg_data": svg_b64,
             "prompt_text": prompt_text,
@@ -245,6 +245,7 @@ class ChartService:
             "native_data": {
                 "datetime": dt1,
                 "location": loc1,
+                "timezone": natal_chart_data.get("timezone") or "UTC",
                 "person1": {"datetime": dt1, "location": loc1, "name": person1_name},
                 "person2": {"datetime": person2_datetime, "location": person2_location, "name": person2_name},
             },
@@ -307,6 +308,7 @@ class ChartService:
             "native_data": {
                 "datetime": dt_str,
                 "location": loc,
+                "timezone": natal_chart_data.get("timezone") or "UTC",
                 "transit_datetime": transit_datetime,
             },
             "result_data": transits.to_dict(),
@@ -377,6 +379,7 @@ class ChartService:
             "native_data": {
                 "datetime": dt_str,
                 "location": loc,
+                "timezone": natal_chart_data.get("timezone") or "UTC",
                 "year": year,
                 "location_override": location_override,
             },
@@ -416,6 +419,7 @@ class ChartService:
             "native_data": {
                 "datetime": dt_str,
                 "location": loc,
+                "timezone": natal_chart_data.get("timezone") or "UTC",
                 "near_date": near_date,
             },
             "result_data": lr.to_dict(),
@@ -467,6 +471,7 @@ class ChartService:
             "native_data": {
                 "datetime": dt_str,
                 "location": loc,
+                "timezone": natal_chart_data.get("timezone") or "UTC",
                 "planet": planet,
                 "near_date": near_date,
             },
@@ -550,6 +555,7 @@ class ChartService:
             "native_data": {
                 "datetime": dt_str,
                 "location": loc,
+                "timezone": natal_chart_data.get("timezone") or "UTC",
                 "target_date": target_date,
                 "age": age,
                 "rulership": rulership,
@@ -633,6 +639,7 @@ class ChartService:
             "native_data": {
                 "datetime": dt_str,
                 "location": loc,
+                "timezone": natal_chart_data.get("timezone") or "UTC",
                 "target_date": target_date,
                 "age": age,
             },
@@ -715,6 +722,7 @@ class ChartService:
             "native_data": {
                 "datetime": dt_str,
                 "location": loc,
+                "timezone": natal_chart_data.get("timezone") or "UTC",
                 "target_date": target_date,
                 "age": age,
             },
@@ -778,6 +786,7 @@ class ChartService:
             "native_data": {
                 "datetime": dt_str,
                 "location": loc,
+                "timezone": natal_chart_data.get("timezone") or "UTC",
                 "person1": {"datetime": dt_str, "location": loc, "name": person1_name},
                 "person2": {"datetime": person2_datetime, "location": person2_location, "name": person2_name},
                 "synthesis_type": synthesis_type,

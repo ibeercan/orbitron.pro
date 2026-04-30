@@ -31,9 +31,10 @@ async def bg_rectify_and_persist(cache_id: int, request: RectificationRequest) -
             await db.commit()
             logger.info("Rectification done", cache_id=cache_id)
         except Exception as e:
+            error_msg = str(e) or type(e).__name__
             try:
-                await rect_crud.mark_error(db, id=cache_id, error_message=str(e))
+                await rect_crud.mark_error(db, id=cache_id, error_message=error_msg)
                 await db.commit()
             except Exception:
                 await db.rollback()
-            logger.error("Rectification failed", cache_id=cache_id, error=str(e))
+            logger.error("Rectification failed", cache_id=cache_id, error=error_msg)
