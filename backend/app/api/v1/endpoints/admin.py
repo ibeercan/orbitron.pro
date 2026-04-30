@@ -266,7 +266,6 @@ async def list_audit_logs(
         result = await db.execute(
             select(UserModel.id, UserModel.email).where(
                 UserModel.id.in_(user_ids),
-                UserModel.deleted_at.is_(None),
             )
         )
         user_emails = {row[0]: row[1] for row in result.all()}
