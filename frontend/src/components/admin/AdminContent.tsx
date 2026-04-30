@@ -564,7 +564,11 @@ function AuditTab() {
             <div key={l.id} className="px-4 py-3 rounded-xl hover:bg-[rgba(139,92,246,0.03)] transition-colors">
               <div className="flex items-center gap-2">
                 <span className="text-[9px] px-1.5 py-0.5 rounded font-medium" style={{ color: ACTION_COLORS[l.action] || '#8B7FA8', background: `${ACTION_COLORS[l.action] || '#8B7FA8'}15` }}>{ACTION_LABELS[l.action] || l.action}</span>
-                <span className="text-sm text-[#F0EAD6]">{ENTITY_LABELS[l.entity_type] || l.entity_type} {l.entity_display || `#${l.entity_id}`}</span>
+                <span className="text-sm text-[#F0EAD6]">
+                  {l.entity_type === 'user' && l.entity_display
+                    ? l.entity_display
+                    : `${ENTITY_LABELS[l.entity_type] || l.entity_type} #${l.entity_id}`}
+                </span>
                 <span className="text-[9px] text-[#4A3F6A] ml-auto">{new Date(l.created_at).toLocaleString('ru')}</span>
               </div>
               {describeChange(l) && (
