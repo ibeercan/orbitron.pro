@@ -7,7 +7,7 @@ import tempfile
 from datetime import datetime as dt, timezone
 from typing import Dict, Any
 
-from stellium import ChartBuilder, MultiChartBuilder, ReportBuilder, SynthesisBuilder
+from stellium import ChartBuilder, MultiChartBuilder, Native, ReportBuilder, SynthesisBuilder
 from stellium.engines import PlacidusHouses, WholeSignHouses, RegiomontanusHouses
 
 from app.core.logging import logger
@@ -84,7 +84,7 @@ def _make_svg_transparent(svg_bytes: bytes) -> bytes:
 
 
 def _render_svg(chart_or_multi, theme: str = "midnight", zodiac_palette: str = "auto",
-                size: int = 900, preset: str = "preset_minimal") -> bytes:
+                 size: int = 900, preset: str = "preset_minimal", show_header: bool = False) -> bytes:
     palette = _resolve_palette(theme, zodiac_palette)
     tmp = tempfile.NamedTemporaryFile(suffix=".svg", delete=False)
     tmp_path = tmp.name
@@ -96,6 +96,10 @@ def _render_svg(chart_or_multi, theme: str = "midnight", zodiac_palette: str = "
             .with_theme(theme)
             .with_zodiac_palette(palette)
         )
+        if show_header:
+            drawer = drawer.with_header()
+        else:
+            drawer = drawer.without_header()
         if preset == "preset_minimal":
             drawer = drawer.preset_minimal()
         elif preset == "preset_standard":
@@ -119,10 +123,13 @@ def _svg_to_b64(svg_bytes: bytes) -> str:
     return base64.b64encode(svg_bytes).decode("utf-8")
 
 
-def _build_natal(datetime_str: str, location: str, house_system: str = "placidus"):
+def _build_natal(datetime_str: str, location: str, house_system: str = "placidus", name: str | None = None):
     engine_cls = HOUSE_ENGINES.get(house_system, PlacidusHouses)
+    builder = ChartBuilder.from_details(datetime_str, location)
+    if name:
+        builder = builder.with_name(name)
     return (
-        ChartBuilder.from_details(datetime_str, location)
+        builder
         .with_house_systems([engine_cls()])
         .with_aspects()
         .calculate()
@@ -141,8 +148,8 @@ class ChartService:
         name: str | None = None,
     ) -> Dict[str, Any]:
         logger.info("Creating natal chart", datetime=datetime_str, location=location, theme=theme)
-        chart = _build_natal(datetime_str, location, house_system)
-        svg_bytes = _render_svg(chart, theme, zodiac_palette)
+        chart = _build_natal(datetime_str, location, house_system, name=name)
+        svg_bytes = _render_svg(chart, theme, zodiac_palette, show_header=True)
         svg_b64 = _svg_to_b64(svg_bytes)
         return {
             "name": name,
@@ -165,8 +172,8 @@ class ChartService:
         name: str | None = None,
     ) -> Dict[str, Any]:
         logger.info("Creating horary chart", datetime=datetime_str, location=location, question=question[:80])
-        chart = _build_natal(datetime_str, location, house_system)
-        svg_bytes = _render_svg(chart, theme, zodiac_palette)
+        chart = _build_natal(datetime_str, location, house_system, name=name or question[:80])
+        svg_bytes = _render_svg(chart, theme, zodiac_palette, show_header=bool(name))
         svg_b64 = _svg_to_b64(svg_bytes)
 
         prompt_text = chart.to_prompt_text()
