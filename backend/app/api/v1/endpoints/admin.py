@@ -317,7 +317,7 @@ async def update_settings(
         await set_setting(db, SMTP_PORT_KEY, str(body.smtp_port))
     if body.smtp_user is not None:
         await set_setting(db, SMTP_USER_KEY, body.smtp_user)
-    if body.smtp_password is not None:
+    if body.smtp_password is not None and not body.smtp_password.startswith("****"):
         await set_setting(db, SMTP_PASSWORD_KEY, body.smtp_password)
     if body.smtp_from is not None:
         await set_setting(db, SMTP_FROM_KEY, body.smtp_from)
