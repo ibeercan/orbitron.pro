@@ -47,6 +47,8 @@ class User(Base, TimestampMixin, SoftDeleteMixin, AuditMixin):
     email_verified: Mapped[bool] = mapped_column(default=False)
     verification_token: Mapped[str | None] = mapped_column(String(255), default=None, index=True)
     verification_token_expires: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
+    reset_password_token: Mapped[str | None] = mapped_column(String(255), default=None, index=True)
+    reset_password_token_expires: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
 
     subscriptions = relationship(
         "Subscription",

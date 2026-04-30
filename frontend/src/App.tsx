@@ -4,6 +4,7 @@ import Landing from '@/pages/Landing'
 import Dashboard from '@/pages/Dashboard'
 import AdminPage from '@/pages/AdminPage'
 import VerifyEmail from '@/pages/VerifyEmail'
+import ResetPassword from '@/pages/ResetPassword'
 import { AdminRoute } from '@/components/auth/AdminRoute'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -68,6 +69,7 @@ export default function App() {
         }
       />
       <Route path="/verify-email" element={<VerifyEmail />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="*" element={<FallbackRedirect />} />
     </Routes>
   )

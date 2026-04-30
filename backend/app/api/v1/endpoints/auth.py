@@ -16,13 +16,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_db
 from app.core.config import settings
 from app.core.constants import COOKIE_NAME, REFRESH_COOKIE_NAME, REGISTRATION_OPEN_KEY
-from app.core.security import create_access_token, create_refresh_token, decode_token
+from app.core.security import create_access_token, create_refresh_token, decode_token, get_password_hash
 from app.auth.schemas import (
     LoginResponse,
     UserCreate,
     User,
     RegisterResponse,
     ResendVerificationRequest,
+    ForgotPasswordRequest,
+    ResetPasswordRequest,
+    ChangePasswordRequest,
 )
 from app.auth.crud import user as user_crud
 from app.auth.deps import get_current_active_user
@@ -30,7 +33,7 @@ from app.admin.settings import is_registration_open
 from app.models.refresh_token import RefreshToken
 from app.models.user import User as UserModel
 from app.subscriptions.crud import early_subscriber as early_subscriber_crud
-from app.email.service import send_verification_email
+from app.email.service import send_verification_email, send_reset_password_email
 from slowapi import Limiter
 
 from app.middleware.proxy_headers import get_real_ip
@@ -387,3 +390,122 @@ async def logout(
 
     _clear_cookies(response)
     return {"message": "Logged out successfully"}
+
+
+@router.post("/forgot-password")
+@limiter.limit("3/minute")
+async def forgot_password(
+    request: Request,
+    *,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    body: ForgotPasswordRequest,
+) -> dict:
+    """Send password reset email. Always returns success to avoid leaking user existence."""
+    user = await user_crud.get_by_email(db, email=body.email)
+    if not user or not user_crud.is_active(user):
+        return {"message": "Если аккаунт существует, мы отправили письмо на этот email"}
+
+    if not user.email_verified:
+        return {"message": "Если аккаунт существует, мы отправили письмо на этот email"}
+
+    token = str(uuid.uuid4())
+    user.reset_password_token = token
+    user.reset_password_token_expires = datetime.now(timezone.utc) + timedelta(hours=1)
+    await db.commit()
+
+    try:
+        await send_reset_password_email(user.email, token, db=db)
+    except Exception:
+        logger.exception("Failed to send reset password email to %s", user.email)
+
+    return {"message": "Если аккаунт существует, мы отправили письмо на этот email"}
+
+
+@router.post("/reset-password", response_model=LoginResponse)
+@limiter.limit("5/minute")
+async def reset_password(
+    request: Request,
+    *,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    response: Response,
+    body: ResetPasswordRequest,
+) -> LoginResponse:
+    """Reset password using token from email. Auto-logs in user after reset."""
+    result = await db.execute(
+        select(UserModel).where(
+            UserModel.reset_password_token == body.token,
+            UserModel.deleted_at.is_(None),
+        )
+    )
+    user = result.scalars().first()
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Недействительная или устаревшая ссылка сброса пароля",
+        )
+
+    if not user.reset_password_token_expires or user.reset_password_token_expires < datetime.now(timezone.utc):
+        user.reset_password_token = None
+        user.reset_password_token_expires = None
+        await db.commit()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Ссылка сброса пароля устарела. Запросите новую.",
+        )
+
+    user.hashed_password = get_password_hash(body.new_password)
+    user.reset_password_token = None
+    user.reset_password_token_expires = None
+
+    revoke_result = await db.execute(
+        select(RefreshToken).where(
+            RefreshToken.user_id == user.id,
+            RefreshToken.revoked_at.is_(None),
+        )
+    )
+    for rt in revoke_result.scalars().all():
+        rt.revoked_at = datetime.now(timezone.utc)
+
+    await db.commit()
+
+    login_result = await _create_tokens_and_cookies(user.email, response, db)
+    await db.commit()
+    return login_result
+
+
+@router.post("/change-password", response_model=LoginResponse)
+@limiter.limit("3/minute")
+async def change_password(
+    request: Request,
+    *,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    response: Response,
+    current_user: Annotated[User, Depends(get_current_active_user)],
+    body: ChangePasswordRequest,
+) -> LoginResponse:
+    """Change password for authenticated user. Revokes all other sessions."""
+    from app.core.security import verify_password
+
+    if not verify_password(body.current_password, current_user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Неверный текущий пароль",
+        )
+
+    current_user.hashed_password = get_password_hash(body.new_password)
+
+    revoke_result = await db.execute(
+        select(RefreshToken).where(
+            RefreshToken.user_id == current_user.id,
+            RefreshToken.revoked_at.is_(None),
+        )
+    )
+    for rt in revoke_result.scalars().all():
+        rt.revoked_at = datetime.now(timezone.utc)
+
+    await db.flush()
+
+    login_result = await _create_tokens_and_cookies(current_user.email, response, db)
+    await db.commit()
+    return login_result

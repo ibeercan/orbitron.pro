@@ -25,7 +25,7 @@ interface PasswordFormData {
   password: string
 }
 
-type Step = 'email' | 'login' | 'check' | 'register' | 'success' | 'verify_email'
+type Step = 'email' | 'login' | 'check' | 'register' | 'success' | 'verify_email' | 'forgot_password'
 
 function OrbitronLogo({ size = 64 }: { size?: number }) {
   return (
@@ -121,6 +121,8 @@ export default function Landing() {
   const [messageType, setMessageType] = useState<'info' | 'error'>('info')
   const [isLoading, setIsLoading] = useState(false)
   const [resendStatus, setResendStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
+  const [forgotEmail, setForgotEmail] = useState('')
+  const [forgotStatus, setForgotStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
   const [isAlreadySubscribed, setIsAlreadySubscribed] = useState(false)
   const verifiedFromUrl = searchParams.get('verified') === 'true'
   const inviteFromUrl = searchParams.get('invite') || ''
@@ -384,6 +386,16 @@ export default function Landing() {
     }
   }, [email])
 
+  const onForgotPassword = useCallback(async () => {
+    setForgotStatus('sending')
+    try {
+      await authApi.forgotPassword(forgotEmail)
+      setForgotStatus('sent')
+    } catch {
+      setForgotStatus('error')
+    }
+  }, [forgotEmail])
+
   const formTitle = {
     email:        { title: 'Добро пожаловать',   subtitle: 'Войдите или зарегистрируйтесь' },
     login:        { title: 'С возвращением',      subtitle: 'Введите пароль от аккаунта' },
@@ -391,6 +403,7 @@ export default function Landing() {
     register:     { title: 'Создать аккаунт',     subtitle: isPremium ? 'Вы получите Premium навсегда' : 'Добро пожаловать в Orbitron' },
     success:      { title: 'Спасибо за подписку!',   subtitle: 'Вы получите Premium на 1 месяц при запуске Orbitron' },
     verify_email: { title: 'Проверьте почту',    subtitle: `Мы отправили письмо на ${email}` },
+    forgot_password: { title: 'Сброс пароля', subtitle: 'Введите email — мы отправим ссылку для сброса' },
   }[step]
 
   const COMPARISON = [
@@ -505,7 +518,7 @@ export default function Landing() {
                     </h2>
                     <p className="text-[#8B7FA8] text-sm mt-1">{formTitle.subtitle}</p>
                   </div>
-                  {(step === 'login' || step === 'register' || step === 'check') && (
+                  {(step === 'login' || step === 'register' || step === 'check' || step === 'forgot_password') && (
                     <button
                       onClick={goBack}
                       className="w-8 h-8 rounded-lg flex items-center justify-center text-[#8B7FA8] hover:text-[#D4AF37] hover:bg-[rgba(212,175,55,0.08)] transition-all"
@@ -523,7 +536,7 @@ export default function Landing() {
               </div>
 
               <div className="px-7 py-6">
-                {step !== 'email' && (
+                {step !== 'email' && step !== 'forgot_password' && (
                   <div className="mb-5 flex items-center gap-2 px-3.5 py-2.5 rounded-lg bg-[rgba(212,175,55,0.06)] border border-[rgba(212,175,55,0.15)]">
                     <div className="w-1.5 h-1.5 rounded-full bg-[#D4AF37] shrink-0" />
                     <span className="text-sm text-[#D4AF37] font-medium truncate">{email}</span>
@@ -620,10 +633,14 @@ export default function Landing() {
                        </div>
                      )}
 
-                     <button type="submit" disabled={isLoading} className="btn-gold h-11 w-full flex items-center justify-center gap-2">
-                       {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Войти'}
-                    </button>
-                  </form>
+<button type="submit" disabled={isLoading} className="btn-gold h-11 w-full flex items-center justify-center gap-2">
+                        {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Войти'}
+                     </button>
+                     <button type="button" onClick={() => { setForgotEmail(email); setForgotStatus('idle'); setStep('forgot_password') }}
+                       className="text-sm text-[#8B7FA8] hover:text-[#D4AF37] transition-colors text-center">
+                       Забыли пароль?
+                     </button>
+                   </form>
                 )}
 
                 {step === 'check' && (
@@ -646,6 +663,43 @@ export default function Landing() {
                       >
                         {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Получить ранний доступ'}
                       </button>
+                    )}
+                  </div>
+                )}
+
+                {step === 'forgot_password' && (
+                  <div className="flex flex-col gap-4">
+                    {forgotStatus === 'sent' ? (
+                      <div className="px-4 py-3 rounded-lg bg-[rgba(52,211,153,0.08)] border border-[rgba(52,211,153,0.2)] text-sm text-[#34D399]">
+                        Если аккаунт существует, мы отправили письмо на {forgotEmail}
+                      </div>
+                    ) : (
+                      <>
+                        <div>
+                          <label className="block text-xs font-medium text-[#8B7FA8] mb-1.5 uppercase tracking-wide">
+                            Email
+                          </label>
+                          <input
+                            type="email"
+                            placeholder="you@example.com"
+                            value={forgotEmail}
+                            onChange={e => setForgotEmail(e.target.value)}
+                            className="luxury-input w-full h-11 px-4"
+                          />
+                        </div>
+                        {forgotStatus === 'error' && (
+                          <div className="px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 text-sm text-red-400">
+                            Ошибка отправки. Попробуйте позже.
+                          </div>
+                        )}
+                        <button
+                          onClick={onForgotPassword}
+                          disabled={forgotStatus === 'sending' || !forgotEmail}
+                          className="btn-gold h-11 w-full flex items-center justify-center gap-2"
+                        >
+                          {forgotStatus === 'sending' ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Отправить ссылку'}
+                        </button>
+                      </>
                     )}
                   </div>
                 )}

@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/auth-context'
-import { personsApi, geocodingApi } from '@/lib/api/client'
+import { personsApi, geocodingApi, authApi } from '@/lib/api/client'
 import { NumberPicker } from '@/components/ui/number-picker'
 import { cn } from '@/lib/utils'
 import { useFixedDropdown } from '@/hooks/useFixedDropdown'
-import { X, Crown, Shield, Check, Users, Trash2, Plus, MapPin, Loader2 } from 'lucide-react'
+import { X, Crown, Shield, Check, Users, Trash2, Plus, MapPin, Loader2, Lock, ChevronDown } from 'lucide-react'
 
 interface ProfileSlideOverProps {
   isOpen: boolean
@@ -53,6 +53,12 @@ export function ProfileSlideOver({ isOpen, onClose }: ProfileSlideOverProps) {
   const [persons, setPersons] = useState<Person[]>([])
   const [personsLoading, setPersonsLoading] = useState(false)
   const [showAddPerson, setShowAddPerson] = useState(false)
+  const [showChangePassword, setShowChangePassword] = useState(false)
+  const [currentPassword, setCurrentPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmNewPassword, setConfirmNewPassword] = useState('')
+  const [passwordSaving, setPasswordSaving] = useState(false)
+  const [passwordMessage, setPasswordMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [personName, setPersonName] = useState('')
   const [personDay, setPersonDay] = useState(1)
   const [personMonth, setPersonMonth] = useState(1)
@@ -125,6 +131,40 @@ export function ProfileSlideOver({ isOpen, onClose }: ProfileSlideOverProps) {
     setPersonLocValue(shortName)
     setPersonSuggestions([])
     setPersonSuggestionsOpen(false)
+  }
+
+  const handleChangePassword = async () => {
+    setPasswordMessage(null)
+    if (!currentPassword || !newPassword || !confirmNewPassword) {
+      setPasswordMessage({ type: 'error', text: 'Заполните все поля' })
+      return
+    }
+    if (newPassword.length < 8) {
+      setPasswordMessage({ type: 'error', text: 'Минимум 8 символов' })
+      return
+    }
+    if (!/[A-Z]/.test(newPassword) || !/[a-z]/.test(newPassword) || !/\d/.test(newPassword)) {
+      setPasswordMessage({ type: 'error', text: 'Заглавная, строчная буква и цифра' })
+      return
+    }
+    if (newPassword !== confirmNewPassword) {
+      setPasswordMessage({ type: 'error', text: 'Пароли не совпадают' })
+      return
+    }
+    setPasswordSaving(true)
+    try {
+      await authApi.changePassword(currentPassword, newPassword)
+      setPasswordMessage({ type: 'success', text: 'Пароль изменён' })
+      setCurrentPassword('')
+      setNewPassword('')
+      setConfirmNewPassword('')
+      setTimeout(() => { setPasswordMessage(null); setShowChangePassword(false) }, 2000)
+    } catch (err: any) {
+      const detail = err?.response?.data?.detail
+      setPasswordMessage({ type: 'error', text: typeof detail === 'string' ? detail : 'Ошибка смены пароля' })
+    } finally {
+      setPasswordSaving(false)
+    }
   }
 
   const handleSavePerson = async () => {
@@ -275,6 +315,53 @@ export function ProfileSlideOver({ isOpen, onClose }: ProfileSlideOverProps) {
                   </span>
                 </div>
               </div>
+            </div>
+
+            {/* ── Change password ── */}
+            <div className="luxury-card p-5">
+              <button
+                onClick={() => { setShowChangePassword(v => !v); setPasswordMessage(null) }}
+                className="w-full flex items-center gap-3"
+              >
+                <div className="w-9 h-9 rounded-xl bg-[rgba(212,175,55,0.08)] border border-[rgba(212,175,55,0.15)] flex items-center justify-center">
+                  <Lock className="w-4 h-4 text-[#D4AF37]" />
+                </div>
+                <div className="flex-1 text-left">
+                  <h3 className="font-semibold text-[#F0EAD6] text-sm">Сменить пароль</h3>
+                  <p className="text-xs text-[#4A3F6A]">Изменить пароль аккаунта</p>
+                </div>
+                <ChevronDown className={cn('w-4 h-4 text-[#4A3F6A] transition-transform', showChangePassword && 'rotate-180')} />
+              </button>
+
+              {showChangePassword && (
+                <div className="mt-4 pt-4 border-t border-[rgba(212,175,55,0.08)] space-y-3">
+                  <div>
+                    <label className="block text-[10px] font-semibold text-[#8B7FA8] uppercase tracking-[0.12em] mb-1.5">Текущий пароль</label>
+                    <input type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} placeholder="••••••••" className="luxury-input w-full h-10 px-3.5 text-sm" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-semibold text-[#8B7FA8] uppercase tracking-[0.12em] mb-1.5">Новый пароль</label>
+                    <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="Минимум 8 символов" className="luxury-input w-full h-10 px-3.5 text-sm" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-semibold text-[#8B7FA8] uppercase tracking-[0.12em] mb-1.5">Подтвердите новый пароль</label>
+                    <input type="password" value={confirmNewPassword} onChange={e => setConfirmNewPassword(e.target.value)} placeholder="Повторите пароль" className="luxury-input w-full h-10 px-3.5 text-sm" />
+                  </div>
+
+                  {passwordMessage && (
+                    <div className={cn('px-4 py-3 rounded-lg border text-sm', passwordMessage.type === 'success' ? 'bg-[rgba(52,211,153,0.08)] border-[rgba(52,211,153,0.2)] text-[#34D399]' : 'bg-red-500/10 border-red-500/20 text-red-400')}>
+                      {passwordMessage.text}
+                    </div>
+                  )}
+
+                  <div className="flex gap-2 pt-1">
+                    <button onClick={() => { setShowChangePassword(false); setPasswordMessage(null); setCurrentPassword(''); setNewPassword(''); setConfirmNewPassword('') }} disabled={passwordSaving} className="btn-ghost flex-1 h-9 text-xs font-medium">Отмена</button>
+                    <button onClick={handleChangePassword} disabled={passwordSaving} className="btn-gold flex-1 h-9 text-xs flex items-center justify-center gap-1.5">
+                      {passwordSaving ? <><Loader2 className="w-3.5 h-3.5 animate-spin" />Сохраняем…</> : 'Сохранить'}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* ── Upgrade card (non-premium) ── */}

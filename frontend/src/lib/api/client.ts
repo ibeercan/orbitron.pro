@@ -59,6 +59,18 @@ export const authApi = {
   completeOnboarding: async () => {
     return api.post('/auth/onboarding-complete')
   },
+
+  forgotPassword: async (email: string) => {
+    return api.post('/auth/forgot-password', { email })
+  },
+
+  resetPassword: async (token: string, newPassword: string) => {
+    return api.post('/auth/reset-password', { token, new_password: newPassword })
+  },
+
+  changePassword: async (currentPassword: string, newPassword: string) => {
+    return api.post('/auth/change-password', { current_password: currentPassword, new_password: newPassword })
+  },
 }
 
 export const subscriptionApi = {

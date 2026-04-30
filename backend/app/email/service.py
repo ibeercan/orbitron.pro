@@ -79,6 +79,21 @@ async def send_verification_email(to: str, token: str, db: Optional[AsyncSession
     await send_email(to=to, subject="Подтвердите ваш email — Orbitron", html_body=html, db=db)
 
 
+async def send_reset_password_email(to: str, token: str, db: Optional[AsyncSession] = None) -> None:
+    """Send password reset link."""
+    from app.email.templates import reset_password_email_html
+
+    frontend_url = settings.FRONTEND_URL
+    if db is not None:
+        from app.admin.settings import get_smtp_config
+        config = await get_smtp_config(db)
+        frontend_url = config["frontend_url"]
+
+    reset_url = f"{frontend_url}/reset-password?token={token}"
+    html = reset_password_email_html(reset_url)
+    await send_email(to=to, subject="Сброс пароля — Orbitron", html_body=html, db=db)
+
+
 async def send_invite_email(to: str, code: str, db: Optional[AsyncSession] = None) -> None:
     """Send invite code to a subscriber."""
     from app.email.templates import invite_email_html
