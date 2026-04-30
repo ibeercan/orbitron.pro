@@ -56,6 +56,7 @@ async def send_email(to: str, subject: str, html_body: str, db: Optional[AsyncSe
             password=smtp_password or None,
             use_tls=use_tls,
             start_tls=start_tls if not use_tls else False,
+            timeout=10,
         )
         logger.info("email_sent", to=to, subject=subject)
     except Exception as e:
