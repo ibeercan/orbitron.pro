@@ -77,3 +77,18 @@ async def send_verification_email(to: str, token: str, db: Optional[AsyncSession
     verify_url = f"{config['frontend_url']}/verify-email?token={token}"
     html = verification_email_html(verify_url)
     await send_email(to=to, subject="Подтвердите ваш email — Orbitron", html_body=html, db=db)
+
+
+async def send_invite_email(to: str, code: str, db: Optional[AsyncSession] = None) -> None:
+    """Send invite code to a subscriber."""
+    from app.email.templates import invite_email_html
+
+    frontend_url = settings.FRONTEND_URL
+    if db is not None:
+        from app.admin.settings import get_smtp_config
+        config = await get_smtp_config(db)
+        frontend_url = config["frontend_url"]
+
+    register_url = f"{frontend_url}/register?invite={code}"
+    html = invite_email_html(code, register_url)
+    await send_email(to=to, subject="Ваш инвайт-код — Orbitron", html_body=html, db=db)

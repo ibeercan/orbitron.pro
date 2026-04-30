@@ -351,6 +351,7 @@ function SubscribersTab() {
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
   const [inviting, setInviting] = useState<number | null>(null)
+  const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -364,20 +365,43 @@ function SubscribersTab() {
 
   useEffect(() => { load() }, [load])
 
+  useEffect(() => {
+    if (!toast) return
+    const t = setTimeout(() => setToast(null), 4000)
+    return () => clearTimeout(t)
+  }, [toast])
+
   const invite = async (id: number) => {
     setInviting(id)
     try {
       const r = await adminApi.inviteSubscriber(id)
-      const code = r.data.code
-      const email = r.data.subscriber_email
-      alert(`Инвайт-код для ${email}: ${code}`)
+      const { code, subscriber_email, email_sent } = r.data
+      if (email_sent) {
+        setToast({ type: 'success', message: `Инвайт-код отправлен на ${subscriber_email}` })
+      } else {
+        setToast({ type: 'error', message: `Не удалось отправить письмо. Код: ${code} — скопируйте и отправьте вручную` })
+      }
       load()
-    } catch { alert('Ошибка') }
+    } catch { setToast({ type: 'error', message: 'Ошибка при создании инвайта' }) }
     finally { setInviting(null) }
   }
 
   return (
-    <div className="p-6">
+    <div className="p-6 relative">
+      {toast && (
+        <div className={cn(
+          'absolute top-2 right-2 z-50 px-4 py-2.5 rounded-xl text-sm font-medium shadow-lg border transition-all',
+          toast.type === 'success'
+            ? 'bg-[rgba(16,185,129,0.12)] text-[#34D399] border-[rgba(16,185,129,0.2)]'
+            : 'bg-[rgba(239,68,68,0.12)] text-[#F87171] border-[rgba(239,68,68,0.2)]'
+        )}>
+          <div className="flex items-center gap-2">
+            {toast.type === 'success' ? <MailCheck className="w-4 h-4 shrink-0" /> : <MailX className="w-4 h-4 shrink-0" />}
+            <span>{toast.message}</span>
+            <button onClick={() => setToast(null)} className="ml-2 opacity-60 hover:opacity-100"><X className="w-3.5 h-3.5" /></button>
+          </div>
+        </div>
+      )}
       <span className="text-xs text-[#8B7FA8] mb-4 block">Всего: {total}</span>
       {loading ? <div className="flex items-center justify-center py-12"><Loader2 className="w-5 h-5 text-[#34D399] animate-spin" /></div> : (
         <div className="space-y-1">

@@ -196,8 +196,17 @@ async def invite_subscriber(
             email = s.email
             break
 
+    email_sent = False
+    if email:
+        try:
+            from app.email.service import send_invite_email
+            await send_invite_email(email, code.code, db=db)
+            email_sent = True
+        except Exception:
+            logger.warning("invite_email_failed", subscriber_id=subscriber_id, email=email)
+
     await db.commit()
-    return AdminInviteSubscriberResponse(code=code.code, subscriber_email=email)
+    return AdminInviteSubscriberResponse(code=code.code, subscriber_email=email, email_sent=email_sent)
 
 
 @router.get("/invites", response_model=InviteCodeListResponse)

@@ -139,6 +139,7 @@ class AdminEarlySubscriberListResponse(BaseModel):
 class AdminInviteSubscriberResponse(BaseModel):
     code: str
     subscriber_email: str
+    email_sent: bool = False
 
 
 class AppSettingOut(BaseModel):
