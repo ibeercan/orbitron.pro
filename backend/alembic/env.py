@@ -21,7 +21,7 @@ from app.core.config import settings
 db_url = settings.computed_database_url
 if db_url.startswith("sqlite"):
     db_url = db_url.replace("sqlite:///", "sqlite+aiosqlite:///")
-config.set_main_option("sqlalchemy.url", db_url)
+config.attributes["sqlalchemy.url"] = db_url
 
 
 def run_migrations_offline() -> None:
