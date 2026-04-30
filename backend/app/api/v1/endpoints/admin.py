@@ -191,10 +191,11 @@ async def invite_subscriber(
     existing_user = (await db.execute(
         select(UserModel).where(
             func.lower(UserModel.email) == sub.email.lower().strip(),
-            UserModel.deleted_at.is_(None),
         )
     )).scalars().first()
     if existing_user:
+        if existing_user.deleted_at is not None:
+            raise HTTPException(status_code=409, detail="Этот email принадлежит удалённому аккаунту")
         raise HTTPException(status_code=409, detail="Этот email уже зарегистрирован")
 
     code = await crud.invite_subscriber(

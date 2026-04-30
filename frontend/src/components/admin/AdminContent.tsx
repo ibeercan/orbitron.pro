@@ -415,9 +415,11 @@ function SubscribersTab() {
                 {s.source && <span className="text-[10px] text-[#4A3F6A]">{s.source}</span>}
               </div>
               <span className="text-[9px] text-[#4A3F6A] shrink-0">{new Date(s.created_at).toLocaleDateString('ru')}</span>
-              {s.is_registered ? (
-                <span className="text-[10px] px-3 py-1.5 rounded-lg bg-[rgba(52,211,153,0.08)] text-[#34D399] border border-[rgba(52,211,153,0.15)] shrink-0">Зарегистрирован</span>
-              ) : (
+{s.is_registered === true ? (
+                  <span className="text-[10px] px-3 py-1.5 rounded-lg bg-[rgba(52,211,153,0.08)] text-[#34D399] border border-[rgba(52,211,153,0.15)] shrink-0">Зарегистрирован</span>
+                ) : s.is_registered === 'deleted' ? (
+                  <span className="text-[10px] px-3 py-1.5 rounded-lg bg-[rgba(107,114,128,0.06)] text-[#6B7280] border border-[rgba(107,114,128,0.15)] shrink-0">Удалён</span>
+                ) : (
                 <button onClick={() => invite(s.id)} disabled={inviting === s.id}
                   className="text-[10px] px-3 py-1.5 rounded-lg bg-[rgba(16,185,129,0.08)] text-[#34D399] hover:bg-[rgba(16,185,129,0.15)] transition-all border border-[rgba(16,185,129,0.1)] shrink-0">
                   {inviting === s.id ? '...' : 'Пригласить'}

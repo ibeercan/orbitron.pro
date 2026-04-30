@@ -251,15 +251,20 @@ async def list_early_subscribers(
 
     if subs:
         emails = [s.email.lower().strip() for s in subs]
-        user_emails_result = await db.execute(
-            select(User.email).where(
+        user_rows = (await db.execute(
+            select(User.email, User.deleted_at).where(
                 func.lower(User.email).in_(emails),
-                User.deleted_at.is_(None),
             )
-        )
-        registered_emails = {e.lower().strip() for e in user_emails_result.scalars().all()}
+        )).all()
+        registered_map: dict[str, bool | str] = {}
+        for email, deleted_at in user_rows:
+            email_lower = email.lower().strip()
+            if deleted_at is not None:
+                registered_map[email_lower] = 'deleted'
+            else:
+                registered_map[email_lower] = True
         for s in subs:
-            s.is_registered = s.email.lower().strip() in registered_emails
+            s.is_registered = registered_map.get(s.email.lower().strip(), False)
 
     return subs, total
 

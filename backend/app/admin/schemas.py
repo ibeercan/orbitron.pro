@@ -118,7 +118,7 @@ class AdminEarlySubscriberOut(BaseModel):
     source: Optional[str] = None
     ip_address: Optional[str] = None
     invited_by: Optional[int] = None
-    is_registered: bool = False
+    is_registered: bool | str = False
     created_at: datetime
 
     @field_validator("created_at", mode="before")
