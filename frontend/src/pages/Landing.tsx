@@ -141,10 +141,10 @@ export default function Landing() {
     if (!inviteFromUrl) return
     setInviteCode(inviteFromUrl)
     setValueEmail('invite_code', inviteFromUrl)
-    setStep('register')
+    setStep('email')
     setIsPremium(true)
     setMessageType('info')
-    setMessage('Код приглашения принят')
+    setMessage('')
   }, [])
 
   const {
