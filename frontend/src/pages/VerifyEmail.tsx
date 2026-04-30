@@ -20,7 +20,7 @@ export default function VerifyEmail() {
     }
     authApi.verifyEmail(token)
       .then(() => {
-        window.location.href = '/?verified=true'
+        setState('success')
       })
       .catch((err) => {
         const detail = err.response?.data?.detail

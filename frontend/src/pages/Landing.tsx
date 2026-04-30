@@ -122,6 +122,7 @@ export default function Landing() {
   const [isLoading, setIsLoading] = useState(false)
   const [resendStatus, setResendStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
   const verifiedFromUrl = searchParams.get('verified') === 'true'
+  const inviteFromUrl = searchParams.get('invite') || ''
 
   const { login } = useAuth()
 
@@ -135,11 +136,22 @@ export default function Landing() {
     return () => document.body.classList.remove('landing-page')
   }, [])
 
+  useEffect(() => {
+    if (!inviteFromUrl) return
+    setInviteCode(inviteFromUrl)
+    setValueEmail('invite_code', inviteFromUrl)
+    setStep('register')
+    setIsPremium(true)
+    setMessageType('info')
+    setMessage('Код приглашения принят')
+  }, [])
+
   const {
     register: registerEmail,
     handleSubmit: handleEmailSubmit,
     formState: { errors: emailErrors },
     reset: resetEmail,
+    setValue: setValueEmail,
   } = useForm<SubscribeFormData>()
 
   const {
@@ -370,7 +382,7 @@ export default function Landing() {
     login:        { title: 'С возвращением',      subtitle: 'Введите пароль от аккаунта' },
     check:        { title: 'Ранний доступ',       subtitle: 'Подпишитесь, чтобы не пропустить запуск' },
     register:     { title: 'Создать аккаунт',     subtitle: isPremium ? 'Вы получите Premium навсегда' : 'Добро пожаловать в Orbitron' },
-    success:      { title: 'Добро пожаловать!',   subtitle: 'Переходим в личный кабинет...' },
+    success:      { title: 'Спасибо за подписку!',   subtitle: 'Мы уведомим вас о запуске Orbitron' },
     verify_email: { title: 'Проверьте почту',    subtitle: `Мы отправили письмо на ${email}` },
   }[step]
 
@@ -420,9 +432,9 @@ export default function Landing() {
                     <OrbitronLogo size={40} />
                   </div>
                   <h2 className="font-serif text-2xl font-semibold text-[#F0EAD6] mb-2">
-                    Добро пожаловать!
+                    Спасибо за подписку!
                   </h2>
-                  <p className="text-[#8B7FA8] text-sm">Переходим в личный кабинет...</p>
+                  <p className="text-[#8B7FA8] text-sm">Мы уведомим вас о запуске Orbitron</p>
                   <div className="mt-6 flex justify-center">
                     <div className="flex gap-1.5">
                       <div className="w-2 h-2 rounded-full bg-[#D4AF37] animate-typing-1" />

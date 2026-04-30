@@ -247,7 +247,21 @@ async def list_early_subscribers(
         .offset(skip)
         .limit(limit)
     )
-    return list(result.scalars().all()), total
+    subs = list(result.scalars().all())
+
+    if subs:
+        emails = [s.email.lower().strip() for s in subs]
+        user_emails_result = await db.execute(
+            select(User.email).where(
+                func.lower(User.email).in_(emails),
+                User.deleted_at.is_(None),
+            )
+        )
+        registered_emails = {e.lower().strip() for e in user_emails_result.scalars().all()}
+        for s in subs:
+            s.is_registered = s.email.lower().strip() in registered_emails
+
+    return subs, total
 
 
 async def invite_subscriber(

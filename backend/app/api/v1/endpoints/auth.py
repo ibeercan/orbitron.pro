@@ -173,7 +173,7 @@ async def verify_email(
     token: str,
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
-    """Verify user email via token. Redirects to frontend."""
+    """Verify user email via token."""
     result = await db.execute(
         select(UserModel).where(
             UserModel.verification_token == token,
@@ -205,8 +205,7 @@ async def verify_email(
     user.verification_token_expires = None
     await db.commit()
 
-    from fastapi.responses import RedirectResponse
-    return RedirectResponse(url=f"{settings.FRONTEND_URL}/?verified=true", status_code=302)
+    return {"verified": True}
 
 
 @router.post("/resend-verification", response_model=RegisterResponse)

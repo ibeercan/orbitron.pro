@@ -3,7 +3,7 @@ from datetime import date as date_type, datetime, timezone, timedelta
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
@@ -40,6 +40,7 @@ from app.core.constants import (
     SMTP_FROM_KEY,
     FRONTEND_URL_KEY,
 )
+from app.models.early_subscriber import EarlySubscriber
 from app.invites.crud import invite_code_crud
 from app.invites.schemas import InviteCodeListResponse
 from app.core.logging import logger
@@ -183,19 +184,24 @@ async def invite_subscriber(
     db: AsyncSession = Depends(get_db),
     admin: User = Depends(get_current_admin_user),
 ) -> Any:
+    sub = await db.get(EarlySubscriber, subscriber_id)
+    if not sub or sub.deleted_at is not None:
+        raise HTTPException(status_code=404, detail="Subscriber not found")
+
+    existing_user = (await db.execute(
+        select(UserModel).where(
+            func.lower(UserModel.email) == sub.email.lower().strip(),
+            UserModel.deleted_at.is_(None),
+        )
+    )).scalars().first()
+    if existing_user:
+        raise HTTPException(status_code=409, detail="Этот email уже зарегистрирован")
+
     code = await crud.invite_subscriber(
         db, subscriber_id=subscriber_id, admin_user_id=admin.id,
     )
-    if not code:
-        raise HTTPException(status_code=404, detail="Subscriber not found")
 
-    sub = (await crud.list_early_subscribers(db, skip=0, limit=1000))[0]
-    email = ""
-    for s in sub:
-        if s.id == subscriber_id:
-            email = s.email
-            break
-
+    email = sub.email
     email_sent = False
     if email:
         try:
