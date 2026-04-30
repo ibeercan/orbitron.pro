@@ -452,7 +452,13 @@ function AuditTab() {
 
   useEffect(() => { load() }, [load])
 
-  const ENTITY_FILTERS = ['', 'user', 'invite', 'subscription', 'payment']
+  const ENTITY_FILTERS = [
+    { id: '', label: 'Все' },
+    { id: 'user', label: 'Пользователь' },
+    { id: 'invite', label: 'Инвайт' },
+    { id: 'subscription', label: 'Подписка' },
+    { id: 'payment', label: 'Оплата' },
+  ]
   const ACTION_COLORS: Record<string, string> = {
     create: '#34D399', update: '#60A5FA', delete: '#EF4444',
   }
@@ -464,10 +470,10 @@ function AuditTab() {
         <div className="flex-1" />
         <div className="flex items-center gap-1">
           {ENTITY_FILTERS.map(f => (
-            <button key={f} onClick={() => setEntityFilter(f)}
+            <button key={f.id} onClick={() => setEntityFilter(f.id)}
               className={cn('px-2.5 py-1.5 rounded-lg text-[10px] font-medium transition-all',
-                entityFilter === f ? 'bg-[rgba(139,92,246,0.1)] text-[#A78BFA] border border-[rgba(139,92,246,0.2)]' : 'text-[#8B7FA8] hover:text-[#F0EAD6]'
-              )}>{f || 'Все'}</button>
+                entityFilter === f.id ? 'bg-[rgba(139,92,246,0.1)] text-[#A78BFA] border border-[rgba(139,92,246,0.2)]' : 'text-[#8B7FA8] hover:text-[#F0EAD6]'
+              )}>{f.label}</button>
           ))}
         </div>
       </div>
