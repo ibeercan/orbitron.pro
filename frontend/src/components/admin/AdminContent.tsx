@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { adminApi } from '@/lib/api/client'
-import { Loader2, Crown, ChevronDown, Key, Users, BarChart3, ScrollText, Mail, Settings, X, MailCheck, MailX, Zap, SendHorizonal } from 'lucide-react'
+import { Loader2, Crown, ChevronDown, Key, Users, BarChart3, ScrollText, Mail, Settings, X, MailCheck, MailX, Zap, SendHorizonal, Check } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 type Tab = 'analytics' | 'users' | 'invites' | 'subscribers' | 'audit' | 'tokens' | 'settings'
@@ -505,6 +505,18 @@ function TokensTab() {
   const [loading, setLoading] = useState(true)
   const [period, setPeriod] = useState<string>('month')
   const [userId, setUserId] = useState<number | null>(null)
+  const [showUserMenu, setShowUserMenu] = useState(false)
+  const userMenuRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setShowUserMenu(false)
+      }
+    }
+    if (showUserMenu) document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [showUserMenu])
 
   const getDates = (p: string) => {
     const now = new Date()
@@ -574,13 +586,37 @@ function TokensTab() {
         {byUser.length > 0 && (
           <>
             <div className="flex-1" />
-            <select value={userId ?? ''} onChange={e => setUserId(e.target.value ? Number(e.target.value) : null)}
-              className="text-[10px] px-2 py-1.5 rounded-lg bg-[rgba(245,158,11,0.06)] border border-[rgba(245,158,11,0.1)] text-[#F0EAD6] outline-none">
-              <option value="">Все пользователи</option>
-              {byUser.map((u: any) => (
-                <option key={u.user_id} value={u.user_id}>{u.user_email || `User #${u.user_id}`}</option>
-              ))}
-            </select>
+            <div className="relative" ref={userMenuRef}>
+              <button onClick={() => setShowUserMenu(v => !v)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[rgba(245,158,11,0.1)] border border-[rgba(245,158,11,0.2)] text-[#F59E0B] text-[10px] font-medium hover:bg-[rgba(245,158,11,0.15)] transition-all">
+                <Zap className="w-3.5 h-3.5" />
+                {userId ? byUser.find((u: any) => u.user_id === userId)?.user_email || `User #${userId}` : 'Все пользователи'}
+                <ChevronDown className="w-3 h-3" />
+              </button>
+              {showUserMenu && (
+                <div className="absolute right-0 top-full mt-1 bg-[#1a1630] border border-[rgba(245,158,11,0.12)] rounded-lg overflow-hidden z-20 shadow-xl max-h-60 overflow-y-auto min-w-[200px]">
+                  <button onClick={() => { setUserId(null); setShowUserMenu(false) }}
+                    className={cn('flex items-center gap-2 w-full px-3 py-2 text-[11px] text-left transition-colors',
+                      userId === null ? 'bg-[rgba(245,158,11,0.08)] text-[#F59E0B]' : 'text-[#8B7FA8] hover:text-[#F0EAD6] hover:bg-[rgba(245,158,11,0.04)]'
+                    )}>
+                    {userId === null && <Check className="w-3 h-3" />}
+                    <span className={userId === null ? '' : 'ml-[18px]'}>Все пользователи</span>
+                  </button>
+                  {byUser.map((u: any) => (
+                    <button key={u.user_id} onClick={() => { setUserId(u.user_id); setShowUserMenu(false) }}
+                      className={cn('flex items-center gap-2 w-full px-3 py-2 text-[11px] text-left transition-colors',
+                        userId === u.user_id ? 'bg-[rgba(245,158,11,0.08)] text-[#F59E0B]' : 'text-[#8B7FA8] hover:text-[#F0EAD6] hover:bg-[rgba(245,158,11,0.04)]'
+                      )}>
+                      <div className="w-5 h-5 rounded bg-[rgba(245,158,11,0.08)] flex items-center justify-center shrink-0">
+                        <span className="text-[8px] font-semibold text-[#F59E0B]">{(u.user_email as string)[0]?.toUpperCase() || '?'}</span>
+                      </div>
+                      <span className="truncate">{u.user_email || `User #${u.user_id}`}</span>
+                      {userId === u.user_id && <Check className="w-3 h-3 ml-auto" />}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </>
         )}
       </div>
