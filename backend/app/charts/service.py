@@ -10,6 +10,7 @@ from typing import Dict, Any
 from stellium import ChartBuilder, MultiChartBuilder, Native, ReportBuilder, SynthesisBuilder
 from stellium.engines import PlacidusHouses, WholeSignHouses, RegiomontanusHouses
 from stellium.components.dignity import DignityComponent, AccidentalDignityComponent
+from stellium.components.arabic_parts import ArabicPartsCalculator
 
 from app.core.logging import logger
 
@@ -926,4 +927,81 @@ def compute_dignities(native_data: dict) -> dict:
         "mutual_receptions": mutual_receptions,
         "accidental_dignities": accidental_dignities,
         "strongest_planet": strongest,
+    }
+
+
+ARABIC_PARTS_RU: dict[str, str] = {
+    "Part of Fortune": "Лот Фортуны",
+    "Part of Spirit": "Лот Духа",
+    "Part of Eros (Love)": "Лот Эроса (Любовь)",
+    "Part of Eros (Planetary)": "Лот Эроса (Планетарный)",
+    "Part of Necessity (Ananke)": "Лот Необходимости (Ананке)",
+    "Part of Courage (Tolma)": "Лот Смелости (Толма)",
+    "Part of Victory (Nike)": "Лот Победы (Нике)",
+    "Part of Nemesis": "Лот Немезиды",
+    "Part of Father": "Лот Отца",
+    "Part of Mother": "Лот Матери",
+    "Part of Marriage": "Лот Брака",
+    "Part of Children": "Лот Детей",
+    "Part of Siblings": "Лот Братьев и сестёр",
+    "Part of Action (Praxis)": "Лот Деятельности (Праксис)",
+    "Part of Profession (User)": "Лот Профессии",
+    "Part of Passion / Lust": "Лот Страсти",
+    "Part of Illness / Disease": "Лот Болезни",
+    "Part of Death": "Лот Смерти",
+    "Part of Debt / Bondage": "Лот Долга и Рабства",
+    "Part of Travel": "Лот Путешествий",
+    "Part of Friends / Associates": "Лот Друзей",
+    "Part of the Sun (Exaltation)": "Лот Солнца (Экзальтация)",
+    "Part of the Moon (Exaltation)": "Лот Луны (Экзальтация)",
+    "Part of Mercury (Exaltation)": "Лот Меркурия (Экзальтация)",
+    "Part of Venus (Exaltation)": "Лот Венеры (Экзальтация)",
+    "Part of Mars (Exaltation)": "Лот Марса (Экзальтация)",
+    "Part of Jupiter (Exaltation)": "Лот Юпитера (Экзальтация)",
+    "Part of Saturn (Exaltation)": "Лот Сатурна (Экзальтация)",
+}
+
+SIGN_RU: dict[str, str] = {
+    "Aries": "Овен", "Taurus": "Телец", "Gemini": "Близнецы", "Cancer": "Рак",
+    "Leo": "Лев", "Virgo": "Дева", "Libra": "Весы", "Scorpio": "Скорпион",
+    "Sagittarius": "Стрелец", "Capricorn": "Козерог", "Aquarius": "Водолей", "Pisces": "Рыбы",
+}
+
+
+def compute_arabic_parts(native_data: dict) -> dict:
+    dt_str = native_data["datetime"]
+    loc = native_data["location"]
+    engine_cls = HOUSE_ENGINES.get(native_data.get("house_system", "placidus"), PlacidusHouses)
+    chart = (
+        ChartBuilder.from_details(dt_str, loc)
+        .with_house_systems([engine_cls()])
+        .with_aspects()
+        .add_component(ArabicPartsCalculator())
+        .calculate()
+    )
+
+    sect = chart.metadata.get("dignities", {}).get("sect", "unknown")
+
+    parts = []
+    for pos in chart.positions:
+        if hasattr(pos, "object_type") and getattr(pos, "object_type", None) and pos.object_type.value == "arabic_part":
+            name = pos.name
+            degree = pos.longitude
+            sign = pos.sign if hasattr(pos, "sign") else ""
+            degree_in_sign = pos.sign_degree if hasattr(pos, "sign_degree") else (degree % 30)
+
+            parts.append({
+                "name": name,
+                "name_ru": ARABIC_PARTS_RU.get(name, name),
+                "sign": sign,
+                "sign_ru": SIGN_RU.get(sign, sign),
+                "degree": round(degree, 4),
+                "degree_in_sign": round(degree_in_sign, 2),
+            })
+
+    parts.sort(key=lambda p: p["degree"])
+
+    return {
+        "parts": parts,
+        "sect": sect,
     }

@@ -39,10 +39,11 @@ from app.charts.schemas import (
     NotableEventInfo,
     DignityRequest,
     DignityResponse,
+    ArabicPartsResponse,
 )
 from app.charts.rectification_schemas import RectificationRequest, RectificationResponse, RectificationPollResponse
 from app.charts.rectification import rectify
-from app.charts.service import chart_service, _build_natal, compute_dignities
+from app.charts.service import chart_service, _build_natal, compute_dignities, compute_arabic_parts
 from app.charts import notables
 from app.charts.crud import chart as chart_crud
 from app.insights.crud import insight_crud
@@ -508,6 +509,23 @@ async def get_dignities(
         return DignityResponse(**result)
     except Exception as e:
         logger.error("API: Failed to compute dignities", chart_id=chart_id, error=str(e))
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.post("/{chart_id}/arabic-parts", response_model=ArabicPartsResponse)
+async def get_arabic_parts(
+    *,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+    chart_id: int,
+) -> Any:
+    require_premium(current_user, "arabic_parts")
+    native_data, _ = await _get_native_data(db, chart_id, current_user.id)
+    try:
+        result = compute_arabic_parts(native_data)
+        return ArabicPartsResponse(**result)
+    except Exception as e:
+        logger.error("API: Failed to compute arabic parts", chart_id=chart_id, error=str(e))
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 

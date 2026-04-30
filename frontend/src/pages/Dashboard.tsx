@@ -23,9 +23,10 @@ import { PlannerForm } from '@/components/ui/PlannerForm'
 import { TransitTimeline } from '@/components/ui/TransitTimeline'
 import { AstroTwinsPanel } from '@/components/ui/AstroTwinsPanel'
 import { DignityPanel } from '@/components/ui/DignityPanel'
+import { ArabicPartsPanel } from '@/components/ui/ArabicPartsPanel'
 import { OnboardingTour } from '@/components/ui/OnboardingTour'
 import { PremiumUpgradeModal } from '@/components/ui/PremiumUpgradeModal'
-import { Loader2, Calendar, MapPin, Sparkles, Star, Trash2, AlertTriangle, Maximize2, Heart, Clock, Sun, Moon, Target, FileText, Lock, Crown, ArrowLeft, Crosshair, Navigation, Zap, Compass, BookOpen, RotateCcw, Shield } from 'lucide-react'
+import { Loader2, Calendar, MapPin, Sparkles, Star, Trash2, AlertTriangle, Maximize2, Heart, Clock, Sun, Moon, Target, FileText, Lock, Crown, ArrowLeft, Crosshair, Navigation, Zap, Compass, BookOpen, RotateCcw, Shield, Hexagon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/contexts/auth-context'
 
@@ -633,6 +634,7 @@ const loadChartSvg = async (chart: Chart) => {
                     <ChartActionButton icon={BookOpen} label="Плэннер" premium onClick={() => setActiveModal('planner')} onPremiumLock={() => setShowPremiumModal(true)} />
                     <ChartActionButton icon={FileText} label="PDF" premium onClick={handlePdfDownload} onPremiumLock={() => setShowPremiumModal(true)} />
                     <ChartActionButton icon={Shield} label="Достоинства" premium onClick={() => setActiveModal('dignities')} onPremiumLock={() => setShowPremiumModal(true)} />
+                    <ChartActionButton icon={Hexagon} label="Части" premium onClick={() => setActiveModal('arabic_parts')} onPremiumLock={() => setShowPremiumModal(true)} />
                   </div>
                 )}
 
@@ -1083,6 +1085,19 @@ const loadChartSvg = async (chart: Chart) => {
             size="lg"
           >
             <DignityPanel natalChartId={selectedChart.id} onClose={closeModal} />
+          </ModalShell>
+        )}
+
+        {selectedChart && (
+          <ModalShell
+            open={activeModal === 'arabic_parts'}
+            onClose={closeModal}
+            icon={<Hexagon className="w-4 h-4 text-[#D4AF37]" style={{ width: 16, height: 16 }} />}
+            title="Арабские части"
+            description="Лоты Фортуны, Духа и другие арабские части натальной карты"
+            size="lg"
+          >
+            <ArabicPartsPanel natalChartId={selectedChart.id} onClose={closeModal} />
           </ModalShell>
         )}
 

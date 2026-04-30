@@ -470,3 +470,17 @@ class DignityResponse(BaseModel):
     mutual_receptions: dict[str, list[MutualReception]] = {}
     accidental_dignities: list[AccidentalDignity] = []
     strongest_planet: str | None = None
+
+
+class ArabicPartResult(BaseModel):
+    name: str
+    name_ru: str
+    sign: str
+    sign_ru: str
+    degree: float
+    degree_in_sign: float
+
+
+class ArabicPartsResponse(BaseModel):
+    parts: list[ArabicPartResult]
+    sect: str
