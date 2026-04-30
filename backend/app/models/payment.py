@@ -4,7 +4,7 @@ from datetime import datetime
 from decimal import Decimal
 from enum import Enum
 
-from sqlalchemy import Enum as SQLEnum, ForeignKey, Index, Numeric, String
+from sqlalchemy import DateTime, Enum as SQLEnum, ForeignKey, Index, Numeric, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
@@ -57,7 +57,7 @@ class Payment(Base, TimestampMixin, SoftDeleteMixin):
         default=PaymentMethod.CARD.value,
     )
     failure_message: Mapped[str | None] = mapped_column(default=None)
-    refunded_at: Mapped[datetime | None] = mapped_column(default=None)
+    refunded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
 
     user = relationship("User", back_populates="payments")
     subscription = relationship("Subscription", back_populates="payments")

@@ -3,7 +3,7 @@
 from datetime import datetime, timezone
 from enum import Enum
 
-from sqlalchemy import Enum as SQLEnum, Index, String
+from sqlalchemy import DateTime, Enum as SQLEnum, Index, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
@@ -41,12 +41,12 @@ class User(Base, TimestampMixin, SoftDeleteMixin, AuditMixin):
         SQLEnum(SubscriptionType, values_callable=_enum_values, name="subscription_type_enum"),
         default=SubscriptionType.FREE.value,
     )
-    subscription_end: Mapped[datetime | None] = mapped_column(default=None)
+    subscription_end: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
     is_active: Mapped[bool] = mapped_column(default=True)
     onboarding_completed: Mapped[bool] = mapped_column(default=False)
     email_verified: Mapped[bool] = mapped_column(default=False)
     verification_token: Mapped[str | None] = mapped_column(String(255), default=None, index=True)
-    verification_token_expires: Mapped[datetime | None] = mapped_column(default=None)
+    verification_token_expires: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
 
     subscriptions = relationship(
         "Subscription",
@@ -86,14 +86,9 @@ class User(Base, TimestampMixin, SoftDeleteMixin, AuditMixin):
 
     @property
     def is_subscription_active(self) -> bool:
-        """Check if premium subscription is still valid (timezone-aware)."""
+        """Check if premium subscription is still valid."""
         if self.subscription_type != SubscriptionType.PREMIUM.value:
             return False
         if self.subscription_end is None:
             return True
-        end_utc = (
-            self.subscription_end.replace(tzinfo=timezone.utc)
-            if self.subscription_end.tzinfo is None
-            else self.subscription_end
-        )
-        return datetime.now(timezone.utc) < end_utc
+        return datetime.now(timezone.utc) < self.subscription_end

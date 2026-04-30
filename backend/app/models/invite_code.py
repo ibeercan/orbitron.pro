@@ -2,7 +2,7 @@
 
 from datetime import datetime, timezone
 
-from sqlalchemy import Index, String
+from sqlalchemy import DateTime, Index, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base
@@ -22,7 +22,7 @@ class InviteCode(Base, TimestampMixin, SoftDeleteMixin):
     code: Mapped[str] = mapped_column(String(10), unique=True)
     used: Mapped[bool] = mapped_column(default=False)
     used_email: Mapped[str | None] = mapped_column(String(255), default=None)
-    used_at: Mapped[datetime | None] = mapped_column(default=None)
+    used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
 
     @property
     def is_used(self) -> bool:

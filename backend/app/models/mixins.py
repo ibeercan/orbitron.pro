@@ -1,13 +1,9 @@
 """SQLAlchemy mixins for common model behaviors."""
 
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Any
 
-from sqlalchemy import Index, func
+from sqlalchemy import DateTime, Index, func
 from sqlalchemy.orm import Mapped, mapped_column
-
-if TYPE_CHECKING:
-    pass
 
 __all__ = ["TimestampMixin", "SoftDeleteMixin", "AuditMixin"]
 
@@ -16,12 +12,14 @@ class TimestampMixin:
     """Mixin for automatic created_at and updated_at timestamps.
     
     Auto-updates updated_at on every save.
-    Uses naive UTC datetime for cross-database compatibility.
+    Uses timezone-aware UTC datetime (TIMESTAMPTZ).
     """
     created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
         server_default=func.now(),
     )
     updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
         server_default=func.now(),
         onupdate=func.now(),
     )
@@ -34,6 +32,7 @@ class SoftDeleteMixin:
     Queries should filter WHERE deleted_at IS NULL.
     """
     deleted_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
         default=None,
     )
 
@@ -46,14 +45,14 @@ class SoftDeleteMixin:
         self.deleted_at = None
 
     @classmethod
-    def query_active(cls, *args: Any, **kwargs: Any) -> Any:
+    def query_active(cls):
         """Query only non-deleted records.
         
         Usage:
             User.query_active(db).filter(...)
         """
         from sqlalchemy import select
-        return select(cls).where(cls.deleted_at == None)
+        return select(cls).where(cls.deleted_at.is_(None))
 
 
 class AuditMixin:

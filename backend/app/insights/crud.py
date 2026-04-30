@@ -91,7 +91,7 @@ class InsightCacheCRUD:
             return False
         if obj.updated_at is None:
             return True
-        age = (datetime.now(timezone.utc) - obj.updated_at.replace(tzinfo=timezone.utc)).total_seconds()
+        age = (datetime.now(timezone.utc) - obj.updated_at).total_seconds()
         if age < max_age_seconds:
             return False
         await db.delete(obj)

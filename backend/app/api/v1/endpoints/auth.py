@@ -194,7 +194,7 @@ async def verify_email(
             detail="Email уже подтверждён.",
         )
 
-    if user.verification_token_expires and user.verification_token_expires.replace(tzinfo=timezone.utc) < datetime.now(timezone.utc):
+    if user.verification_token_expires and user.verification_token_expires < datetime.now(timezone.utc):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Ссылка подтверждения устарела. Запросите новую.",
@@ -322,7 +322,7 @@ async def refresh_token(
         )
 
     now = datetime.now(timezone.utc)
-    if stored_token.expires_at.replace(tzinfo=timezone.utc) < now:
+    if stored_token.expires_at < now:
         stored_token.revoked_at = now
         await db.flush()
         await db.commit()

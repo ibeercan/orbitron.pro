@@ -3,7 +3,7 @@
 from datetime import datetime, timezone
 from enum import Enum
 
-from sqlalchemy import Enum as SQLEnum, ForeignKey, Index, String
+from sqlalchemy import DateTime, Enum as SQLEnum, ForeignKey, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
@@ -50,9 +50,9 @@ class Subscription(Base, TimestampMixin, SoftDeleteMixin, AuditMixin):
         SQLEnum(SubscriptionStatus, values_callable=_enum_values, name="subscription_status_enum"),
         default=SubscriptionStatus.ACTIVE.value,
     )
-    start_date: Mapped[datetime] = mapped_column()
-    end_date: Mapped[datetime] = mapped_column()
-    cancelled_at: Mapped[datetime | None] = mapped_column(default=None)
+    start_date: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    end_date: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    cancelled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
 
     user = relationship("User", back_populates="subscriptions")
     payments = relationship(
@@ -69,12 +69,7 @@ class Subscription(Base, TimestampMixin, SoftDeleteMixin, AuditMixin):
 
     @property
     def is_expired(self) -> bool:
-        """Check if subscription has expired (timezone-aware)."""
+        """Check if subscription has expired."""
         if self.end_date is None:
             return False
-        end_utc = (
-            self.end_date.replace(tzinfo=timezone.utc)
-            if self.end_date.tzinfo is None
-            else self.end_date
-        )
-        return datetime.now(timezone.utc) >= end_utc
+        return datetime.now(timezone.utc) >= self.end_date

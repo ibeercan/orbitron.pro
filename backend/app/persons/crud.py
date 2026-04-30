@@ -65,7 +65,7 @@ class CRUDPerson:
         person = await self.get_by_id_and_user(db, id=id, user_id=user_id)
         if not person:
             return False
-        person.deleted_at = __import__("datetime").datetime.utcnow()
+        person.soft_delete()
         await db.flush()
         return True
 
