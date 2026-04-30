@@ -283,6 +283,10 @@ export const chartsApi = {
     return api.post(`/charts/${chartId}/arabic-parts`)
   },
 
+  getAspectPatterns: async (chartId: number) => {
+    return api.post(`/charts/${chartId}/aspect-patterns`)
+  },
+
   rectify: async (data: {
     birth_date: string
     location: string

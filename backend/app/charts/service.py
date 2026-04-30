@@ -11,6 +11,7 @@ from stellium import ChartBuilder, MultiChartBuilder, Native, ReportBuilder, Syn
 from stellium.engines import PlacidusHouses, WholeSignHouses, RegiomontanusHouses
 from stellium.components.dignity import DignityComponent, AccidentalDignityComponent
 from stellium.components.arabic_parts import ArabicPartsCalculator
+from stellium.engines.patterns import AspectPatternAnalyzer
 
 from app.core.logging import logger
 
@@ -1005,3 +1006,74 @@ def compute_arabic_parts(native_data: dict) -> dict:
         "parts": parts,
         "sect": sect,
     }
+
+
+PATTERN_NAMES_RU: dict[str, str] = {
+    "Grand Trine": "Большой трин",
+    "T-Square": "Тау-квадрат",
+    "Yod": "Йод (Палец Бога)",
+    "Kite": "Воздушный змей",
+    "Grand Cross": "Большой крест",
+    "Mystic Rectangle": "Мистический прямоугольник",
+    "Stellium": "Стеллиум",
+}
+
+ELEMENT_RU: dict[str, str] = {
+    "Fire": "Огонь", "Earth": "Земля", "Air": "Воздух", "Water": "Вода",
+}
+
+QUALITY_RU: dict[str, str] = {
+    "Cardinal": "Кардинальный", "Fixed": "Фиксированный", "Mutable": "Мутабельный",
+}
+
+PLANET_RU: dict[str, str] = {
+    "Sun": "Солнце", "Moon": "Луна", "Mercury": "Меркурий", "Venus": "Венера",
+    "Mars": "Марс", "Jupiter": "Юпитер", "Saturn": "Сатурн",
+    "Uranus": "Уран", "Neptune": "Нептун", "Pluto": "Плутон",
+    "North Node": "Северный узел", "South Node": "Южный узел",
+    "Chiron": "Хирон", "Asc": "Асцендент", "MC": "МС",
+}
+
+
+def compute_aspect_patterns(native_data: dict) -> dict:
+    dt_str = native_data["datetime"]
+    loc = native_data["location"]
+    engine_cls = HOUSE_ENGINES.get(native_data.get("house_system", "placidus"), PlacidusHouses)
+    chart = (
+        ChartBuilder.from_details(dt_str, loc)
+        .with_house_systems([engine_cls()])
+        .with_aspects()
+        .add_analyzer(AspectPatternAnalyzer())
+        .calculate()
+    )
+
+    patterns_data = chart.get_component_result("Aspect Patterns")
+    if not patterns_data:
+        return {"patterns": []}
+
+    patterns = []
+    for p in patterns_data:
+        name = p.name if hasattr(p, "name") else str(p)
+        p_dict = p.to_dict() if hasattr(p, "to_dict") else {}
+
+        planets = p_dict.get("planets", [])
+        aspects = p_dict.get("aspects", [])
+        element = p_dict.get("element")
+        quality = p_dict.get("quality")
+        focal = p_dict.get("focal_planet")
+
+        patterns.append({
+            "name": name,
+            "name_ru": PATTERN_NAMES_RU.get(name, name),
+            "planets": [PLANET_RU.get(pl, pl) for pl in planets] if isinstance(planets, list) else [],
+            "aspects": aspects if isinstance(aspects, list) else [],
+            "element": element,
+            "element_ru": ELEMENT_RU.get(element) if element else None,
+            "quality": quality,
+            "quality_ru": QUALITY_RU.get(quality) if quality else None,
+            "focal_planet": focal,
+            "focal_planet_ru": PLANET_RU.get(focal) if focal else None,
+            "description": None,
+        })
+
+    return {"patterns": patterns}

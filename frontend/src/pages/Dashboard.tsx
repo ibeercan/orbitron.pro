@@ -24,9 +24,10 @@ import { TransitTimeline } from '@/components/ui/TransitTimeline'
 import { AstroTwinsPanel } from '@/components/ui/AstroTwinsPanel'
 import { DignityPanel } from '@/components/ui/DignityPanel'
 import { ArabicPartsPanel } from '@/components/ui/ArabicPartsPanel'
+import { AspectPatternsPanel } from '@/components/ui/AspectPatternsPanel'
 import { OnboardingTour } from '@/components/ui/OnboardingTour'
 import { PremiumUpgradeModal } from '@/components/ui/PremiumUpgradeModal'
-import { Loader2, Calendar, MapPin, Sparkles, Star, Trash2, AlertTriangle, Maximize2, Heart, Clock, Sun, Moon, Target, FileText, Lock, Crown, ArrowLeft, Crosshair, Navigation, Zap, Compass, BookOpen, RotateCcw, Shield, Hexagon } from 'lucide-react'
+import { Loader2, Calendar, MapPin, Sparkles, Star, Trash2, AlertTriangle, Maximize2, Heart, Clock, Sun, Moon, Target, FileText, Lock, Crown, ArrowLeft, Crosshair, Navigation, Zap, Compass, BookOpen, RotateCcw, Shield, Hexagon, TrendingUp } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/contexts/auth-context'
 
@@ -635,6 +636,7 @@ const loadChartSvg = async (chart: Chart) => {
                     <ChartActionButton icon={FileText} label="PDF" premium onClick={handlePdfDownload} onPremiumLock={() => setShowPremiumModal(true)} />
                     <ChartActionButton icon={Shield} label="Достоинства" premium onClick={() => setActiveModal('dignities')} onPremiumLock={() => setShowPremiumModal(true)} />
                     <ChartActionButton icon={Hexagon} label="Части" premium onClick={() => setActiveModal('arabic_parts')} onPremiumLock={() => setShowPremiumModal(true)} />
+                    <ChartActionButton icon={TrendingUp} label="Паттерны" premium onClick={() => setActiveModal('aspect_patterns')} onPremiumLock={() => setShowPremiumModal(true)} />
                   </div>
                 )}
 
@@ -1098,6 +1100,19 @@ const loadChartSvg = async (chart: Chart) => {
             size="lg"
           >
             <ArabicPartsPanel natalChartId={selectedChart.id} onClose={closeModal} />
+          </ModalShell>
+        )}
+
+        {selectedChart && (
+          <ModalShell
+            open={activeModal === 'aspect_patterns'}
+            onClose={closeModal}
+            icon={<TrendingUp className="w-4 h-4 text-[#D4AF37]" style={{ width: 16, height: 16 }} />}
+            title="Паттерны аспектов"
+            description="Глобальные конфигурации — Большой трин, Йод, Тау-квадрат и другие"
+            size="lg"
+          >
+            <AspectPatternsPanel natalChartId={selectedChart.id} onClose={closeModal} />
           </ModalShell>
         )}
 

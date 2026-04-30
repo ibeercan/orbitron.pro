@@ -484,3 +484,21 @@ class ArabicPartResult(BaseModel):
 class ArabicPartsResponse(BaseModel):
     parts: list[ArabicPartResult]
     sect: str
+
+
+class AspectPatternResult(BaseModel):
+    name: str
+    name_ru: str
+    planets: list[str]
+    aspects: list[str] = []
+    element: str | None = None
+    element_ru: str | None = None
+    quality: str | None = None
+    quality_ru: str | None = None
+    focal_planet: str | None = None
+    focal_planet_ru: str | None = None
+    description: str | None = None
+
+
+class AspectPatternsResponse(BaseModel):
+    patterns: list[AspectPatternResult]
