@@ -26,9 +26,8 @@ def get_engine():
             echo=False,
         )
 
-    async_database_url = db_url.replace("postgresql://", "postgresql+asyncpg://")
     return create_async_engine(
-        async_database_url,
+        db_url,
         pool_size=DB_POOL_SIZE,
         max_overflow=DB_MAX_OVERFLOW,
         pool_pre_ping=True,

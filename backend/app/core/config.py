@@ -2,6 +2,7 @@ import json
 import logging
 from pathlib import Path
 from typing import List, Optional
+from urllib.parse import quote_plus
 
 from pydantic import BaseModel, field_validator
 from pydantic_settings import BaseSettings
@@ -76,10 +77,14 @@ class Settings(BaseSettings):
     @property
     def computed_database_url(self) -> str:
         if self.DATABASE_URL:
-            return self.DATABASE_URL
+            url = self.DATABASE_URL
+            if url.startswith("postgresql://"):
+                url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+            return url
         if self.POSTGRES_PASSWORD:
-            return f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@postgres:5432/{self.POSTGRES_DB}"
-        return f"postgresql://{self.POSTGRES_USER}@postgres:5432/{self.POSTGRES_DB}"
+            password = quote_plus(self.POSTGRES_PASSWORD)
+            return f"postgresql+asyncpg://{self.POSTGRES_USER}:{password}@postgres:5432/{self.POSTGRES_DB}"
+        return f"postgresql+asyncpg://{self.POSTGRES_USER}@postgres:5432/{self.POSTGRES_DB}"
 
     # JWT
     SECRET_KEY: str = "dev-only-insecure-key-change-in-production"
@@ -131,7 +136,7 @@ class Settings(BaseSettings):
     # Redis
     REDIS_URL: str = "redis://localhost:6379"
 
-    # Security — CORS origins (comma-separated in env, falls back to defaults)
+    # Security — CORS origins (comma-separated in env, parsed by validator)
     @property
     def allowed_origins(self) -> List[str]:
         if self.ALLOWED_ORIGINS:

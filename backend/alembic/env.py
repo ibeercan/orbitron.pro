@@ -19,9 +19,7 @@ target_metadata = Base.metadata
 from app.core.config import settings
 
 db_url = settings.computed_database_url
-if db_url.startswith("postgresql://"):
-    db_url = db_url.replace("postgresql://", "postgresql+asyncpg://")
-elif db_url.startswith("sqlite"):
+if db_url.startswith("sqlite"):
     db_url = db_url.replace("sqlite:///", "sqlite+aiosqlite:///")
 config.set_main_option("sqlalchemy.url", db_url)
 
