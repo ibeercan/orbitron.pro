@@ -462,6 +462,86 @@ function AuditTab() {
   const ACTION_COLORS: Record<string, string> = {
     create: '#34D399', update: '#60A5FA', delete: '#EF4444',
   }
+  const ACTION_LABELS: Record<string, string> = {
+    create: 'Создание', update: 'Изменение', delete: 'Удаление',
+  }
+  const ENTITY_LABELS: Record<string, string> = {
+    user: 'Пользователь', invite: 'Инвайт', subscription: 'Подписка', payment: 'Оплата',
+  }
+
+  const describeChange = (l: any) => {
+    const nv = l.new_values
+    const ov = l.old_values
+
+    if (l.action === 'create' && nv) {
+      const parts: string[] = []
+      const skip = new Set(['id', 'hashed_password', 'verification_token', 'verification_token_expires', 'reset_password_token', 'reset_password_token_expires', 'deleted_at', 'created_at', 'updated_at', 'created_by_id', 'updated_by_id', 'token_hash'])
+      for (const [k, v] of Object.entries(nv)) {
+        if (skip.has(k) || v === null || v === undefined) continue
+        if (k === 'email') parts.push(v as string)
+        else if (k === 'subscription_type') parts.push(v === 'premium' ? 'Premium' : 'Free')
+        else if (k === 'is_admin' && v) parts.push('Admin')
+        else if (k === 'code') parts.push(`Код: ${v}`)
+        else if (k === 'used') parts.push(v ? 'Использован' : 'Не использован')
+        else if (k === 'used_email') parts.push(`→ ${v}`)
+        else if (k === 'email') parts.push(v as string)
+      }
+      return parts.length ? parts.join(' · ') : null
+    }
+
+    if (l.action === 'update') {
+      if (nv && nv.field === 'password') {
+        return nv.method === 'reset' ? 'Сброс пароля (по email)' : 'Смена пароля'
+      }
+      if (ov && nv) {
+        const diffs: string[] = []
+        for (const k of Object.keys(nv)) {
+          if (skip_keys.has(k)) continue
+          if (ov[k] !== nv[k]) {
+            const label = FIELD_LABELS[k] || k
+            const from = formatVal(ov[k])
+            const to = formatVal(nv[k])
+            diffs.push(`${label}: ${from} → ${to}`)
+          }
+        }
+        return diffs.length ? diffs.join(' · ') : null
+      }
+      if (nv) {
+        const parts: string[] = []
+        for (const [k, v] of Object.entries(nv)) {
+          if (skip_keys.has(k) || v === null || v === undefined) continue
+          const label = FIELD_LABELS[k] || k
+          parts.push(`${label}: ${formatVal(v)}`)
+        }
+        return parts.length ? parts.join(' · ') : null
+      }
+    }
+
+    if (l.action === 'delete' && ov) {
+      const email = ov.email || ov.code || `#${l.entity_id}`
+      return email as string
+    }
+
+    return null
+  }
+
+  const skip_keys = new Set(['id', 'hashed_password', 'verification_token', 'verification_token_expires', 'reset_password_token', 'reset_password_token_expires', 'deleted_at', 'created_at', 'updated_at', 'created_by_id', 'updated_by_id', 'token_hash'])
+
+  const FIELD_LABELS: Record<string, string> = {
+    email: 'Email',
+    subscription_type: 'Подписка',
+    is_admin: 'Admin',
+    is_active: 'Активен',
+    used: 'Статус',
+    used_email: 'Использ.',
+    code: 'Код',
+  }
+
+  const formatVal = (v: any) => {
+    if (v === null || v === undefined) return '—'
+    if (typeof v === 'boolean') return v ? 'Да' : 'Нет'
+    return String(v)
+  }
 
   return (
     <div className="p-6">
@@ -483,19 +563,12 @@ function AuditTab() {
           {logs.map(l => (
             <div key={l.id} className="px-4 py-3 rounded-xl hover:bg-[rgba(139,92,246,0.03)] transition-colors">
               <div className="flex items-center gap-2">
-                <span className="text-[9px] px-1.5 py-0.5 rounded font-medium" style={{ color: ACTION_COLORS[l.action] || '#8B7FA8', background: `${ACTION_COLORS[l.action] || '#8B7FA8'}15` }}>{l.action}</span>
-                <span className="text-sm text-[#F0EAD6]">{l.entity_type} #{l.entity_id}</span>
+                <span className="text-[9px] px-1.5 py-0.5 rounded font-medium" style={{ color: ACTION_COLORS[l.action] || '#8B7FA8', background: `${ACTION_COLORS[l.action] || '#8B7FA8'}15` }}>{ACTION_LABELS[l.action] || l.action}</span>
+                <span className="text-sm text-[#F0EAD6]">{ENTITY_LABELS[l.entity_type] || l.entity_type} #{l.entity_id}</span>
                 <span className="text-[9px] text-[#4A3F6A] ml-auto">{new Date(l.created_at).toLocaleString('ru')}</span>
               </div>
-              {l.old_values && l.new_values && (
-                <div className="mt-1.5 text-[10px]">
-                  {Object.keys(l.new_values).filter(k => l.old_values.get?.(k) !== l.new_values[k] || l.old_values?.[k] !== l.new_values[k]).map(k => (
-                    <span key={k} className="mr-3 inline-block">
-                      <span className="text-red-400 line-through">{k}: {String(l.old_values?.[k] ?? '—')}</span>
-                      <span className="text-[#34D399] ml-1.5">{k}: {String(l.new_values[k])}</span>
-                    </span>
-                  ))}
-                </div>
+              {describeChange(l) && (
+                <p className="mt-1 text-[10px] text-[#8B7FA8]">{describeChange(l)}</p>
               )}
             </div>
           ))}
