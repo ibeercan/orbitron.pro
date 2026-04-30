@@ -319,7 +319,7 @@ export default function Landing() {
     try {
       await subscriptionApi.earlyAccess(email)
       setMessageType('info')
-      setMessage('Спасибо за подписку!')
+      setMessage('Спасибо! Вы получите Premium на 1 месяц при запуске')
       setStep('success')
       setTimeout(() => goBack(), 2500)
     } catch (error: unknown) {
@@ -380,9 +380,9 @@ export default function Landing() {
   const formTitle = {
     email:        { title: 'Добро пожаловать',   subtitle: 'Войдите или зарегистрируйтесь' },
     login:        { title: 'С возвращением',      subtitle: 'Введите пароль от аккаунта' },
-    check:        { title: 'Ранний доступ',       subtitle: 'Подпишитесь, чтобы не пропустить запуск' },
+    check:        { title: 'Ранний доступ',       subtitle: 'Оставьте email — получите Premium на 1 месяц при запуске' },
     register:     { title: 'Создать аккаунт',     subtitle: isPremium ? 'Вы получите Premium навсегда' : 'Добро пожаловать в Orbitron' },
-    success:      { title: 'Спасибо за подписку!',   subtitle: 'Мы уведомим вас о запуске Orbitron' },
+    success:      { title: 'Спасибо за подписку!',   subtitle: 'Вы получите Premium на 1 месяц при запуске Orbitron' },
     verify_email: { title: 'Проверьте почту',    subtitle: `Мы отправили письмо на ${email}` },
   }[step]
 
@@ -434,7 +434,7 @@ export default function Landing() {
                   <h2 className="font-serif text-2xl font-semibold text-[#F0EAD6] mb-2">
                     Спасибо за подписку!
                   </h2>
-                  <p className="text-[#8B7FA8] text-sm">Мы уведомим вас о запуске Orbitron</p>
+                  <p className="text-[#8B7FA8] text-sm">Вы получите Premium на 1 месяц при запуске Orbitron</p>
                   <div className="mt-6 flex justify-center">
                     <div className="flex gap-1.5">
                       <div className="w-2 h-2 rounded-full bg-[#D4AF37] animate-typing-1" />
@@ -636,7 +636,7 @@ export default function Landing() {
                       disabled={isLoading}
                       className="btn-gold h-11 w-full flex items-center justify-center gap-2"
                     >
-                      {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Подписаться на рассылку'}
+                      {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Получить ранний доступ'}
                     </button>
                   </div>
                 )}
