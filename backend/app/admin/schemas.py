@@ -59,6 +59,7 @@ class AdminAuditLogOut(BaseModel):
     id: int
     entity_type: str
     entity_id: int
+    entity_display: Optional[str] = None
     action: str
     old_values: Optional[dict] = None
     new_values: Optional[dict] = None

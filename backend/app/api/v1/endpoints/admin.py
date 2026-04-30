@@ -259,10 +259,26 @@ async def list_audit_logs(
         skip=skip,
         limit=limit,
     )
-    return AdminAuditLogListResponse(
-        logs=[AdminAuditLogOut.model_validate(l) for l in logs],
-        total=total,
-    )
+
+    user_ids = {l.entity_id for l in logs if l.entity_type == "user"}
+    user_emails: dict[int, str] = {}
+    if user_ids:
+        result = await db.execute(
+            select(UserModel.id, UserModel.email).where(
+                UserModel.id.in_(user_ids),
+                UserModel.deleted_at.is_(None),
+            )
+        )
+        user_emails = {row[0]: row[1] for row in result.all()}
+
+    entries = []
+    for l in logs:
+        entry = AdminAuditLogOut.model_validate(l)
+        if l.entity_type == "user" and l.entity_id in user_emails:
+            entry.entity_display = user_emails[l.entity_id]
+        entries.append(entry)
+
+    return AdminAuditLogListResponse(logs=entries, total=total)
 
 
 @router.get("/token-usage", response_model=AdminTokenUsageListResponse)
