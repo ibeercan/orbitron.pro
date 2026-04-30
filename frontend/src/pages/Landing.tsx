@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/auth-context'
 import { cn } from '@/lib/utils'
 import {
   ArrowRight, Sparkles, Heart, Compass, Users, Loader2, ChevronLeft,
-  Sun, Zap, RotateCcw, BookOpen, MessageCircle, Crown, Check, X, Mail, Circle, Diamond, Star, Share2, CalendarDays, Trophy,
+  Sun, Zap, RotateCcw, BookOpen, MessageCircle, Crown, Check, X, Mail, Circle, Diamond, Star, Share2, CalendarDays, Trophy, Shield, TrendingUp,
 } from 'lucide-react'
 
 function parseApiError(error: unknown, fallback: string): string {
@@ -943,11 +943,13 @@ export default function Landing() {
                       <h3 className="font-serif text-lg font-semibold text-[#F0EAD6] mb-3">Следующий уровень</h3>
                       <div className="space-y-2">
                         {[
-                          { icon: Heart, text: 'Автоматический отчёт совместимости' },
-                          { icon: CalendarDays, text: 'Астрологический дневник — прогноз на каждый день' },
-                          { icon: Share2, text: 'Шаринг карт — красивые карточки для соцсетей' },
-                          { icon: Zap, text: 'Кармический индекс — напряжённость периода' },
-                          { icon: Trophy, text: 'Система достижений и наград' },
+{ icon: Heart, text: 'Автоматический отчёт совместимости — развёрнутый ИИ-анализ пары' },
+                        { icon: CalendarDays, text: 'Астрологический дневник — персональный прогноз на каждый день' },
+                        { icon: Share2, text: 'Шаринг карт — красивые карточки для соцсетей' },
+                        { icon: Zap, text: 'Кармический индекс — визуализация напряжённости периода' },
+                        { icon: Trophy, text: 'Система достижений и наград — стрики, бейджи, бонусы' },
+                        { icon: Shield, text: 'Достоинства планет + Арабские части — глубина анализа' },
+                        { icon: TrendingUp, text: 'Зодиакальное высвобождение — таймлайн жизни' },
                         ].map(item => (
                           <div key={item.text} className="flex items-center gap-2.5">
                             <div className="w-4 h-4 rounded-full bg-[rgba(139,127,168,0.06)] flex items-center justify-center shrink-0">
