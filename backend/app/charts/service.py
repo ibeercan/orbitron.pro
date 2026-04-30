@@ -9,6 +9,7 @@ from typing import Dict, Any
 
 from stellium import ChartBuilder, MultiChartBuilder, Native, ReportBuilder, SynthesisBuilder
 from stellium.engines import PlacidusHouses, WholeSignHouses, RegiomontanusHouses
+from stellium.components.dignity import DignityComponent, AccidentalDignityComponent
 
 from app.core.logging import logger
 
@@ -843,3 +844,86 @@ class ChartService:
 
 
 chart_service = ChartService()
+
+
+def compute_dignities(native_data: dict) -> dict:
+    dt_str = native_data["datetime"]
+    loc = native_data["location"]
+    engine_cls = HOUSE_ENGINES.get(native_data.get("house_system", "placidus"), PlacidusHouses)
+    chart = (
+        ChartBuilder.from_details(dt_str, loc)
+        .with_house_systems([engine_cls()])
+        .with_aspects()
+        .add_component(DignityComponent())
+        .add_component(AccidentalDignityComponent())
+        .calculate()
+    )
+
+    dignities = chart.metadata.get("dignities", {})
+    acc = chart.metadata.get("accidental_dignities", {})
+
+    planet_dignities = []
+    for planet_name, data in dignities.get("planet_dignities", {}).items():
+        trad = data.get("traditional")
+        mod = data.get("modern")
+        planet_dict = {
+            "planet": planet_name,
+            "sign": data.get("sign", ""),
+            "degree": data.get("degree", 0.0),
+        }
+        if trad:
+            planet_dict["traditional"] = trad
+        if mod:
+            planet_dict["modern"] = mod
+        planet_dict["total_score"] = data.get("total_score")
+        planet_dict["is_peregrine"] = data.get("is_peregrine")
+        planet_dignities.append(planet_dict)
+
+    mutual_receptions = {}
+    mr_data = dignities.get("mutual_receptions", {})
+    for system, receptions in mr_data.items():
+        mutual_receptions[system] = [
+            {
+                "type": r.get("type", ""),
+                "planet1": r.get("planet1", ""),
+                "planet2": r.get("planet2", ""),
+                "planet1_sign": r.get("planet1_sign", ""),
+                "planet2_sign": r.get("planet2_sign", ""),
+                "strength": r.get("strength", ""),
+                "description": r.get("description", ""),
+            }
+            for r in receptions
+        ]
+
+    accidental_dignities = []
+    for planet_name, data in acc.items():
+        by_system = data.get("by_system", {})
+        house_conditions = []
+        for system_name, sys_data in by_system.items():
+            house_conditions.append({
+                "system": system_name,
+                "score": sys_data.get("score", 0),
+                "house": sys_data.get("house"),
+                "conditions": sys_data.get("conditions", []),
+            })
+        universal_conditions = data.get("universal", {}).get("conditions", [])
+        accidental_dignities.append({
+            "planet": planet_name,
+            "total_score": data.get("score", 0),
+            "house_conditions": house_conditions,
+            "universal_conditions": universal_conditions,
+        })
+
+    strongest = None
+    if hasattr(chart, "get_strongest_planet"):
+        result = chart.get_strongest_planet("traditional")
+        if result:
+            strongest = result[0] if isinstance(result, tuple) else result
+
+    return {
+        "sect": dignities.get("sect", "unknown"),
+        "planet_dignities": planet_dignities,
+        "mutual_receptions": mutual_receptions,
+        "accidental_dignities": accidental_dignities,
+        "strongest_planet": strongest,
+    }

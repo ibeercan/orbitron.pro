@@ -431,3 +431,42 @@ class NotableEventInfo(BaseModel):
 
 class NotableEventsResponse(BaseModel):
     events: list[NotableEventInfo]
+
+
+class DignityRequest(BaseModel):
+    natal_chart_id: int
+
+
+class PlanetDignity(BaseModel):
+    planet: str
+    sign: str
+    degree: float
+    traditional: dict | None = None
+    modern: dict | None = None
+    total_score: int | None = None
+    is_peregrine: bool | None = None
+
+
+class MutualReception(BaseModel):
+    type: str
+    planet1: str
+    planet2: str
+    planet1_sign: str
+    planet2_sign: str
+    strength: str
+    description: str
+
+
+class AccidentalDignity(BaseModel):
+    planet: str
+    total_score: int
+    house_conditions: list[dict] = []
+    universal_conditions: list[dict] = []
+
+
+class DignityResponse(BaseModel):
+    sect: str
+    planet_dignities: list[PlanetDignity]
+    mutual_receptions: dict[str, list[MutualReception]] = {}
+    accidental_dignities: list[AccidentalDignity] = []
+    strongest_planet: str | None = None

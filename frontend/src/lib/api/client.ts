@@ -275,6 +275,10 @@ export const chartsApi = {
     return api.delete(`/charts/${id}`)
   },
 
+  getDignities: async (chartId: number) => {
+    return api.post(`/charts/${chartId}/dignities`)
+  },
+
   rectify: async (data: {
     birth_date: string
     location: string

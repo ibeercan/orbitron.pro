@@ -22,9 +22,10 @@ import { ElectionalForm } from '@/components/ui/ElectionalForm'
 import { PlannerForm } from '@/components/ui/PlannerForm'
 import { TransitTimeline } from '@/components/ui/TransitTimeline'
 import { AstroTwinsPanel } from '@/components/ui/AstroTwinsPanel'
+import { DignityPanel } from '@/components/ui/DignityPanel'
 import { OnboardingTour } from '@/components/ui/OnboardingTour'
 import { PremiumUpgradeModal } from '@/components/ui/PremiumUpgradeModal'
-import { Loader2, Calendar, MapPin, Sparkles, Star, Trash2, AlertTriangle, Maximize2, Heart, Clock, Sun, Moon, Target, FileText, Lock, Crown, ArrowLeft, Crosshair, Navigation, Zap, Compass, BookOpen, RotateCcw } from 'lucide-react'
+import { Loader2, Calendar, MapPin, Sparkles, Star, Trash2, AlertTriangle, Maximize2, Heart, Clock, Sun, Moon, Target, FileText, Lock, Crown, ArrowLeft, Crosshair, Navigation, Zap, Compass, BookOpen, RotateCcw, Shield } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/contexts/auth-context'
 
@@ -631,6 +632,7 @@ const loadChartSvg = async (chart: Chart) => {
                     <ChartActionButton icon={Zap} label="Прогрессии" premium onClick={() => setActiveModal('progression')} onPremiumLock={() => setShowPremiumModal(true)} />
                     <ChartActionButton icon={BookOpen} label="Плэннер" premium onClick={() => setActiveModal('planner')} onPremiumLock={() => setShowPremiumModal(true)} />
                     <ChartActionButton icon={FileText} label="PDF" premium onClick={handlePdfDownload} onPremiumLock={() => setShowPremiumModal(true)} />
+                    <ChartActionButton icon={Shield} label="Достоинства" premium onClick={() => setActiveModal('dignities')} onPremiumLock={() => setShowPremiumModal(true)} />
                   </div>
                 )}
 
@@ -1068,6 +1070,19 @@ const loadChartSvg = async (chart: Chart) => {
               natalChartId={selectedChart.id}
               onCancel={closeModal}
             />
+          </ModalShell>
+        )}
+
+        {selectedChart && (
+          <ModalShell
+            open={activeModal === 'dignities'}
+            onClose={closeModal}
+            icon={<Shield className="w-4 h-4 text-[#D4AF37]" style={{ width: 16, height: 16 }} />}
+            title="Достоинства планет"
+            description="Обитель, экзальтация, заточение и сила каждой планеты"
+            size="lg"
+          >
+            <DignityPanel natalChartId={selectedChart.id} onClose={closeModal} />
           </ModalShell>
         )}
 
