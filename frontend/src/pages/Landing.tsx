@@ -121,6 +121,7 @@ export default function Landing() {
   const [messageType, setMessageType] = useState<'info' | 'error'>('info')
   const [isLoading, setIsLoading] = useState(false)
   const [resendStatus, setResendStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
+  const [isAlreadySubscribed, setIsAlreadySubscribed] = useState(false)
   const verifiedFromUrl = searchParams.get('verified') === 'true'
   const inviteFromUrl = searchParams.get('invite') || ''
 
@@ -291,6 +292,11 @@ export default function Landing() {
           setMessage(parseApiError(inviteRes.data.message || 'Неверный код', 'Неверный код приглашения'))
           setStep('check')
         }
+      } else if (!regOpen && is_subscriber) {
+        setIsAlreadySubscribed(true)
+        setMessageType('info')
+        setMessage('Вы уже подписаны. Регистрация скоро откроется, и вы получите Premium на 1 месяц.')
+        setStep('check')
       } else if (!regOpen) {
         setMessageType('info')
         setMessage('Регистрация сейчас только по приглашению. Введите код приглашения.')
@@ -363,6 +369,7 @@ export default function Landing() {
     setMessage('')
     setMessageType('info')
     setIsPremium(false)
+    setIsAlreadySubscribed(false)
     resetEmail()
     resetPassword()
   }
@@ -631,13 +638,15 @@ export default function Landing() {
                         {message}
                       </div>
                     )}
-                    <button
-                      onClick={onSubscribe}
-                      disabled={isLoading}
-                      className="btn-gold h-11 w-full flex items-center justify-center gap-2"
-                    >
-                      {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Получить ранний доступ'}
-                    </button>
+                    {!isAlreadySubscribed && (
+                      <button
+                        onClick={onSubscribe}
+                        disabled={isLoading}
+                        className="btn-gold h-11 w-full flex items-center justify-center gap-2"
+                      >
+                        {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Получить ранний доступ'}
+                      </button>
+                    )}
                   </div>
                 )}
 
