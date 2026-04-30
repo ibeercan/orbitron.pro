@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/auth-context'
 import { cn } from '@/lib/utils'
 import {
   ArrowRight, Sparkles, Heart, Compass, Users, Loader2, ChevronLeft,
-  Sun, Zap, RotateCcw, BookOpen, MessageCircle, Crown, Check, X, Mail,
+  Sun, Zap, RotateCcw, BookOpen, MessageCircle, Crown, Check, X, Mail, Circle, Diamond, Star, Share2, CalendarDays, Trophy,
 } from 'lucide-react'
 
 function parseApiError(error: unknown, fallback: string): string {
@@ -850,8 +850,121 @@ export default function Landing() {
               </div>
             </section>
 
+            {/* ── Roadmap ── */}
+            <section className="w-full max-w-2xl mt-20 animate-in animate-in-delay-5">
+              <h2 className="font-serif text-2xl sm:text-3xl font-semibold text-center text-[#F0EAD6] mb-2">
+                Дорожная карта
+              </h2>
+              <p className="text-[#8B7FA8] text-center text-sm mb-10 max-w-md mx-auto">
+                От натальной карты до полноценной астрологической платформы
+              </p>
+
+              <div className="relative">
+                {/* Vertical timeline line */}
+                <div className="absolute left-5 top-8 bottom-8 w-px border-l border-dashed border-[rgba(212,175,55,0.15)]" />
+
+                <div className="space-y-6">
+                  {/* Phase 1: Available */}
+                  <div className="relative flex gap-5">
+                    <div className="flex flex-col items-center shrink-0 pt-1">
+                      <div className="w-10 h-10 rounded-xl bg-[rgba(52,211,153,0.1)] border border-[rgba(52,211,153,0.2)] flex items-center justify-center z-10">
+                        <Check className="w-4.5 h-4.5 text-[#34D399]" style={{ width: 18, height: 18 }} />
+                      </div>
+                    </div>
+                    <div className="flex-1 luxury-card p-5">
+                      <div className="flex items-center gap-2.5 mb-3">
+                        <span className="text-[9px] px-2 py-1 rounded-md bg-[rgba(52,211,153,0.1)] text-[#34D399] border border-[rgba(52,211,153,0.2)] font-medium">Доступно</span>
+                        <span className="text-xs text-[#8B7FA8]">Бета 2026</span>
+                      </div>
+                      <h3 className="font-serif text-lg font-semibold text-[#F0EAD6] mb-3">Основа астрологии</h3>
+                      <div className="space-y-2">
+                        {[
+                          { icon: Star, text: 'Натальные карты + ИИ-интерпретация' },
+                          { icon: Zap, text: 'Транзиты текущего момента' },
+                          { icon: MessageCircle, text: 'ИИ-астролог — 3 вопроса бесплатно' },
+                          { icon: Users, text: 'Профили людей — сохраняйте даты рождения' },
+                        ].map(item => (
+                          <div key={item.text} className="flex items-center gap-2.5">
+                            <div className="w-4 h-4 rounded-full bg-[rgba(52,211,153,0.1)] flex items-center justify-center shrink-0">
+                              <item.icon className="w-2.5 h-2.5 text-[#34D399]" />
+                            </div>
+                            <span className="text-sm text-[#D4C5A0]">{item.text}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Phase 2: Premium */}
+                  <div className="relative flex gap-5">
+                    <div className="flex flex-col items-center shrink-0 pt-1">
+                      <div className="w-10 h-10 rounded-xl bg-[rgba(212,175,55,0.1)] border border-[rgba(212,175,55,0.2)] flex items-center justify-center z-10">
+                        <Diamond className="w-4.5 h-4.5 text-[#D4AF37]" style={{ width: 18, height: 18 }} />
+                      </div>
+                    </div>
+                    <div className="flex-1 luxury-card p-5">
+                      <div className="flex items-center gap-2.5 mb-3">
+                        <span className="text-[9px] px-2 py-1 rounded-md bg-[rgba(212,175,55,0.1)] text-[#D4AF37] border border-[rgba(212,175,55,0.2)] font-medium">Premium</span>
+                        <span className="text-xs text-[#8B7FA8]">Скоро</span>
+                      </div>
+                      <h3 className="font-serif text-lg font-semibold text-[#F0EAD6] mb-3">Полный инструментарий</h3>
+                      <div className="space-y-2">
+                        {[
+                          { icon: Heart, text: 'Синастрия, Композит и Давидсон' },
+                          { icon: Sun, text: 'Соляр, Лунар, Планетарные возвраты' },
+                          { icon: RotateCcw, text: 'Профекции, Дирекции, Прогрессии' },
+                          { icon: Compass, text: 'Хорар и Электив' },
+                          { icon: Zap, text: 'Транзитный таймлайн на любую дату' },
+                          { icon: BookOpen, text: 'Ректификация времени рождения' },
+                        ].map(item => (
+                          <div key={item.text} className="flex items-center gap-2.5">
+                            <div className="w-4 h-4 rounded-full bg-[rgba(212,175,55,0.1)] flex items-center justify-center shrink-0">
+                              <item.icon className="w-2.5 h-2.5 text-[#D4AF37]" />
+                            </div>
+                            <span className="text-sm text-[#D4C5A0]">{item.text}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Phase 3: In development */}
+                  <div className="relative flex gap-5">
+                    <div className="flex flex-col items-center shrink-0 pt-1">
+                      <div className="w-10 h-10 rounded-xl bg-[rgba(139,127,168,0.08)] border border-[rgba(139,127,168,0.15)] flex items-center justify-center z-10">
+                        <Circle className="w-4.5 h-4.5 text-[#8B7FA8]" style={{ width: 18, height: 18 }} />
+                      </div>
+                    </div>
+                    <div className="flex-1 luxury-card p-5">
+                      <div className="flex items-center gap-2.5 mb-3">
+                        <span className="text-[9px] px-2 py-1 rounded-md bg-[rgba(139,127,168,0.08)] text-[#8B7FA8] border border-[rgba(139,127,168,0.15)] font-medium">План</span>
+                        <span className="text-xs text-[#4A3F6A]">В разработке</span>
+                      </div>
+                      <h3 className="font-serif text-lg font-semibold text-[#F0EAD6] mb-3">Следующий уровень</h3>
+                      <div className="space-y-2">
+                        {[
+                          { icon: Heart, text: 'Автоматический отчёт совместимости' },
+                          { icon: CalendarDays, text: 'Астрологический дневник — прогноз на каждый день' },
+                          { icon: Share2, text: 'Шаринг карт — красивые карточки для соцсетей' },
+                          { icon: Zap, text: 'Кармический индекс — напряжённость периода' },
+                          { icon: Trophy, text: 'Система достижений и наград' },
+                        ].map(item => (
+                          <div key={item.text} className="flex items-center gap-2.5">
+                            <div className="w-4 h-4 rounded-full bg-[rgba(139,127,168,0.06)] flex items-center justify-center shrink-0">
+                              <item.icon className="w-2.5 h-2.5 text-[#6B5F8A]" />
+                            </div>
+                            <span className="text-sm text-[#6B5F8A]">{item.text}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
             {/* ── Bottom bar ── */}
-            <div className="flex items-center gap-3 mt-20 animate-in animate-in-delay-5">
+            <div className="flex items-center gap-3 mt-20 animate-in animate-in-delay-6">
               <div className="gold-divider w-12" />
               <span className="text-xs text-[#4A3F6A] tracking-widest uppercase font-medium">
                 Orbitron · Ранний доступ · 2026
