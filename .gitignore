@@ -105,8 +105,7 @@ dmypy.json
 .vscode/
 .idea/
 
-# Alembic
-alembic/versions/*.py
+
 
 # Frontend
 frontend/node_modules/

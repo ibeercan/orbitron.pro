@@ -109,5 +109,3 @@ dmypy.json
 dev.db
 *.db
 
-# Alembic
-alembic/versions/*.py
