@@ -578,12 +578,12 @@ function TokensTab() {
           {byDate.length > 0 && (
             <div className="rounded-xl border border-[rgba(212,175,55,0.08)] bg-[rgba(10,6,18,0.4)] p-4">
               <p className="text-[10px] text-[#8B7FA8] mb-3 uppercase tracking-wider">Стоимость по дням</p>
-              <div className="flex items-end gap-[2px] h-32">
+              <div className="flex gap-[2px] h-32">
                 {byDate.map((d: any) => {
                   const h = maxCost > 0 ? (d.cost_rub / maxCost) * 100 : 0
                   const label = d.date.slice(5)
                   return (
-                    <div key={d.date} className="flex-1 min-w-0 flex flex-col items-center gap-0.5 group relative">
+                    <div key={d.date} className="flex-1 min-w-0 flex flex-col items-center justify-end gap-0.5 group relative h-full">
                       <div className="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity text-[9px] text-[#F0EAD6] whitespace-nowrap bg-[#1a1630] px-2 py-1 rounded shadow-lg border border-[rgba(212,175,55,0.1)] z-10">
                         {d.cost_rub.toFixed(2)}₽
                       </div>
