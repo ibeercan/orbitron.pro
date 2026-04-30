@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils'
 
 const RELATIONSHIP_TYPES = [
   { id: 'synastry' as const, label: 'Синастрия', desc: 'Наложение двух натальных карт', icon: Heart },
-  { id: 'composite' as const, label: 'Композит / Давидсон', desc: 'Карта отношений как единое целое', icon: Merge },
+  { id: 'composite' as const, label: 'Композит / Давидсон', desc: 'Композит — средняя карта пары · Давидсон — карта момента знакомства', icon: Merge },
 ]
 
 type RelationshipType = 'synastry' | 'composite'

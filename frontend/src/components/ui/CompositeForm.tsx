@@ -226,8 +226,8 @@ export function CompositeForm({ natalChartId, onSubmit, onCancel, defaultType = 
         </div>
         <p className="text-[11px] text-[#4A3F6A] mt-1">
           {synthesisType === 'composite'
-            ? 'Мидпоинт позиций двух натальных карт'
-            : 'Мидпоинт времени и места рождения двух людей'}
+            ? 'Средняя позиция планет — карта пары как единого целого'
+            : 'Карта на среднюю дату и место — отражает суть отношений'}
         </p>
       </div>
 
