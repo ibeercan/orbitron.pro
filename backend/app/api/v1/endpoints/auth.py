@@ -32,6 +32,7 @@ from app.auth.deps import get_current_active_user
 from app.admin.settings import is_registration_open
 from app.models.refresh_token import RefreshToken
 from app.models.user import User as UserModel
+from app.models.audit import AuditLog
 from app.subscriptions.crud import early_subscriber as early_subscriber_crud
 from app.email.service import send_verification_email, send_reset_password_email
 from slowapi import Limiter
@@ -467,6 +468,15 @@ async def reset_password(
     for rt in revoke_result.scalars().all():
         rt.revoked_at = datetime.now(timezone.utc)
 
+    audit = AuditLog.log_update(
+        entity_type="user",
+        entity_id=user.id,
+        old_values=None,
+        new_values={"field": "password", "method": "reset"},
+        user_id=user.id,
+    )
+    db.add(audit)
+
     await db.commit()
 
     login_result = await _create_tokens_and_cookies(user.email, response, db)
@@ -503,6 +513,15 @@ async def change_password(
     )
     for rt in revoke_result.scalars().all():
         rt.revoked_at = datetime.now(timezone.utc)
+
+    audit = AuditLog.log_update(
+        entity_type="user",
+        entity_id=current_user.id,
+        old_values=None,
+        new_values={"field": "password", "method": "change"},
+        user_id=current_user.id,
+    )
+    db.add(audit)
 
     await db.flush()
 
