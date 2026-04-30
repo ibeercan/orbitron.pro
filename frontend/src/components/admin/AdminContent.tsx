@@ -518,7 +518,7 @@ function AuditTab() {
     }
 
     if (l.action === 'delete' && ov) {
-      if (l.entity_type === 'user') return null
+      if (l.entity_type === 'user') return `#${l.entity_id}`
       const email = ov.code || `#${l.entity_id}`
       return email as string
     }
