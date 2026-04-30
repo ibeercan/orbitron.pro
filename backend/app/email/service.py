@@ -44,6 +44,9 @@ async def send_email(to: str, subject: str, html_body: str, db: Optional[AsyncSe
 
     msg.attach(MIMEText(html_body, "html", "utf-8"))
 
+    use_tls = smtp_port == 465
+    start_tls = smtp_port == 587
+
     try:
         await aiosmtplib.send(
             msg,
@@ -51,7 +54,8 @@ async def send_email(to: str, subject: str, html_body: str, db: Optional[AsyncSe
             port=smtp_port,
             username=smtp_user or None,
             password=smtp_password or None,
-            start_tls=True,
+            use_tls=use_tls,
+            start_tls=start_tls if not use_tls else False,
         )
         logger.info("email_sent", to=to, subject=subject)
     except Exception as e:
