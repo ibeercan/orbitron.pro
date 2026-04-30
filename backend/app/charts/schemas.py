@@ -502,3 +502,34 @@ class AspectPatternResult(BaseModel):
 
 class AspectPatternsResponse(BaseModel):
     patterns: list[AspectPatternResult]
+
+
+class ZRPeriod(BaseModel):
+    level: int
+    sign: str
+    sign_ru: str
+    ruler: str
+    ruler_ru: str
+    start_date: str
+    end_date: str
+    length_days: float
+    is_peak: bool = False
+    is_loosing_bond: bool = False
+    score: int | None = None
+
+
+class ZRRequest(BaseModel):
+    natal_chart_id: int
+    lots: list[str] = ["Part of Fortune"]
+    method: str = "valens"
+    max_level: int = 2
+
+
+class ZodiacalReleasingResponse(BaseModel):
+    lot: str
+    lot_ru: str
+    lot_sign: str
+    lot_sign_ru: str
+    birth_date: str
+    sect: str
+    periods: dict[int, list[ZRPeriod]]

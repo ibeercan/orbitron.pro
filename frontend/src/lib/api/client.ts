@@ -287,6 +287,14 @@ export const chartsApi = {
     return api.post(`/charts/${chartId}/aspect-patterns`)
   },
 
+  getZodiacalReleasing: async (chartId: number, lots?: string[], maxLevel?: number) => {
+    return api.post(`/charts/${chartId}/zodiacal-releasing`, {
+      natal_chart_id: chartId,
+      lots: lots || ['Part of Fortune'],
+      max_level: maxLevel || 2,
+    })
+  },
+
   rectify: async (data: {
     birth_date: string
     location: string

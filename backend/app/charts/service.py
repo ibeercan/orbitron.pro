@@ -12,6 +12,7 @@ from stellium.engines import PlacidusHouses, WholeSignHouses, RegiomontanusHouse
 from stellium.components.dignity import DignityComponent, AccidentalDignityComponent
 from stellium.components.arabic_parts import ArabicPartsCalculator
 from stellium.engines.patterns import AspectPatternAnalyzer
+from stellium.engines.releasing import ZodiacalReleasingAnalyzer
 
 from app.core.logging import logger
 
@@ -1077,3 +1078,94 @@ def compute_aspect_patterns(native_data: dict) -> dict:
         })
 
     return {"patterns": patterns}
+
+
+ZR_LOTS_RU: dict[str, str] = {
+    "Part of Fortune": "Лот Фортуны",
+    "Part of Spirit": "Лот Духа",
+}
+
+
+def compute_zodiacal_releasing(native_data: dict, lots: list[str] | None = None, method: str = "valens", max_level: int = 2) -> dict:
+    dt_str = native_data["datetime"]
+    loc = native_data["location"]
+    engine_cls = HOUSE_ENGINES.get(native_data.get("house_system", "placidus"), PlacidusHouses)
+    chart = (
+        ChartBuilder.from_details(dt_str, loc)
+        .with_house_systems([engine_cls()])
+        .with_aspects()
+        .add_analyzer(ZodiacalReleasingAnalyzer(
+            lots=lots or ["Part of Fortune"],
+            max_level=max_level,
+        ))
+        .calculate()
+    )
+
+    sect = chart.metadata.get("dignities", {}).get("sect", "unknown")
+
+    results = []
+    for lot_name in (lots or ["Part of Fortune"]):
+        lot_ru = ZR_LOTS_RU.get(lot_name, lot_name)
+
+        try:
+            timeline = chart.zodiacal_releasing(lot_name)
+        except Exception:
+            continue
+
+        lot_sign = timeline.lot_sign if hasattr(timeline, "lot_sign") else ""
+        birth_date = timeline.birth_date.isoformat() if hasattr(timeline, "birth_date") else ""
+
+        lot_sign_ru = SIGN_RU.get(lot_sign, lot_sign)
+
+        periods_by_level: dict[int, list[dict]] = {}
+        for level in range(1, max_level + 1):
+            level_periods = []
+            for period in timeline.periods.get(level, []):
+                ruler_name = period.ruler if hasattr(period, "ruler") else ""
+                period_dict = {
+                    "level": level,
+                    "sign": period.sign if hasattr(period, "sign") else "",
+                    "sign_ru": SIGN_RU.get(period.sign, period.sign) if hasattr(period, "sign") else "",
+                    "ruler": ruler_name,
+                    "ruler_ru": PLANET_RU.get(ruler_name, ruler_name),
+                    "start_date": period.start.isoformat() if hasattr(period, "start") else "",
+                    "end_date": period.end.isoformat() if hasattr(period, "end") else "",
+                    "length_days": period.length_days if hasattr(period, "length_days") else 0,
+                    "is_peak": period.is_peak if hasattr(period, "is_peak") else False,
+                    "is_loosing_bond": period.is_loosing_bond if hasattr(period, "is_loosing_bond") else False,
+                    "score": period.score if hasattr(period, "score") else None,
+                }
+                level_periods.append(period_dict)
+            periods_by_level[level] = level_periods
+
+        results.append({
+            "lot": lot_name,
+            "lot_ru": lot_ru,
+            "lot_sign": lot_sign,
+            "lot_sign_ru": lot_sign_ru,
+            "birth_date": birth_date,
+            "sect": sect,
+            "periods": periods_by_level,
+        })
+
+    if not results:
+        return {
+            "lot": lots[0] if lots else "Part of Fortune",
+            "lot_ru": ZR_LOTS_RU.get(lots[0] if lots else "Part of Fortune", "Лот Фортуны"),
+            "lot_sign": "",
+            "lot_sign_ru": "",
+            "birth_date": "",
+            "sect": sect,
+            "periods": {},
+        }
+
+    first = results[0]
+    return {
+        "lot": first["lot"],
+        "lot_ru": first["lot_ru"],
+        "lot_sign": first["lot_sign"],
+        "lot_sign_ru": first["lot_sign_ru"],
+        "birth_date": first["birth_date"],
+        "sect": first["sect"],
+        "periods": first["periods"],
+    }

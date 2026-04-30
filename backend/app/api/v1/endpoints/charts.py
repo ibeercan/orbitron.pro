@@ -41,10 +41,12 @@ from app.charts.schemas import (
     DignityResponse,
     ArabicPartsResponse,
     AspectPatternsResponse,
+    ZRRequest,
+    ZodiacalReleasingResponse,
 )
 from app.charts.rectification_schemas import RectificationRequest, RectificationResponse, RectificationPollResponse
 from app.charts.rectification import rectify
-from app.charts.service import chart_service, _build_natal, compute_dignities, compute_arabic_parts, compute_aspect_patterns
+from app.charts.service import chart_service, _build_natal, compute_dignities, compute_arabic_parts, compute_aspect_patterns, compute_zodiacal_releasing
 from app.charts import notables
 from app.charts.crud import chart as chart_crud
 from app.insights.crud import insight_crud
@@ -510,6 +512,27 @@ async def get_dignities(
         return DignityResponse(**result)
     except Exception as e:
         logger.error("API: Failed to compute dignities", chart_id=chart_id, error=str(e))
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.post("/{chart_id}/zodiacal-releasing", response_model=ZodiacalReleasingResponse)
+async def get_zodiacal_releasing(
+    *,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+    chart_id: int,
+    body: ZRRequest | None = None,
+) -> Any:
+    require_premium(current_user, "zodiacal_releasing")
+    native_data, _ = await _get_native_data(db, chart_id, current_user.id)
+    lots = body.lots if body else ["Part of Fortune"]
+    method = body.method if body else "valens"
+    max_level = body.max_level if body else 2
+    try:
+        result = compute_zodiacal_releasing(native_data, lots=lots, method=method, max_level=max_level)
+        return ZodiacalReleasingResponse(**result)
+    except Exception as e:
+        logger.error("API: Failed to compute zodiacal releasing", chart_id=chart_id, error=str(e))
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
