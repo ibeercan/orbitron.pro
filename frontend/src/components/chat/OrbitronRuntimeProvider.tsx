@@ -1,10 +1,12 @@
-import React, { useState, useCallback, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
+import React, { useState, useCallback, useEffect, useRef, forwardRef, useImperativeHandle, createContext } from 'react';
 import {
   useExternalStoreRuntime,
   ThreadMessageLike,
   AppendMessage,
   AssistantRuntimeProvider,
 } from '@assistant-ui/react';
+
+export const StatusMessageContext = createContext<string | null>(null);
 
 interface ChatMessage {
   id: string;
@@ -68,7 +70,7 @@ function useOrbitronChatRuntime({
   const [sessionId, setSessionId] = useState<number | null>(initialSessionId);
   const abortControllerRef = useRef<AbortController | null>(null);
   const loadedSessionRef = useRef<number | null>(null);
-  const statusMessageIdRef = useRef<string | null>(null);
+  const [statusMessageId, setStatusMessageId] = useState<string | null>(null);
   const sessionIdRef = useRef(sessionId);
   const chartIdRef = useRef(chartId);
   const isRunningRef = useRef(false);
@@ -177,7 +179,7 @@ function useOrbitronChatRuntime({
           if (data.type === 'content') {
             if (!firstContentReceived) {
               firstContentReceived = true;
-              statusMessageIdRef.current = null;
+              setStatusMessageId(null);
               setMessages((prev) =>
                 prev.map((m) =>
                   m.id === assistantMessageId
@@ -195,7 +197,7 @@ function useOrbitronChatRuntime({
               );
             }
           } else if (data.type === 'error') {
-            statusMessageIdRef.current = null;
+            setStatusMessageId(null);
             setMessages((prev) =>
               prev.map((m) =>
                 m.id === assistantMessageId
@@ -261,7 +263,7 @@ function useOrbitronChatRuntime({
       content: userText,
       createdAt: new Date(),
     };
-    const statusText = '🔄 Думаю…';
+    const statusText = 'Думаю…';
     const assistantMsg: ChatMessage = {
       id: assistantMessageId,
       role: 'assistant',
@@ -271,7 +273,7 @@ function useOrbitronChatRuntime({
 
     setMessages((prev) => [...prev, userMsg, assistantMsg]);
     setIsRunning(true);
-    statusMessageIdRef.current = assistantMessageId;
+    setStatusMessageId(assistantMessageId);
     abortControllerRef.current = new AbortController();
 
     try {
@@ -300,7 +302,7 @@ function useOrbitronChatRuntime({
     const userMessageId = `user-${Date.now()}`;
     const assistantMessageId = `assistant-${Date.now()}`;
 
-    const statusText = statusMessage || '🔄 Думаю…';
+    const statusText = statusMessage || 'Думаю…';
     const userMsg: ChatMessage = {
       id: userMessageId,
       role: 'user',
@@ -316,7 +318,7 @@ function useOrbitronChatRuntime({
 
     setMessages((prev) => [...prev, userMsg, assistantMsg]);
     setIsRunning(true);
-    statusMessageIdRef.current = assistantMessageId;
+    setStatusMessageId(assistantMessageId);
     abortControllerRef.current = new AbortController();
 
     try {
@@ -353,12 +355,12 @@ function useOrbitronChatRuntime({
     convertMessage: (message) => convertMessage(message),
   });
 
-  return { runtime, sendAnalysisMessage };
+  return { runtime, sendAnalysisMessage, statusMessageId };
 }
 
 export const OrbitronRuntimeProvider = forwardRef<OrbitronRuntimeHandle, OrbitronRuntimeProviderProps>(
   ({ children, baseUrl, sessionId, chartId, onSessionCreated }, ref) => {
-    const { runtime, sendAnalysisMessage } = useOrbitronChatRuntime({
+    const { runtime, sendAnalysisMessage, statusMessageId } = useOrbitronChatRuntime({
       baseUrl,
       sessionId,
       chartId,
@@ -370,9 +372,11 @@ export const OrbitronRuntimeProvider = forwardRef<OrbitronRuntimeHandle, Orbitro
     }), [sendAnalysisMessage]);
 
     return (
-      <AssistantRuntimeProvider runtime={runtime}>
-        {children}
-      </AssistantRuntimeProvider>
+      <StatusMessageContext.Provider value={statusMessageId}>
+        <AssistantRuntimeProvider runtime={runtime}>
+          {children}
+        </AssistantRuntimeProvider>
+      </StatusMessageContext.Provider>
     );
   }
 );

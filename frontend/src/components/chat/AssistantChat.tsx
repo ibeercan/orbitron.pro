@@ -1,9 +1,9 @@
-import React, { useState, useRef, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react';
+import React, { useState, useRef, useEffect, useCallback, forwardRef, useImperativeHandle, useContext } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Send, Square, Copy, Check, Star, Sparkles, X } from 'lucide-react';
 import { useThread, useComposerRuntime, type ThreadMessage } from '@assistant-ui/react';
-import { OrbitronRuntimeProvider, type OrbitronRuntimeHandle } from './OrbitronRuntimeProvider';
+import { OrbitronRuntimeProvider, type OrbitronRuntimeHandle, StatusMessageContext } from './OrbitronRuntimeProvider';
 import { WelcomeMessage } from '@/components/ui/WelcomeMessage';
 import { cn } from '@/lib/utils';
 
@@ -334,6 +334,7 @@ horary: {
 function ChatContent({ showWelcome, onWelcomeDismiss, chartType }: { showWelcome?: boolean; onWelcomeDismiss?: () => void; chartType?: string }) {
   const threadState = useThread();
   const composer = useComposerRuntime({ optional: true });
+  const statusId = useContext(StatusMessageContext);
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const lastMsgContentRef = useRef('');
@@ -477,6 +478,7 @@ function ChatContent({ showWelcome, onWelcomeDismiss, chartType }: { showWelcome
             const isUser = msg.role === 'user';
             const isLast = idx === messages.length - 1;
             const isStreaming = isRunning && isLast && !isUser;
+            const isStatus = !isUser && statusId && msg.id === statusId;
 
             // Extract plain text for copy button
             const plainText = Array.isArray(msg.content)
@@ -506,7 +508,12 @@ function ChatContent({ showWelcome, onWelcomeDismiss, chartType }: { showWelcome
                     'w-fit max-w-full text-sm leading-relaxed px-4 py-3',
                     isUser ? 'msg-user ml-auto' : 'msg-ai'
                   )}>
-                    {isStreaming && !plainText ? (
+                    {isStatus ? (
+                      <div className="flex flex-col items-center gap-1.5">
+                        <ThinkingOrb />
+                        <span className="text-xs text-[#8B7FA8] italic">{plainText}</span>
+                      </div>
+                    ) : isStreaming && !plainText ? (
                       <ThinkingOrb />
                     ) : (
                       <MessageContent message={msg} />
