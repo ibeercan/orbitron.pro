@@ -492,10 +492,7 @@ function ChatContent({ showWelcome, onWelcomeDismiss, chartType }: { showWelcome
                     ) : (
                       <MessageContent message={msg} />
                     )}
-                    {/* Streaming cursor */}
-                    {isStreaming && plainText && (
-                      <span className="inline-block w-0.5 h-3.5 bg-[#D4AF37] ml-0.5 animate-pulse align-middle" />
-                    )}
+                    
                   </div>
 
                   {/* Copy button for AI messages */}
