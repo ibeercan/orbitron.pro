@@ -46,6 +46,18 @@ const QUALITY_COLORS: Record<string, string> = {
   'Мутабельный': 'text-[#60A5FA] bg-[rgba(96,165,250,0.1)]',
 }
 
+function AiButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className="flex items-center justify-center gap-2 w-full mt-4 py-3 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#B8960F] text-[#0A0612] font-semibold text-sm hover:from-[#E0BD4A] hover:to-[#C9A528] transition-all"
+    >
+      <Sparkles className="w-4 h-4" />
+      ИИ-интерпретация
+    </button>
+  )
+}
+
 export function AspectPatternsPanel({ natalChartId, onAiInterpret }: AspectPatternsPanelProps) {
   const [data, setData] = useState<{ patterns: PatternResult[] } | null>(null)
   const [loading, setLoading] = useState(true)
@@ -96,12 +108,12 @@ export function AspectPatternsPanel({ natalChartId, onAiInterpret }: AspectPatte
   }
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-2 mb-1">
+    <div className="space-y-4">
+      <div className="flex items-center gap-2 flex-wrap">
         <TrendingUp className="w-4 h-4 text-[#D4AF37]" />
         <h3 className="font-serif text-lg font-semibold text-[#F0EAD6]">Паттерны аспектов</h3>
+        <span className="text-xs text-[#8B7FA8]">Найдено: {data.patterns.length}</span>
       </div>
-      <p className="text-xs text-[#8B7FA8]">Найдено паттернов: {data.patterns.length}</p>
 
       <div className="space-y-3">
         {data.patterns.map((pattern, i) => {
@@ -156,15 +168,7 @@ export function AspectPatternsPanel({ natalChartId, onAiInterpret }: AspectPatte
         })}
       </div>
 
-      {onAiInterpret && (
-        <button
-          onClick={onAiInterpret}
-          className="flex items-center justify-center gap-2 w-full mt-4 py-3 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#B8960F] text-[#0A0612] font-semibold text-sm hover:from-[#E0BD4A] hover:to-[#C9A528] transition-all"
-        >
-          <Sparkles className="w-4 h-4" />
-          ИИ-интерпретация
-        </button>
-      )}
+      {onAiInterpret && <AiButton onClick={onAiInterpret} />}
     </div>
   )
 }

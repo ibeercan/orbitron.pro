@@ -11,7 +11,7 @@ interface DignityPanelProps {
 
 interface PlanetDignity {
   planet: string
-sign: string
+  sign: string
   degree: number
   traditional: Record<string, unknown> | null
   modern: Record<string, unknown> | null
@@ -81,6 +81,32 @@ function formatDignityEntry(key: string, value: unknown): string | null {
   return label
 }
 
+function SectBadge({ sect }: { sect: string }) {
+  const label = sect === 'day' ? 'Дневная' : 'Ночная'
+  return (
+    <span className={cn(
+      'px-2 py-0.5 rounded-md text-[10px] font-medium',
+      sect === 'day'
+        ? 'bg-[rgba(250,204,21,0.1)] text-[#FACC15] border border-[rgba(250,204,21,0.2)]'
+        : 'bg-[rgba(139,92,246,0.1)] text-[#A78BFA] border border-[rgba(139,92,246,0.2)]'
+    )}>
+      {label}
+    </span>
+  )
+}
+
+function AiButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className="flex items-center justify-center gap-2 w-full mt-4 py-3 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#B8960F] text-[#0A0612] font-semibold text-sm hover:from-[#E0BD4A] hover:to-[#C9A528] transition-all"
+    >
+      <Sparkles className="w-4 h-4" />
+      ИИ-интерпретация
+    </button>
+  )
+}
+
 export function DignityPanel({ natalChartId, onAiInterpret }: DignityPanelProps) {
   const [data, setData] = useState<{
     sect: string
@@ -131,27 +157,15 @@ export function DignityPanel({ natalChartId, onAiInterpret }: DignityPanelProps)
 
   if (!data) return null
 
-  const sectLabel = data.sect === 'day' ? 'Дневная' : 'Ночная'
-
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2 mb-1">
+      <div className="flex items-center gap-2 flex-wrap">
         <Shield className="w-4 h-4 text-[#D4AF37]" />
         <h3 className="font-serif text-lg font-semibold text-[#F0EAD6]">Достоинства планет</h3>
-      </div>
-
-      <div className="flex items-center gap-2 text-xs text-[#8B7FA8]">
-        <span className={cn(
-          'px-2 py-0.5 rounded-md text-[10px] font-medium',
-          data.sect === 'day'
-            ? 'bg-[rgba(250,204,21,0.1)] text-[#FACC15] border border-[rgba(250,204,21,0.2)]'
-            : 'bg-[rgba(139,92,246,0.1)] text-[#A78BFA] border border-[rgba(139,92,246,0.2)]'
-        )}>
-          {sectLabel} карта
-        </span>
+        <SectBadge sect={data.sect} />
         {data.strongest_planet && (
-          <span>
-            Сильнейшая планета: <span className="text-[#D4AF37]">{planetRu(data.strongest_planet)}</span>
+          <span className="text-xs text-[#8B7FA8]">
+            Сильнейшая: <span className="text-[#D4AF37]">{planetRu(data.strongest_planet)}</span>
           </span>
         )}
       </div>
@@ -178,7 +192,7 @@ export function DignityPanel({ natalChartId, onAiInterpret }: DignityPanelProps)
                     score >= 3 ? 'bg-[rgba(110,231,183,0.1)] text-[#6EE7B7]' :
                     score >= 1 ? 'bg-[rgba(167,243,208,0.08)] text-[#A7F3D0]' :
                     score <= -5 ? 'bg-[rgba(248,113,113,0.15)] text-[#F87171]' :
-                    score <= -3 ? 'bg-[rgba(248,113,113,0.1]] text-[#FCA5A5]' :
+                    score <= -3 ? 'bg-[rgba(248,113,113,0.1)] text-[#FCA5A5]' :
                     'bg-[rgba(139,127,168,0.1)] text-[#8B7FA8]'
                   )}>
                     {score > 0 ? '+' : ''}{score}
@@ -286,15 +300,7 @@ export function DignityPanel({ natalChartId, onAiInterpret }: DignityPanelProps)
         </div>
       )}
 
-      {onAiInterpret && (
-        <button
-          onClick={onAiInterpret}
-          className="flex items-center justify-center gap-2 w-full mt-4 py-3 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#B8960F] text-[#0A0612] font-semibold text-sm hover:from-[#E0BD4A] hover:to-[#C9A528] transition-all"
-        >
-          <Sparkles className="w-4 h-4" />
-          ИИ-интерпретация
-        </button>
-      )}
+      {onAiInterpret && <AiButton onClick={onAiInterpret} />}
     </div>
   )
 }

@@ -33,11 +33,37 @@ function formatDegree(degreeInSign: number, signRu: string): string {
   return `${d}°${String(m).padStart(2, '0')}' ${symbol}${signRu}`
 }
 
+function SectBadge({ sect }: { sect: string }) {
+  const label = sect === 'day' ? 'Дневная' : 'Ночная'
+  return (
+    <span className={cn(
+      'px-2 py-0.5 rounded-md text-[10px] font-medium',
+      sect === 'day'
+        ? 'bg-[rgba(250,204,21,0.1)] text-[#FACC15] border border-[rgba(250,204,21,0.2)]'
+        : 'bg-[rgba(139,92,246,0.1)] text-[#A78BFA] border border-[rgba(139,92,246,0.2)]'
+    )}>
+      {label}
+    </span>
+  )
+}
+
+function AiButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className="flex items-center justify-center gap-2 w-full mt-4 py-3 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#B8960F] text-[#0A0612] font-semibold text-sm hover:from-[#E0BD4A] hover:to-[#C9A528] transition-all"
+    >
+      <Sparkles className="w-4 h-4" />
+      ИИ-интерпретация
+    </button>
+  )
+}
+
 export function ArabicPartsPanel({ natalChartId, onAiInterpret }: ArabicPartsPanelProps) {
   const [data, setData] = useState<{ parts: PartResult[]; sect: string } | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [filter, setFilter] = useState<'all' | 'key'>('all')
+  const [filter, setFilter] = useState<'all' | 'key'>('key')
 
   useEffect(() => {
     let cancelled = false
@@ -80,25 +106,13 @@ export function ArabicPartsPanel({ natalChartId, onAiInterpret }: ArabicPartsPan
     ? data.parts.filter((p) => KEY_PARTS.includes(p.name_ru))
     : data.parts
 
-  const sectLabel = data.sect === 'day' ? 'Дневная' : 'Ночная'
-
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2 mb-1">
+      <div className="flex items-center gap-2 flex-wrap">
         <Hexagon className="w-4 h-4 text-[#D4AF37]" />
         <h3 className="font-serif text-lg font-semibold text-[#F0EAD6]">Арабские части</h3>
-      </div>
-
-      <div className="flex items-center gap-2 text-xs text-[#8B7FA8]">
-        <span className={cn(
-          'px-2 py-0.5 rounded-md text-[10px] font-medium',
-          data.sect === 'day'
-            ? 'bg-[rgba(250,204,21,0.1)] text-[#FACC15] border border-[rgba(250,204,21,0.2)]'
-            : 'bg-[rgba(139,92,246,0.1)] text-[#A78BFA] border border-[rgba(139,92,246,0.2)]'
-        )}>
-          {sectLabel} карта
-        </span>
-        <span>{data.parts.length} частей</span>
+        <SectBadge sect={data.sect} />
+        <span className="text-xs text-[#8B7FA8]">{data.parts.length} частей</span>
       </div>
 
       <div className="flex gap-2">
@@ -133,8 +147,8 @@ export function ArabicPartsPanel({ natalChartId, onAiInterpret }: ArabicPartsPan
             <div
               key={part.name}
               className={cn(
-                'flex items-center justify-between px-3 py-2 rounded-lg transition-colors',
-                isKey ? 'bg-[rgba(212,175,55,0.06)]' : 'bg-[rgba(255,255,255,0.02)]'
+                'luxury-card px-3 py-2.5 flex items-center justify-between',
+                isKey && 'border-[rgba(212,175,55,0.15)]'
               )}
             >
               <div className="flex items-center gap-2">
@@ -151,15 +165,7 @@ export function ArabicPartsPanel({ natalChartId, onAiInterpret }: ArabicPartsPan
         })}
       </div>
 
-      {onAiInterpret && (
-        <button
-          onClick={onAiInterpret}
-          className="flex items-center justify-center gap-2 w-full mt-4 py-3 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#B8960F] text-[#0A0612] font-semibold text-sm hover:from-[#E0BD4A] hover:to-[#C9A528] transition-all"
-        >
-          <Sparkles className="w-4 h-4" />
-          ИИ-интерпретация
-        </button>
-      )}
+      {onAiInterpret && <AiButton onClick={onAiInterpret} />}
     </div>
   )
 }

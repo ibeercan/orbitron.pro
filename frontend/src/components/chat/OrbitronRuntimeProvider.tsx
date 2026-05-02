@@ -129,12 +129,11 @@ function useOrbitronChatRuntime({
   }, [sessionId, baseApiUrl]);
 
   const _sendStreamRequest = useCallback(async (
+    assistantMessageId: string,
     userText: string,
     activeSessionId: number,
     analysisTypes?: string[] | null,
   ) => {
-    const assistantMessageId = `assistant-${Date.now()}`;
-
     const body: Record<string, unknown> = { content: userText };
     if (analysisTypes && analysisTypes.length > 0) {
       body.analysis_types = analysisTypes;
@@ -261,7 +260,7 @@ function useOrbitronChatRuntime({
       const activeSessionId = await _ensureSession();
       if (!activeSessionId) return;
 
-      await _sendStreamRequest(userText, activeSessionId);
+      await _sendStreamRequest(assistantMessageId, userText, activeSessionId);
     } catch (err) {
       if (err instanceof Error && err.name !== 'AbortError') {
         setMessages((prev) =>
@@ -304,7 +303,7 @@ function useOrbitronChatRuntime({
       const activeSessionId = await _ensureSession();
       if (!activeSessionId) return;
 
-      await _sendStreamRequest(content, activeSessionId, analysisTypes);
+      await _sendStreamRequest(assistantMessageId, content, activeSessionId, analysisTypes);
     } catch (err) {
       if (err instanceof Error && err.name !== 'AbortError') {
         setMessages((prev) =>

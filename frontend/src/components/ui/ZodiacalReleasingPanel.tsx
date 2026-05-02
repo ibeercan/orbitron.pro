@@ -54,13 +54,33 @@ function scoreColor(score: number | null): string {
   return 'text-[#8B7FA8]'
 }
 
-function scoreBg(score: number | null): string {
-  if (score === null || score === undefined) return 'bg-[rgba(139,127,168,0.08)]'
-  if (score >= 3) return 'bg-[rgba(52,211,153,0.1)]'
-  if (score >= 1) return 'bg-[rgba(110,231,183,0.06)]'
-  if (score <= -3) return 'bg-[rgba(248,113,113,0.1)]'
-  if (score <= -1) return 'bg-[rgba(248,113,113,0.05)]'
-  return 'bg-[rgba(139,127,168,0.05)]'
+
+
+function SectBadge({ sect }: { sect: string }) {
+  const label = sect === 'day' ? 'Дневная' : sect === 'night' ? 'Ночная' : ''
+  if (!label) return null
+  return (
+    <span className={cn(
+      'px-2 py-0.5 rounded-md text-[10px] font-medium',
+      sect === 'day'
+        ? 'bg-[rgba(250,204,21,0.1)] text-[#FACC15] border border-[rgba(250,204,21,0.2)]'
+        : 'bg-[rgba(139,92,246,0.1)] text-[#A78BFA] border border-[rgba(139,92,246,0.2)]'
+    )}>
+      {label}
+    </span>
+  )
+}
+
+function AiButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className="flex items-center justify-center gap-2 w-full mt-4 py-3 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#B8960F] text-[#0A0612] font-semibold text-sm hover:from-[#E0BD4A] hover:to-[#C9A528] transition-all"
+    >
+      <Sparkles className="w-4 h-4" />
+      ИИ-интерпретация
+    </button>
+  )
 }
 
 export function ZodiacalReleasingPanel({ natalChartId, onAiInterpret }: ZodiacalReleasingPanelProps) {
@@ -96,13 +116,13 @@ export function ZodiacalReleasingPanel({ natalChartId, onAiInterpret }: Zodiacal
     fetchData(selectedLot, maxLevel)
   }, [selectedLot, maxLevel, natalChartId])
 
-  const sectLabel = data?.sect === 'day' ? 'Дневная' : data?.sect === 'night' ? 'Ночная' : ''
-
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2 mb-1">
+      <div className="flex items-center gap-2 flex-wrap">
         <Compass className="w-4 h-4 text-[#D4AF37]" />
         <h3 className="font-serif text-lg font-semibold text-[#F0EAD6]">Зодиакальное высвобождение</h3>
+        {data && <SectBadge sect={data.sect} />}
+        {data && <span className="text-xs text-[#8B7FA8]">{data.lot_ru} в {data.lot_sign_ru}</span>}
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3">
@@ -132,20 +152,6 @@ export function ZodiacalReleasingPanel({ natalChartId, onAiInterpret }: Zodiacal
         </div>
       </div>
 
-      {data && (
-        <div className="flex flex-wrap items-center gap-2 text-xs text-[#8B7FA8]">
-          <span className={cn(
-            'px-2 py-0.5 rounded-md text-[10px] font-medium',
-            data.sect === 'day'
-              ? 'bg-[rgba(250,204,21,0.1)] text-[#FACC15] border border-[rgba(250,204,21,0.2)]'
-              : 'bg-[rgba(139,92,246,0.1)] text-[#A78BFA] border border-[rgba(139,92,246,0.2)]'
-          )}>
-            {sectLabel} карта
-          </span>
-          <span>{data.lot_ru} в {data.lot_sign_ru}</span>
-        </div>
-      )}
-
       {loading && (
         <div className="flex items-center justify-center py-12">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#D4AF37] border-t-transparent" />
@@ -155,7 +161,7 @@ export function ZodiacalReleasingPanel({ natalChartId, onAiInterpret }: Zodiacal
       {error && (
         <div className="text-center py-8">
           <p className="text-[#F87171] text-sm">{error}</p>
-          </div>
+        </div>
       )}
 
       {data && !loading && !error && (
@@ -172,10 +178,9 @@ export function ZodiacalReleasingPanel({ natalChartId, onAiInterpret }: Zodiacal
                     <div
                       key={i}
                       className={cn(
-                        'flex items-center gap-2 px-3 py-2 rounded-lg text-xs',
-                        scoreBg(p.score),
-                        p.is_peak && 'ring-1 ring-[rgba(52,211,153,0.3)]',
-                        p.is_loosing_bond && 'ring-1 ring-[rgba(248,113,113,0.3)]',
+                        'luxury-card px-3 py-2 flex items-center gap-2 text-xs',
+                        p.is_peak && 'border-[rgba(52,211,153,0.3)]',
+                        p.is_loosing_bond && 'border-[rgba(248,113,113,0.3)]',
                       )}
                     >
                       <span className="w-16 shrink-0 text-[#8B7FA8] font-mono">
@@ -208,15 +213,7 @@ export function ZodiacalReleasingPanel({ natalChartId, onAiInterpret }: Zodiacal
         </div>
       )}
 
-      {onAiInterpret && (
-        <button
-          onClick={onAiInterpret}
-          className="flex items-center justify-center gap-2 w-full mt-4 py-3 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#B8960F] text-[#0A0612] font-semibold text-sm hover:from-[#E0BD4A] hover:to-[#C9A528] transition-all"
-        >
-          <Sparkles className="w-4 h-4" />
-          ИИ-интерпретация
-        </button>
-      )}
+      {onAiInterpret && <AiButton onClick={onAiInterpret} />}
     </div>
   )
 }
