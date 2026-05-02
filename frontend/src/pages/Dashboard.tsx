@@ -28,7 +28,7 @@ import { AspectPatternsPanel } from '@/components/ui/AspectPatternsPanel'
 import { ZodiacalReleasingPanel } from '@/components/ui/ZodiacalReleasingPanel'
 import { OnboardingTour } from '@/components/ui/OnboardingTour'
 import { PremiumUpgradeModal } from '@/components/ui/PremiumUpgradeModal'
-import { Loader2, Calendar, MapPin, Sparkles, Star, Trash2, AlertTriangle, Maximize2, Heart, Clock, Sun, Moon, Target, FileText, Lock, Crown, ArrowLeft, Crosshair, Navigation, Zap, Compass, BookOpen, RotateCcw, Shield, Hexagon, TrendingUp } from 'lucide-react'
+import { Loader2, Calendar, MapPin, Sparkles, Star, Trash2, AlertTriangle, Maximize2, Heart, Clock, Sun, Moon, Target, FileText, Lock, Crown, ArrowLeft, Crosshair, Navigation, Zap, Compass, BookOpen, RotateCcw, Shield, Hexagon, TrendingUp, ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/contexts/auth-context'
 
@@ -82,6 +82,74 @@ function ChartActionButton({ icon: Icon, label, premium, onClick, onPremiumLock 
       {locked ? <Lock className="w-3 h-3" /> : <Icon className="w-3 h-3" />}
       {label}
     </button>
+  )
+}
+
+function ChartDropdownButton({ icon: Icon, label, premium, onPremiumLock, items }: {
+  icon: React.ComponentType<{ className?: string }>
+  label: string
+  premium?: boolean
+  onPremiumLock?: () => void
+  items: { icon: React.ComponentType<{ className?: string }>; label: string; premium?: boolean; onClick: () => void; onPremiumLock?: () => void }[]
+}) {
+  const { user } = useAuth()
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+  const locked = premium && !user?.is_subscription_active && !user?.is_admin
+
+  useEffect(() => {
+    if (!open) return
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open])
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        onClick={() => setOpen(!open)}
+        className={cn(
+          'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap',
+          locked
+            ? 'text-[#4A3F6A] hover:text-[#8B7FA8] cursor-not-allowed'
+            : open
+              ? 'text-[#D4AF37] bg-[rgba(212,175,55,0.1)]'
+              : 'text-[#8B7FA8] hover:text-[#D4AF37] hover:bg-[rgba(212,175,55,0.08)]'
+        )}
+      >
+        {locked ? <Lock className="w-3 h-3" /> : <Icon className="w-3 h-3" />}
+        {label}
+        <ChevronDown className={cn('w-3 h-3 transition-transform', open && 'rotate-180')} />
+      </button>
+      {open && (
+        <div className="absolute top-full left-0 mt-1.5 z-50 min-w-[180px] luxury-card p-1.5 animate-scale-in shadow-xl shadow-black/40">
+          {items.map((item) => {
+            const itemLocked = item.premium && !user?.is_subscription_active && !user?.is_admin
+            return (
+              <button
+                key={item.label}
+                onClick={() => {
+                  setOpen(false)
+                  itemLocked ? (item.onPremiumLock || onPremiumLock || (() => {}))() : item.onClick()
+                }}
+                className={cn(
+                  'w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all text-left',
+                  itemLocked
+                    ? 'text-[#4A3F6A] hover:text-[#8B7FA8] cursor-not-allowed'
+                    : 'text-[#D4CCBD] hover:text-[#D4AF37] hover:bg-[rgba(212,175,55,0.08)]'
+                )}
+              >
+                {itemLocked ? <Lock className="w-3 h-3" /> : <item.icon className="w-3.5 h-3.5" />}
+                {item.label}
+                {itemLocked && <span className="ml-auto text-[9px] text-[#6B5F8A]">Premium</span>}
+              </button>
+            )
+          })}
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -644,21 +712,37 @@ const loadChartSvg = async (chart: Chart) => {
                 </div>
 
                 {selectedChart && (selectedChart.chart_type || 'natal') === 'natal' && (
-                  <div className="flex items-center gap-1.5 px-5 py-2 border-b border-[rgba(212,175,55,0.06)] shrink-0 overflow-x-auto" data-onboarding="actions">
+                  <div className="flex items-center gap-1 px-5 py-2 border-b border-[rgba(212,175,55,0.06)] shrink-0" data-onboarding="actions">
                     <ChartActionButton icon={Heart} label="Отношения" premium onClick={() => setActiveModal('relationships')} onPremiumLock={() => setShowPremiumModal(true)} />
                     <ChartActionButton icon={Clock} label="Транзиты" onClick={() => setActiveModal('transit')} />
-                    <ChartActionButton icon={Sun} label="Соляр" premium onClick={() => setActiveModal('solar_return')} onPremiumLock={() => setShowPremiumModal(true)} />
-                    <ChartActionButton icon={Moon} label="Лунар" premium onClick={() => setActiveModal('lunar_return')} onPremiumLock={() => setShowPremiumModal(true)} />
-                    <ChartActionButton icon={RotateCcw} label="Возврат" premium onClick={() => setActiveModal('planetary_return')} onPremiumLock={() => setShowPremiumModal(true)} />
-                    <ChartActionButton icon={Target} label="Профекция" premium onClick={() => setActiveModal('profection')} onPremiumLock={() => setShowPremiumModal(true)} />
-                    <ChartActionButton icon={Navigation} label="Дирекции" premium onClick={() => setActiveModal('solar_arc')} onPremiumLock={() => setShowPremiumModal(true)} />
-                    <ChartActionButton icon={Zap} label="Прогрессии" premium onClick={() => setActiveModal('progression')} onPremiumLock={() => setShowPremiumModal(true)} />
+                    <ChartDropdownButton
+                      icon={Sun}
+                      label="Прогностика"
+                      premium
+                      onPremiumLock={() => setShowPremiumModal(true)}
+                      items={[
+                        { icon: Sun, label: 'Соляр', premium: true, onClick: () => setActiveModal('solar_return'), onPremiumLock: () => setShowPremiumModal(true) },
+                        { icon: Moon, label: 'Лунар', premium: true, onClick: () => setActiveModal('lunar_return'), onPremiumLock: () => setShowPremiumModal(true) },
+                        { icon: RotateCcw, label: 'Возврат', premium: true, onClick: () => setActiveModal('planetary_return'), onPremiumLock: () => setShowPremiumModal(true) },
+                        { icon: Target, label: 'Профекция', premium: true, onClick: () => setActiveModal('profection'), onPremiumLock: () => setShowPremiumModal(true) },
+                        { icon: Navigation, label: 'Дирекции', premium: true, onClick: () => setActiveModal('solar_arc'), onPremiumLock: () => setShowPremiumModal(true) },
+                        { icon: Zap, label: 'Прогрессии', premium: true, onClick: () => setActiveModal('progression'), onPremiumLock: () => setShowPremiumModal(true) },
+                      ]}
+                    />
+                    <ChartDropdownButton
+                      icon={Shield}
+                      label="Анализ"
+                      premium
+                      onPremiumLock={() => setShowPremiumModal(true)}
+                      items={[
+                        { icon: Shield, label: 'Достоинства', premium: true, onClick: () => setAnalysisMode('dignities'), onPremiumLock: () => setShowPremiumModal(true) },
+                        { icon: Hexagon, label: 'Части', premium: true, onClick: () => setAnalysisMode('arabic_parts'), onPremiumLock: () => setShowPremiumModal(true) },
+                        { icon: TrendingUp, label: 'Паттерны', premium: true, onClick: () => setAnalysisMode('aspect_patterns'), onPremiumLock: () => setShowPremiumModal(true) },
+                        { icon: Compass, label: 'Высвобождение', premium: true, onClick: () => setAnalysisMode('zodiacal_releasing'), onPremiumLock: () => setShowPremiumModal(true) },
+                      ]}
+                    />
                     <ChartActionButton icon={BookOpen} label="Плэннер" premium onClick={() => setActiveModal('planner')} onPremiumLock={() => setShowPremiumModal(true)} />
                     <ChartActionButton icon={FileText} label="PDF" premium onClick={handlePdfDownload} onPremiumLock={() => setShowPremiumModal(true)} />
-                    <ChartActionButton icon={Shield} label="Достоинства" premium onClick={() => setAnalysisMode('dignities')} onPremiumLock={() => setShowPremiumModal(true)} />
-                    <ChartActionButton icon={Hexagon} label="Части" premium onClick={() => setAnalysisMode('arabic_parts')} onPremiumLock={() => setShowPremiumModal(true)} />
-                    <ChartActionButton icon={TrendingUp} label="Паттерны" premium onClick={() => setAnalysisMode('aspect_patterns')} onPremiumLock={() => setShowPremiumModal(true)} />
-                    <ChartActionButton icon={Compass} label="Высвобождение" premium onClick={() => setAnalysisMode('zodiacal_releasing')} onPremiumLock={() => setShowPremiumModal(true)} />
                   </div>
                 )}
 
