@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Compass, Sparkles } from 'lucide-react'
 import { chartsApi } from '@/lib/api/client'
 import { cn } from '@/lib/utils'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 interface ZodiacalReleasingPanelProps {
   natalChartId: number
@@ -126,29 +127,31 @@ export function ZodiacalReleasingPanel({ natalChartId, onAiInterpret }: Zodiacal
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3">
-        <div>
+        <div className="flex-1 min-w-[160px]">
           <label className="block text-[10px] font-semibold text-[#8B7FA8] uppercase tracking-wider mb-1.5">Лот</label>
-          <select
-            value={selectedLot}
-            onChange={(e) => setSelectedLot(e.target.value)}
-            className="w-full h-9 rounded-lg bg-[rgba(212,175,55,0.05)] border border-[rgba(212,175,55,0.15)] text-sm text-[#F0EAD6] px-3 focus:outline-none focus:border-[#D4AF37]"
-          >
-            {LOT_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
-            ))}
-          </select>
+          <Select value={selectedLot} onValueChange={setSelectedLot}>
+            <SelectTrigger className="luxury-select-trigger h-9">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="luxury-select-content" position="popper" sideOffset={4}>
+              {LOT_OPTIONS.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
-        <div>
+        <div className="flex-1 min-w-[160px]">
           <label className="block text-[10px] font-semibold text-[#8B7FA8] uppercase tracking-wider mb-1.5">Глубина</label>
-          <select
-            value={maxLevel}
-            onChange={(e) => setMaxLevel(Number(e.target.value))}
-            className="w-full h-9 rounded-lg bg-[rgba(212,175,55,0.05)] border border-[rgba(212,175,55,0.15)] text-sm text-[#F0EAD6] px-3 focus:outline-none focus:border-[#D4AF37]"
-          >
-            <option value={1}>Периоды (L1)</option>
-            <option value={2}>С подпериодами (L2)</option>
-            <option value={3}>С микропериодами (L3)</option>
-          </select>
+          <Select value={String(maxLevel)} onValueChange={(v) => setMaxLevel(Number(v))}>
+            <SelectTrigger className="luxury-select-trigger h-9">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="luxury-select-content" position="popper" sideOffset={4}>
+              <SelectItem value="1">Периоды (L1)</SelectItem>
+              <SelectItem value="2">С подпериодами (L2)</SelectItem>
+              <SelectItem value="3">С микропериодами (L3)</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
