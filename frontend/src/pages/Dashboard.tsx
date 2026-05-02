@@ -34,11 +34,11 @@ import { useAuth } from '@/contexts/auth-context'
 
 type AnalysisMode = 'dignities' | 'arabic_parts' | 'aspect_patterns' | 'zodiacal_releasing'
 
-const ANALYSIS_CONFIG: Record<AnalysisMode, { title: string; icon: React.ComponentType<{ className?: string }>; question: string; types: string[] }> = {
-  dignities: { title: 'Достоинства планет', icon: Shield, question: 'Проанализируй достоинства планет в моей натальной карте. Какие планеты сильные, а какие слабые? Учитывай взаимный приём и случайные достоинства.', types: ['dignities'] },
-  arabic_parts: { title: 'Арабские части', icon: Hexagon, question: 'Расскажи о значении арабских частей в моей натальной карте. На какие сферы жизни указывают ключевые части?', types: ['arabic_parts'] },
-  aspect_patterns: { title: 'Паттерны аспектов', icon: TrendingUp, question: 'Дай интерпретацию паттернов аспектов в моей карте. Раскрой значение каждой конфигурации и её влияние на жизнь.', types: ['aspect_patterns'] },
-  zodiacal_releasing: { title: 'Зодиакальное высвобождение', icon: Compass, question: 'Проанализируй мои периоды зодиакального высвобождения. Какие темы акцентированы в текущем периоде?', types: ['zodiacal_releasing'] },
+const ANALYSIS_CONFIG: Record<AnalysisMode, { title: string; icon: React.ComponentType<{ className?: string }>; question: string; types: string[]; statusMessage: string }> = {
+  dignities: { title: 'Достоинства планет', icon: Shield, question: 'Проанализируй достоинства планет в моей натальной карте. Какие планеты сильные, а какие слабые? Учитывай взаимный приём и случайные достоинства.', types: ['dignities'], statusMessage: '🔄 Анализируем достоинства планет…' },
+  arabic_parts: { title: 'Арабские части', icon: Hexagon, question: 'Расскажи о значении арабских частей в моей натальной карте. На какие сферы жизни указывают ключевые части?', types: ['arabic_parts'], statusMessage: '🔄 Анализируем арабские части…' },
+  aspect_patterns: { title: 'Паттерны аспектов', icon: TrendingUp, question: 'Дай интерпретацию паттернов аспектов в моей карте. Раскрой значение каждой конфигурации и её влияние на жизнь.', types: ['aspect_patterns'], statusMessage: '🔄 Анализируем паттерны аспектов…' },
+  zodiacal_releasing: { title: 'Зодиакальное высвобождение', icon: Compass, question: 'Проанализируй мои периоды зодиакального высвобождения. Какие темы акцентированы в текущем периоде?', types: ['zodiacal_releasing'], statusMessage: '🔄 Анализируем зодиакальное высвобождение…' },
 }
 
 const ZODIAC_SIGNS = ['Овен','Телец','Близнецы','Рак','Лев','Дева','Весы','Скорпион','Стрелец','Козерог','Водолей','Рыбы']
@@ -465,7 +465,7 @@ export default function Dashboard() {
 
   const handleAiInterpret = (mode: AnalysisMode) => {
     const config = ANALYSIS_CONFIG[mode]
-    chatRef.current?.sendAnalysisMessage(config.question, config.types)
+    chatRef.current?.sendAnalysisMessage(config.question, config.types, config.statusMessage)
     setMobilePanelTab('chat')
   }
 

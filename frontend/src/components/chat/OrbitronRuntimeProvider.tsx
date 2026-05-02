@@ -39,7 +39,7 @@ function convertMessage(message: ChatMessage): ThreadMessageLike {
 }
 
 export interface OrbitronRuntimeHandle {
-  sendAnalysisMessage: (content: string, analysisTypes: string[]) => void;
+  sendAnalysisMessage: (content: string, analysisTypes: string[], statusMessage?: string) => void;
 }
 
 interface OrbitronRuntimeProviderProps {
@@ -68,6 +68,7 @@ function useOrbitronChatRuntime({
   const [sessionId, setSessionId] = useState<number | null>(initialSessionId);
   const abortControllerRef = useRef<AbortController | null>(null);
   const loadedSessionRef = useRef<number | null>(null);
+  const statusMessageIdRef = useRef<string | null>(null);
   const sessionIdRef = useRef(sessionId);
   const chartIdRef = useRef(chartId);
   const isRunningRef = useRef(false);
@@ -133,6 +134,7 @@ function useOrbitronChatRuntime({
     userText: string,
     activeSessionId: number,
     analysisTypes?: string[] | null,
+    statusMessage?: string | null,
   ) => {
     const body: Record<string, unknown> = { content: userText };
     if (analysisTypes && analysisTypes.length > 0) {
@@ -154,6 +156,7 @@ function useOrbitronChatRuntime({
 
     if (!response.body) throw new Error('No response body');
 
+    let firstContentReceived = !statusMessage;
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
     let buffer = '';
@@ -172,14 +175,27 @@ function useOrbitronChatRuntime({
           const data = JSON.parse(line.slice(6)) as { type: string; content?: string; error?: string };
 
           if (data.type === 'content') {
-            setMessages((prev) =>
-              prev.map((m) =>
-                m.id === assistantMessageId
-                  ? { ...m, content: m.content + (data.content ?? '') }
-                  : m
-              )
-            );
+            if (!firstContentReceived) {
+              firstContentReceived = true;
+              statusMessageIdRef.current = null;
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === assistantMessageId
+                    ? { ...m, content: data.content ?? '' }
+                    : m
+                )
+              );
+            } else {
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === assistantMessageId
+                    ? { ...m, content: m.content + (data.content ?? '') }
+                    : m
+                )
+              );
+            }
           } else if (data.type === 'error') {
+            statusMessageIdRef.current = null;
             setMessages((prev) =>
               prev.map((m) =>
                 m.id === assistantMessageId
@@ -245,22 +261,24 @@ function useOrbitronChatRuntime({
       content: userText,
       createdAt: new Date(),
     };
+    const statusText = '🔄 Думаю…';
     const assistantMsg: ChatMessage = {
       id: assistantMessageId,
       role: 'assistant',
-      content: '',
+      content: statusText,
       createdAt: new Date(),
     };
 
     setMessages((prev) => [...prev, userMsg, assistantMsg]);
     setIsRunning(true);
+    statusMessageIdRef.current = assistantMessageId;
     abortControllerRef.current = new AbortController();
 
     try {
       const activeSessionId = await _ensureSession();
       if (!activeSessionId) return;
 
-      await _sendStreamRequest(assistantMessageId, userText, activeSessionId);
+      await _sendStreamRequest(assistantMessageId, userText, activeSessionId, null, statusText);
     } catch (err) {
       if (err instanceof Error && err.name !== 'AbortError') {
         setMessages((prev) =>
@@ -276,12 +294,13 @@ function useOrbitronChatRuntime({
     }
   }, [_ensureSession, _sendStreamRequest]);
 
-  const sendAnalysisMessage = useCallback(async (content: string, analysisTypes: string[]) => {
+  const sendAnalysisMessage = useCallback(async (content: string, analysisTypes: string[], statusMessage?: string) => {
     if (isRunningRef.current || !chartIdRef.current) return;
 
     const userMessageId = `user-${Date.now()}`;
     const assistantMessageId = `assistant-${Date.now()}`;
 
+    const statusText = statusMessage || '🔄 Думаю…';
     const userMsg: ChatMessage = {
       id: userMessageId,
       role: 'user',
@@ -291,19 +310,20 @@ function useOrbitronChatRuntime({
     const assistantMsg: ChatMessage = {
       id: assistantMessageId,
       role: 'assistant',
-      content: '',
+      content: statusText,
       createdAt: new Date(),
     };
 
     setMessages((prev) => [...prev, userMsg, assistantMsg]);
     setIsRunning(true);
+    statusMessageIdRef.current = assistantMessageId;
     abortControllerRef.current = new AbortController();
 
     try {
       const activeSessionId = await _ensureSession();
       if (!activeSessionId) return;
 
-      await _sendStreamRequest(assistantMessageId, content, activeSessionId, analysisTypes);
+      await _sendStreamRequest(assistantMessageId, content, activeSessionId, analysisTypes, statusText);
     } catch (err) {
       if (err instanceof Error && err.name !== 'AbortError') {
         setMessages((prev) =>

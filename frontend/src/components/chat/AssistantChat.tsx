@@ -8,7 +8,7 @@ import { WelcomeMessage } from '@/components/ui/WelcomeMessage';
 import { cn } from '@/lib/utils';
 
 export interface AssistantChatHandle {
-  sendAnalysisMessage: (content: string, analysisTypes: string[]) => void;
+  sendAnalysisMessage: (content: string, analysisTypes: string[], statusMessage?: string) => void;
 }
 
 interface AssistantChatProps {
@@ -615,8 +615,8 @@ export const AssistantChat = forwardRef<AssistantChatHandle, AssistantChatProps>
   const runtimeRef = useRef<OrbitronRuntimeHandle>(null);
 
   useImperativeHandle(ref, () => ({
-    sendAnalysisMessage: (content: string, analysisTypes: string[]) => {
-      runtimeRef.current?.sendAnalysisMessage(content, analysisTypes);
+    sendAnalysisMessage: (content: string, analysisTypes: string[], statusMessage?: string) => {
+      runtimeRef.current?.sendAnalysisMessage(content, analysisTypes, statusMessage);
     },
   }));
 
