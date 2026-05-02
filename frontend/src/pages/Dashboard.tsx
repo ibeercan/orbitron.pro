@@ -658,7 +658,7 @@ const loadChartSvg = async (chart: Chart) => {
                     <ChartActionButton icon={Shield} label="Достоинства" premium onClick={() => setAnalysisMode('dignities')} onPremiumLock={() => setShowPremiumModal(true)} />
                     <ChartActionButton icon={Hexagon} label="Части" premium onClick={() => setAnalysisMode('arabic_parts')} onPremiumLock={() => setShowPremiumModal(true)} />
                     <ChartActionButton icon={TrendingUp} label="Паттерны" premium onClick={() => setAnalysisMode('aspect_patterns')} onPremiumLock={() => setShowPremiumModal(true)} />
-                    <ChartActionButton icon={Compass} label="ЗВ" premium onClick={() => setAnalysisMode('zodiacal_releasing')} onPremiumLock={() => setShowPremiumModal(true)} />
+                    <ChartActionButton icon={Compass} label="Высвобождение" premium onClick={() => setAnalysisMode('zodiacal_releasing')} onPremiumLock={() => setShowPremiumModal(true)} />
                   </div>
                 )}
 

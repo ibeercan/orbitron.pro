@@ -1146,7 +1146,8 @@ def compute_aspect_patterns(native_data: dict) -> dict:
         aspects = p_dict.get("aspects", [])
         element = p_dict.get("element")
         quality = p_dict.get("quality")
-        focal = p_dict.get("focal_planet")
+        focal_raw = p_dict.get("focal_planet")
+        focal = focal_raw.name if hasattr(focal_raw, "name") else (str(focal_raw) if focal_raw else None)
 
         patterns.append({
             "name": name,
