@@ -1,11 +1,15 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Send, Square, Copy, Check, Star, Sparkles, X } from 'lucide-react';
 import { useThread, useComposerRuntime, type ThreadMessage } from '@assistant-ui/react';
-import { OrbitronRuntimeProvider } from './OrbitronRuntimeProvider';
+import { OrbitronRuntimeProvider, type OrbitronRuntimeHandle } from './OrbitronRuntimeProvider';
 import { WelcomeMessage } from '@/components/ui/WelcomeMessage';
 import { cn } from '@/lib/utils';
+
+export interface AssistantChatHandle {
+  sendAnalysisMessage: (content: string, analysisTypes: string[]) => void;
+}
 
 interface AssistantChatProps {
   chartId: string;
@@ -597,7 +601,7 @@ function NoChartState() {
 }
 
 /* ── Main export ── */
-export function AssistantChat({
+export const AssistantChat = forwardRef<AssistantChatHandle, AssistantChatProps>(({
   chartId,
   sessionId,
   onSessionCreated,
@@ -606,8 +610,15 @@ export function AssistantChat({
   showWelcome = false,
   onWelcomeDismiss,
   chartType,
-}: AssistantChatProps) {
+}, ref) => {
   const baseUrl = import.meta.env.VITE_API_URL || 'https://api.orbitron.pro/api/v1';
+  const runtimeRef = useRef<OrbitronRuntimeHandle>(null);
+
+  useImperativeHandle(ref, () => ({
+    sendAnalysisMessage: (content: string, analysisTypes: string[]) => {
+      runtimeRef.current?.sendAnalysisMessage(content, analysisTypes);
+    },
+  }));
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -654,6 +665,7 @@ export function AssistantChat({
           <NoChartState />
         ) : (
           <OrbitronRuntimeProvider
+            ref={runtimeRef}
             key={chartId}
             baseUrl={baseUrl}
             sessionId={sessionId}
@@ -666,4 +678,4 @@ export function AssistantChat({
       </div>
     </div>
   );
-}
+});

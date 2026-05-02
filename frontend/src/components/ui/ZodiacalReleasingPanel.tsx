@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react'
-import { Compass } from 'lucide-react'
+import { Compass, Sparkles } from 'lucide-react'
 import { chartsApi } from '@/lib/api/client'
 import { cn } from '@/lib/utils'
 
 interface ZodiacalReleasingPanelProps {
   natalChartId: number
-  onClose: () => void
+  onClose?: () => void
+  onAiInterpret?: () => void
 }
 
 interface ZRPeriod {
@@ -62,7 +63,7 @@ function scoreBg(score: number | null): string {
   return 'bg-[rgba(139,127,168,0.05)]'
 }
 
-export function ZodiacalReleasingPanel({ natalChartId, onClose }: ZodiacalReleasingPanelProps) {
+export function ZodiacalReleasingPanel({ natalChartId, onAiInterpret }: ZodiacalReleasingPanelProps) {
   const [data, setData] = useState<{
     lot: string
     lot_ru: string
@@ -154,10 +155,7 @@ export function ZodiacalReleasingPanel({ natalChartId, onClose }: ZodiacalReleas
       {error && (
         <div className="text-center py-8">
           <p className="text-[#F87171] text-sm">{error}</p>
-          <button onClick={onClose} className="mt-4 text-[#8B7FA8] text-xs hover:text-[#D4AF37] transition-colors">
-            Закрыть
-          </button>
-        </div>
+          </div>
       )}
 
       {data && !loading && !error && (
@@ -208,6 +206,16 @@ export function ZodiacalReleasingPanel({ natalChartId, onClose }: ZodiacalReleas
             )
           })}
         </div>
+      )}
+
+      {onAiInterpret && (
+        <button
+          onClick={onAiInterpret}
+          className="flex items-center justify-center gap-2 w-full mt-4 py-3 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#B8960F] text-[#0A0612] font-semibold text-sm hover:from-[#E0BD4A] hover:to-[#C9A528] transition-all"
+        >
+          <Sparkles className="w-4 h-4" />
+          ИИ-интерпретация
+        </button>
       )}
     </div>
   )

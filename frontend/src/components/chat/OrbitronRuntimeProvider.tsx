@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import {
   useExternalStoreRuntime,
   ThreadMessageLike,
@@ -38,6 +38,10 @@ function convertMessage(message: ChatMessage): ThreadMessageLike {
   };
 }
 
+export interface OrbitronRuntimeHandle {
+  sendAnalysisMessage: (content: string, analysisTypes: string[]) => void;
+}
+
 interface OrbitronRuntimeProviderProps {
   children: React.ReactNode;
   baseUrl: string;
@@ -66,9 +70,11 @@ function useOrbitronChatRuntime({
   const loadedSessionRef = useRef<number | null>(null);
   const sessionIdRef = useRef(sessionId);
   const chartIdRef = useRef(chartId);
+  const isRunningRef = useRef(false);
 
   sessionIdRef.current = sessionId;
   chartIdRef.current = chartId;
+  isRunningRef.current = isRunning;
 
   useEffect(() => {
     setMessages([]);
@@ -122,6 +128,105 @@ function useOrbitronChatRuntime({
     return () => { cancelled = true; };
   }, [sessionId, baseApiUrl]);
 
+  const _sendStreamRequest = useCallback(async (
+    userText: string,
+    activeSessionId: number,
+    analysisTypes?: string[] | null,
+  ) => {
+    const assistantMessageId = `assistant-${Date.now()}`;
+
+    const body: Record<string, unknown> = { content: userText };
+    if (analysisTypes && analysisTypes.length > 0) {
+      body.analysis_types = analysisTypes;
+    }
+
+    const response = await fetch(`${baseApiUrl}/chat/${activeSessionId}/stream`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      credentials: 'include',
+      signal: abortControllerRef.current?.signal,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error((errorData as { detail?: string }).detail || 'Request failed');
+    }
+
+    if (!response.body) throw new Error('No response body');
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        try {
+          const data = JSON.parse(line.slice(6)) as { type: string; content?: string; error?: string };
+
+          if (data.type === 'content') {
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === assistantMessageId
+                  ? { ...m, content: m.content + (data.content ?? '') }
+                  : m
+              )
+            );
+          } else if (data.type === 'error') {
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === assistantMessageId
+                  ? { ...m, content: m.content || `Ошибка: ${data.error}` }
+                  : m
+              )
+            );
+          }
+        } catch {}
+      }
+    }
+  }, [baseApiUrl]);
+
+  const _ensureSession = useCallback(async (): Promise<number | null> => {
+    let activeSessionId = sessionIdRef.current;
+
+    if (!activeSessionId) {
+      const currentChartId = chartIdRef.current;
+      if (!currentChartId) return null;
+
+      const startRes = await fetch(`${baseApiUrl}/chat/chart/${currentChartId}/start`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: 'New Chat' }),
+        credentials: 'include',
+      });
+      if (!startRes.ok) throw new Error('Failed to create session');
+      const sessionData = await startRes.json();
+      activeSessionId = sessionData.id;
+      setSessionId(activeSessionId);
+      sessionIdRef.current = activeSessionId;
+
+      const existing: ChatMessage[] = (sessionData.messages ?? []).map(toChatMessage);
+      if (existing.length > 0) {
+        setMessages((prev) => {
+          const existingIds = new Set(existing.map((m) => m.id));
+          const newOnly = prev.filter((m) => !existingIds.has(m.id));
+          return [...existing, ...newOnly];
+        });
+      }
+      loadedSessionRef.current = activeSessionId;
+    }
+
+    return activeSessionId;
+  }, [baseApiUrl]);
+
   const handleNewMessage = useCallback(async (message: AppendMessage) => {
     const currentChartId = chartIdRef.current;
     if (!currentChartId) return;
@@ -153,84 +258,10 @@ function useOrbitronChatRuntime({
     abortControllerRef.current = new AbortController();
 
     try {
-      let activeSessionId = sessionIdRef.current;
+      const activeSessionId = await _ensureSession();
+      if (!activeSessionId) return;
 
-      if (!activeSessionId) {
-        const startRes = await fetch(`${baseApiUrl}/chat/chart/${currentChartId}/start`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ title: 'New Chat' }),
-          credentials: 'include',
-        });
-        if (!startRes.ok) throw new Error('Failed to create session');
-        const sessionData = await startRes.json();
-        activeSessionId = sessionData.id;
-        setSessionId(activeSessionId);
-        sessionIdRef.current = activeSessionId;
-
-        const existing: ChatMessage[] = (sessionData.messages ?? []).map(toChatMessage);
-        if (existing.length > 0) {
-          setMessages((prev) => {
-            const existingIds = new Set(existing.map((m) => m.id));
-            const newOnly = prev.filter((m) => !existingIds.has(m.id));
-            return [...existing, ...newOnly];
-          });
-        }
-        loadedSessionRef.current = activeSessionId;
-      }
-
-      const response = await fetch(`${baseApiUrl}/chat/${activeSessionId}/stream`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: userText }),
-        credentials: 'include',
-        signal: abortControllerRef.current.signal,
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error((errorData as { detail?: string }).detail || 'Request failed');
-      }
-
-      if (!response.body) throw new Error('No response body');
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
-
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue;
-          try {
-            const data = JSON.parse(line.slice(6)) as { type: string; content?: string; error?: string };
-
-            if (data.type === 'content') {
-              setMessages((prev) =>
-                prev.map((m) =>
-                  m.id === assistantMessageId
-                    ? { ...m, content: m.content + (data.content ?? '') }
-                    : m
-                )
-              );
-            } else if (data.type === 'error') {
-              setMessages((prev) =>
-                prev.map((m) =>
-                  m.id === assistantMessageId
-                    ? { ...m, content: m.content || `Ошибка: ${data.error}` }
-                    : m
-                )
-              );
-            }
-          } catch {}
-        }
-      }
+      await _sendStreamRequest(userText, activeSessionId);
     } catch (err) {
       if (err instanceof Error && err.name !== 'AbortError') {
         setMessages((prev) =>
@@ -244,7 +275,50 @@ function useOrbitronChatRuntime({
     } finally {
       setIsRunning(false);
     }
-  }, [baseApiUrl]);
+  }, [_ensureSession, _sendStreamRequest]);
+
+  const sendAnalysisMessage = useCallback(async (content: string, analysisTypes: string[]) => {
+    if (isRunningRef.current || !chartIdRef.current) return;
+
+    const userMessageId = `user-${Date.now()}`;
+    const assistantMessageId = `assistant-${Date.now()}`;
+
+    const userMsg: ChatMessage = {
+      id: userMessageId,
+      role: 'user',
+      content,
+      createdAt: new Date(),
+    };
+    const assistantMsg: ChatMessage = {
+      id: assistantMessageId,
+      role: 'assistant',
+      content: '',
+      createdAt: new Date(),
+    };
+
+    setMessages((prev) => [...prev, userMsg, assistantMsg]);
+    setIsRunning(true);
+    abortControllerRef.current = new AbortController();
+
+    try {
+      const activeSessionId = await _ensureSession();
+      if (!activeSessionId) return;
+
+      await _sendStreamRequest(content, activeSessionId, analysisTypes);
+    } catch (err) {
+      if (err instanceof Error && err.name !== 'AbortError') {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === assistantMessageId
+              ? { ...m, content: m.content || `Ошибка: ${err.message}` }
+              : m
+          )
+        );
+      }
+    } finally {
+      setIsRunning(false);
+    }
+  }, [_ensureSession, _sendStreamRequest]);
 
   const handleCancel = useCallback(async () => {
     abortControllerRef.current?.abort();
@@ -260,26 +334,26 @@ function useOrbitronChatRuntime({
     convertMessage: (message) => convertMessage(message),
   });
 
-  return runtime;
+  return { runtime, sendAnalysisMessage };
 }
 
-export function OrbitronRuntimeProvider({
-  children,
-  baseUrl,
-  sessionId,
-  chartId,
-  onSessionCreated,
-}: OrbitronRuntimeProviderProps) {
-  const runtime = useOrbitronChatRuntime({
-    baseUrl,
-    sessionId,
-    chartId,
-    onSessionCreated,
-  });
+export const OrbitronRuntimeProvider = forwardRef<OrbitronRuntimeHandle, OrbitronRuntimeProviderProps>(
+  ({ children, baseUrl, sessionId, chartId, onSessionCreated }, ref) => {
+    const { runtime, sendAnalysisMessage } = useOrbitronChatRuntime({
+      baseUrl,
+      sessionId,
+      chartId,
+      onSessionCreated,
+    });
 
-  return (
-    <AssistantRuntimeProvider runtime={runtime}>
-      {children}
-    </AssistantRuntimeProvider>
-  );
-}
+    useImperativeHandle(ref, () => ({
+      sendAnalysisMessage,
+    }), [sendAnalysisMessage]);
+
+    return (
+      <AssistantRuntimeProvider runtime={runtime}>
+        {children}
+      </AssistantRuntimeProvider>
+    );
+  }
+);

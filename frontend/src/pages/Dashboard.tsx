@@ -5,7 +5,7 @@ import { chartsApi, chatApi } from '@/lib/api/client'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { ProfileSlideOver } from '@/components/layout/ProfileSlideOver'
-import { AssistantChat } from '@/components/chat/AssistantChat'
+import { AssistantChat, type AssistantChatHandle } from '@/components/chat/AssistantChat'
 import { CreateChartModal } from '@/components/ui/CreateChartModal'
 import { ModalShell } from '@/components/ui/ModalShell'
 import { TransitForm } from '@/components/ui/TransitForm'
@@ -31,6 +31,15 @@ import { PremiumUpgradeModal } from '@/components/ui/PremiumUpgradeModal'
 import { Loader2, Calendar, MapPin, Sparkles, Star, Trash2, AlertTriangle, Maximize2, Heart, Clock, Sun, Moon, Target, FileText, Lock, Crown, ArrowLeft, Crosshair, Navigation, Zap, Compass, BookOpen, RotateCcw, Shield, Hexagon, TrendingUp } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/contexts/auth-context'
+
+type AnalysisMode = 'dignities' | 'arabic_parts' | 'aspect_patterns' | 'zodiacal_releasing'
+
+const ANALYSIS_CONFIG: Record<AnalysisMode, { title: string; icon: React.ComponentType<{ className?: string }>; question: string; types: string[] }> = {
+  dignities: { title: 'Достоинства планет', icon: Shield, question: 'Проанализируй достоинства планет в моей натальной карте. Какие планеты сильные, а какие слабые? Учитывай взаимный приём и случайные достоинства.', types: ['dignities'] },
+  arabic_parts: { title: 'Арабские части', icon: Hexagon, question: 'Расскажи о значении арабских частей в моей натальной карте. На какие сферы жизни указывают ключевые части?', types: ['arabic_parts'] },
+  aspect_patterns: { title: 'Паттерны аспектов', icon: TrendingUp, question: 'Дай интерпретацию паттернов аспектов в моей карте. Раскрой значение каждой конфигурации и её влияние на жизнь.', types: ['aspect_patterns'] },
+  zodiacal_releasing: { title: 'Зодиакальное высвобождение', icon: Compass, question: 'Проанализируй мои периоды зодиакального высвобождения. Какие темы акцентированы в текущем периоде?', types: ['zodiacal_releasing'] },
+}
 
 const ZODIAC_SIGNS = ['Овен','Телец','Близнецы','Рак','Лев','Дева','Весы','Скорпион','Стрелец','Козерог','Водолей','Рыбы']
 
@@ -377,10 +386,20 @@ export default function Dashboard() {
 
   const [activeModal, setActiveModal] = useState<string | null>(null)
 
+  const [analysisMode, setAnalysisMode] = useState<AnalysisMode | null>(null)
+
+  const chatRef = useRef<AssistantChatHandle>(null)
+
   const [showOnboardingTour, setShowOnboardingTour] = useState(false)
   const [showWelcomeMessage, setShowWelcomeMessage] = useState(false)
 
   const closeModal = () => setActiveModal(null)
+
+  const handleAiInterpret = (mode: AnalysisMode) => {
+    const config = ANALYSIS_CONFIG[mode]
+    chatRef.current?.sendAnalysisMessage(config.question, config.types)
+    setMobilePanelTab('chat')
+  }
 
   const handleOnboardingComplete = () => {
     setShowOnboardingTour(false)
@@ -477,6 +496,7 @@ const loadChartSvg = async (chart: Chart) => {
     setSearchParams({ chart: String(chart.id) }, { replace: true })
     setSelectedChart(chart)
     setChatSessionId(null)
+    setAnalysisMode(null)
 
     if ((chart.chart_type || 'natal') === 'profection') {
       setSvgLoading(false)
@@ -635,15 +655,33 @@ const loadChartSvg = async (chart: Chart) => {
                     <ChartActionButton icon={Zap} label="Прогрессии" premium onClick={() => setActiveModal('progression')} onPremiumLock={() => setShowPremiumModal(true)} />
                     <ChartActionButton icon={BookOpen} label="Плэннер" premium onClick={() => setActiveModal('planner')} onPremiumLock={() => setShowPremiumModal(true)} />
                     <ChartActionButton icon={FileText} label="PDF" premium onClick={handlePdfDownload} onPremiumLock={() => setShowPremiumModal(true)} />
-                    <ChartActionButton icon={Shield} label="Достоинства" premium onClick={() => setActiveModal('dignities')} onPremiumLock={() => setShowPremiumModal(true)} />
-                    <ChartActionButton icon={Hexagon} label="Части" premium onClick={() => setActiveModal('arabic_parts')} onPremiumLock={() => setShowPremiumModal(true)} />
-                    <ChartActionButton icon={TrendingUp} label="Паттерны" premium onClick={() => setActiveModal('aspect_patterns')} onPremiumLock={() => setShowPremiumModal(true)} />
-                    <ChartActionButton icon={Compass} label="ЗВ" premium onClick={() => setActiveModal('zodiacal_releasing')} onPremiumLock={() => setShowPremiumModal(true)} />
+                    <ChartActionButton icon={Shield} label="Достоинства" premium onClick={() => setAnalysisMode('dignities')} onPremiumLock={() => setShowPremiumModal(true)} />
+                    <ChartActionButton icon={Hexagon} label="Части" premium onClick={() => setAnalysisMode('arabic_parts')} onPremiumLock={() => setShowPremiumModal(true)} />
+                    <ChartActionButton icon={TrendingUp} label="Паттерны" premium onClick={() => setAnalysisMode('aspect_patterns')} onPremiumLock={() => setShowPremiumModal(true)} />
+                    <ChartActionButton icon={Compass} label="ЗВ" premium onClick={() => setAnalysisMode('zodiacal_releasing')} onPremiumLock={() => setShowPremiumModal(true)} />
                   </div>
                 )}
 
                 <div className="flex-1 overflow-auto relative">
-                  {!selectedChart ? (
+                  {analysisMode && selectedChart ? (
+                    <div className="flex flex-col h-full">
+                      <div className="flex items-center gap-2 px-4 py-3 border-b border-[rgba(212,175,55,0.08)] shrink-0">
+                        <button onClick={() => setAnalysisMode(null)} className="flex items-center gap-1 text-xs text-[#8B7FA8] hover:text-[#D4AF37] transition-colors">
+                          <ArrowLeft className="w-3.5 h-3.5" />
+                          Назад к карте
+                        </button>
+                        <span className="text-sm font-medium text-[#F0EAD6]">
+                          {ANALYSIS_CONFIG[analysisMode].title}
+                        </span>
+                      </div>
+                      <div className="flex-1 overflow-auto p-4">
+                        {analysisMode === 'dignities' && <DignityPanel natalChartId={selectedChart.id} onAiInterpret={() => handleAiInterpret('dignities')} />}
+                        {analysisMode === 'arabic_parts' && <ArabicPartsPanel natalChartId={selectedChart.id} onAiInterpret={() => handleAiInterpret('arabic_parts')} />}
+                        {analysisMode === 'aspect_patterns' && <AspectPatternsPanel natalChartId={selectedChart.id} onAiInterpret={() => handleAiInterpret('aspect_patterns')} />}
+                        {analysisMode === 'zodiacal_releasing' && <ZodiacalReleasingPanel natalChartId={selectedChart.id} onAiInterpret={() => handleAiInterpret('zodiacal_releasing')} />}
+                      </div>
+                    </div>
+                  ) : !selectedChart ? (
                     <EmptyChartState />
                   ) : (selectedChart.chart_type || 'natal') === 'profection' && getProfectionData(selectedChart, profectionData) ? (
                     <ProfectionInfoPanel data={getProfectionData(selectedChart, profectionData)!} />
@@ -705,6 +743,7 @@ const loadChartSvg = async (chart: Chart) => {
                   </button>
                 )}
                 <AssistantChat
+                  ref={chatRef}
                   chartId={selectedChart ? String(selectedChart.id) : ''}
                   sessionId={chatSessionId}
                   onSessionCreated={handleSessionCreated}
@@ -830,7 +869,25 @@ const loadChartSvg = async (chart: Chart) => {
             <div className="flex-1 overflow-hidden px-4 pb-2">
               {mobilePanelTab === 'chart' ? (
                 <div className="luxury-card h-full flex flex-col overflow-hidden">
-                  {!selectedChart ? (
+                  {analysisMode && selectedChart ? (
+                    <div className="flex flex-col h-full">
+                      <div className="flex items-center gap-2 px-4 py-3 border-b border-[rgba(212,175,55,0.08)] shrink-0">
+                        <button onClick={() => setAnalysisMode(null)} className="flex items-center gap-1 text-xs text-[#8B7FA8] hover:text-[#D4AF37] transition-colors">
+                          <ArrowLeft className="w-3.5 h-3.5" />
+                          Карта
+                        </button>
+                        <span className="text-sm font-medium text-[#F0EAD6]">
+                          {ANALYSIS_CONFIG[analysisMode].title}
+                        </span>
+                      </div>
+                      <div className="flex-1 overflow-auto p-4">
+                        {analysisMode === 'dignities' && <DignityPanel natalChartId={selectedChart.id} onAiInterpret={() => handleAiInterpret('dignities')} />}
+                        {analysisMode === 'arabic_parts' && <ArabicPartsPanel natalChartId={selectedChart.id} onAiInterpret={() => handleAiInterpret('arabic_parts')} />}
+                        {analysisMode === 'aspect_patterns' && <AspectPatternsPanel natalChartId={selectedChart.id} onAiInterpret={() => handleAiInterpret('aspect_patterns')} />}
+                        {analysisMode === 'zodiacal_releasing' && <ZodiacalReleasingPanel natalChartId={selectedChart.id} onAiInterpret={() => handleAiInterpret('zodiacal_releasing')} />}
+                      </div>
+                    </div>
+                  ) : !selectedChart ? (
                     <EmptyChartState />
                   ) : (selectedChart.chart_type || 'natal') === 'profection' && getProfectionData(selectedChart, profectionData) ? (
                     <ProfectionInfoPanel data={getProfectionData(selectedChart, profectionData)!} />
@@ -1076,58 +1133,6 @@ const loadChartSvg = async (chart: Chart) => {
               natalChartId={selectedChart.id}
               onCancel={closeModal}
             />
-          </ModalShell>
-        )}
-
-        {selectedChart && (
-          <ModalShell
-            open={activeModal === 'dignities'}
-            onClose={closeModal}
-            icon={<Shield className="w-4 h-4 text-[#D4AF37]" style={{ width: 16, height: 16 }} />}
-            title="Достоинства планет"
-            description="Обитель, экзальтация, заточение и сила каждой планеты"
-            size="lg"
-          >
-            <DignityPanel natalChartId={selectedChart.id} onClose={closeModal} />
-          </ModalShell>
-        )}
-
-        {selectedChart && (
-          <ModalShell
-            open={activeModal === 'arabic_parts'}
-            onClose={closeModal}
-            icon={<Hexagon className="w-4 h-4 text-[#D4AF37]" style={{ width: 16, height: 16 }} />}
-            title="Арабские части"
-            description="Лоты Фортуны, Духа и другие арабские части натальной карты"
-            size="lg"
-          >
-            <ArabicPartsPanel natalChartId={selectedChart.id} onClose={closeModal} />
-          </ModalShell>
-        )}
-
-        {selectedChart && (
-          <ModalShell
-            open={activeModal === 'aspect_patterns'}
-            onClose={closeModal}
-            icon={<TrendingUp className="w-4 h-4 text-[#D4AF37]" style={{ width: 16, height: 16 }} />}
-            title="Паттерны аспектов"
-            description="Глобальные конфигурации — Большой трин, Йод, Тау-квадрат и другие"
-            size="lg"
-          >
-            <AspectPatternsPanel natalChartId={selectedChart.id} onClose={closeModal} />
-          </ModalShell>
-        )}
-
-        {selectedChart && (
-          <ModalShell
-            open={activeModal === 'zodiacal_releasing'}
-            onClose={closeModal}
-            icon={<Compass className="w-4 h-4 text-[#D4AF37]" style={{ width: 16, height: 16 }} />}
-            title="Зодиакальное высвобождение"
-            description="Периоды жизни по управителям знаков зодиака"
-            size="lg"
-          >
-            <ZodiacalReleasingPanel natalChartId={selectedChart.id} onClose={closeModal} />
           </ModalShell>
         )}
 

@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react'
-import { Shield, ChevronDown, ChevronUp } from 'lucide-react'
+import { Shield, ChevronDown, ChevronUp, Sparkles } from 'lucide-react'
 import { chartsApi } from '@/lib/api/client'
 import { cn } from '@/lib/utils'
 
 interface DignityPanelProps {
   natalChartId: number
-  onClose: () => void
+  onClose?: () => void
+  onAiInterpret?: () => void
 }
 
 interface PlanetDignity {
@@ -80,7 +81,7 @@ function formatDignityEntry(key: string, value: unknown): string | null {
   return label
 }
 
-export function DignityPanel({ natalChartId, onClose }: DignityPanelProps) {
+export function DignityPanel({ natalChartId, onAiInterpret }: DignityPanelProps) {
   const [data, setData] = useState<{
     sect: string
     planet_dignities: PlanetDignity[]
@@ -124,9 +125,6 @@ export function DignityPanel({ natalChartId, onClose }: DignityPanelProps) {
     return (
       <div className="text-center py-8">
         <p className="text-[#F87171] text-sm">{error}</p>
-        <button onClick={onClose} className="mt-4 text-[#8B7FA8] text-xs hover:text-[#D4AF37] transition-colors">
-          Закрыть
-        </button>
       </div>
     )
   }
@@ -286,6 +284,16 @@ export function DignityPanel({ natalChartId, onClose }: DignityPanelProps) {
             </div>
           )}
         </div>
+      )}
+
+      {onAiInterpret && (
+        <button
+          onClick={onAiInterpret}
+          className="flex items-center justify-center gap-2 w-full mt-4 py-3 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#B8960F] text-[#0A0612] font-semibold text-sm hover:from-[#E0BD4A] hover:to-[#C9A528] transition-all"
+        >
+          <Sparkles className="w-4 h-4" />
+          ИИ-интерпретация
+        </button>
       )}
     </div>
   )

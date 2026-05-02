@@ -19,6 +19,8 @@ from app.chat.schemas import (
 from app.chat import crud as chat_crud
 from app.ai.service import ai_service
 from app.charts.crud import chart as chart_crud
+from app.charts.service import compute_analysis_prompt, VALID_ANALYSIS_TYPES
+from app.auth.premium import require_premium
 from app.core.logging import logger
 
 router = APIRouter()
@@ -166,6 +168,16 @@ async def stream_chat_message(
 
     prompt_text: str = chart.prompt_text or ""
     chart_type: str = chart.chart_type or "natal"
+
+    if request.analysis_types:
+        for at in request.analysis_types:
+            if at not in VALID_ANALYSIS_TYPES:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Unknown analysis type: {at}",
+                )
+        require_premium(current_user, "dignities")
+        prompt_text = compute_analysis_prompt(chart.native_data, request.analysis_types)
 
     return StreamingResponse(
         generate_sse(

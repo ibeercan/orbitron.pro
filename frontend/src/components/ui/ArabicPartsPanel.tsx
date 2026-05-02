@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react'
-import { Hexagon } from 'lucide-react'
+import { Hexagon, Sparkles } from 'lucide-react'
 import { chartsApi } from '@/lib/api/client'
 import { cn } from '@/lib/utils'
 
 interface ArabicPartsPanelProps {
   natalChartId: number
-  onClose: () => void
+  onClose?: () => void
+  onAiInterpret?: () => void
 }
 
 interface PartResult {
@@ -32,7 +33,7 @@ function formatDegree(degreeInSign: number, signRu: string): string {
   return `${d}°${String(m).padStart(2, '0')}' ${symbol}${signRu}`
 }
 
-export function ArabicPartsPanel({ natalChartId, onClose }: ArabicPartsPanelProps) {
+export function ArabicPartsPanel({ natalChartId, onAiInterpret }: ArabicPartsPanelProps) {
   const [data, setData] = useState<{ parts: PartResult[]; sect: string } | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -69,9 +70,6 @@ export function ArabicPartsPanel({ natalChartId, onClose }: ArabicPartsPanelProp
     return (
       <div className="text-center py-8">
         <p className="text-[#F87171] text-sm">{error}</p>
-        <button onClick={onClose} className="mt-4 text-[#8B7FA8] text-xs hover:text-[#D4AF37] transition-colors">
-          Закрыть
-        </button>
       </div>
     )
   }
@@ -152,6 +150,16 @@ export function ArabicPartsPanel({ natalChartId, onClose }: ArabicPartsPanelProp
           )
         })}
       </div>
+
+      {onAiInterpret && (
+        <button
+          onClick={onAiInterpret}
+          className="flex items-center justify-center gap-2 w-full mt-4 py-3 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#B8960F] text-[#0A0612] font-semibold text-sm hover:from-[#E0BD4A] hover:to-[#C9A528] transition-all"
+        >
+          <Sparkles className="w-4 h-4" />
+          ИИ-интерпретация
+        </button>
+      )}
     </div>
   )
 }

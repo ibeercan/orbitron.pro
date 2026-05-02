@@ -848,6 +848,91 @@ class ChartService:
 
 chart_service = ChartService()
 
+VALID_ANALYSIS_TYPES = {"dignities", "arabic_parts", "aspect_patterns", "zodiacal_releasing"}
+
+ANALYSIS_TYPE_QUESTIONS = {
+    "dignities": "Проанализируй достоинства планет в моей натальной карте. Какие планеты сильные, а какие слабые? Учитывай взаимный приём и случайные достоинства.",
+    "arabic_parts": "Расскажи о значении арабских частей в моей натальной карте. На какие сферы жизни указывают ключевые части?",
+    "aspect_patterns": "Дай интерпретацию паттернов аспектов в моей карте. Раскрой значение каждой конфигурации и её влияние на жизнь.",
+    "zodiacal_releasing": "Проанализируй мои периоды зодиакального высвобождения. Какие темы акцентированы в текущем периоде?",
+}
+
+
+def compute_analysis_prompt(native_data: dict, analysis_types: list[str]) -> str:
+    dt_str = native_data["datetime"]
+    loc = native_data["location"]
+    engine_cls = HOUSE_ENGINES.get(native_data.get("house_system", "placidus"), PlacidusHouses)
+
+    builder = (
+        ChartBuilder.from_details(dt_str, loc)
+        .with_house_systems([engine_cls()])
+        .with_aspects()
+    )
+
+    if "dignities" in analysis_types:
+        builder = builder.add_component(DignityComponent())
+        builder = builder.add_component(AccidentalDignityComponent())
+    if "arabic_parts" in analysis_types:
+        builder = builder.add_component(ArabicPartsCalculator())
+    if "aspect_patterns" in analysis_types:
+        builder = builder.add_analyzer(AspectPatternAnalyzer())
+    if "zodiacal_releasing" in analysis_types:
+        builder = builder.add_analyzer(ZodiacalReleasingAnalyzer(
+            lots=["Part of Fortune"], max_level=2
+        ))
+
+    chart = builder.calculate()
+
+    sections = {"info", "positions", "angles", "houses", "aspects"}
+    if "dignities" in analysis_types:
+        sections.add("dignities")
+    if "arabic_parts" in analysis_types:
+        sections.add("arabic_parts")
+    if "aspect_patterns" in analysis_types:
+        sections.add("patterns")
+
+    try:
+        prompt_text = chart.to_prompt_text(sections=sections)
+    except TypeError:
+        prompt_text = chart.to_prompt_text()
+
+    if "zodiacal_releasing" in analysis_types:
+        prompt_text += "\n\n" + _format_zr_for_prompt(chart)
+
+    return prompt_text
+
+
+def _format_zr_for_prompt(chart) -> str:
+    lines = ["## Зодиакальное высвобождение"]
+
+    for lot_name in ["Part of Fortune"]:
+        lot_ru = ZR_LOTS_RU.get(lot_name, lot_name)
+        try:
+            timeline = chart.zodiacal_releasing(lot_name)
+        except Exception:
+            continue
+
+        lot_sign = timeline.lot_sign if hasattr(timeline, "lot_sign") else ""
+        lot_sign_ru = SIGN_RU.get(lot_sign, lot_sign)
+        lines.append(f"\n### {lot_ru} (в знаке {lot_sign_ru})")
+
+        for level in sorted(timeline.periods.keys()):
+            level_label = {1: "Большие периоды", 2: "Подпериоды", 3: "Микро-периоды"}.get(level, f"Уровень {level}")
+            lines.append(f"\n{level_label}:")
+            for period in timeline.periods[level]:
+                ruler = period.ruler if hasattr(period, "ruler") else ""
+                ruler_ru = PLANET_RU.get(ruler, ruler)
+                sign = period.sign if hasattr(period, "sign") else ""
+                sign_ru = SIGN_RU.get(sign, sign)
+                start = period.start.strftime("%Y-%m-%d") if hasattr(period, "start") else ""
+                end = period.end.strftime("%Y-%m-%d") if hasattr(period, "end") else ""
+                length = period.length_days if hasattr(period, "length_days") else 0
+                peak = " ⚡Пик" if hasattr(period, "is_peak") and period.is_peak else ""
+                bond = " 🔗Развязка" if hasattr(period, "is_loosing_bond") and period.is_loosing_bond else ""
+                lines.append(f"  {start} — {end}: {sign_ru} ({ruler_ru}), {int(length)} дней{peak}{bond}")
+
+    return "\n".join(lines)
+
 
 def compute_dignities(native_data: dict) -> dict:
     dt_str = native_data["datetime"]

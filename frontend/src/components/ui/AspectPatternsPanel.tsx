@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react'
-import { TrendingUp } from 'lucide-react'
+import { TrendingUp, Sparkles } from 'lucide-react'
 import { chartsApi } from '@/lib/api/client'
 import { cn } from '@/lib/utils'
 
 interface AspectPatternsPanelProps {
   natalChartId: number
-  onClose: () => void
+  onClose?: () => void
+  onAiInterpret?: () => void
 }
 
 interface PatternResult {
@@ -45,7 +46,7 @@ const QUALITY_COLORS: Record<string, string> = {
   'Мутабельный': 'text-[#60A5FA] bg-[rgba(96,165,250,0.1)]',
 }
 
-export function AspectPatternsPanel({ natalChartId, onClose }: AspectPatternsPanelProps) {
+export function AspectPatternsPanel({ natalChartId, onAiInterpret }: AspectPatternsPanelProps) {
   const [data, setData] = useState<{ patterns: PatternResult[] } | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -81,9 +82,6 @@ export function AspectPatternsPanel({ natalChartId, onClose }: AspectPatternsPan
     return (
       <div className="text-center py-8">
         <p className="text-[#F87171] text-sm">{error}</p>
-        <button onClick={onClose} className="mt-4 text-[#8B7FA8] text-xs hover:text-[#D4AF37] transition-colors">
-          Закрыть
-        </button>
       </div>
     )
   }
@@ -93,9 +91,6 @@ export function AspectPatternsPanel({ natalChartId, onClose }: AspectPatternsPan
       <div className="text-center py-8">
         <TrendingUp className="w-8 h-8 text-[#4A3F6A] mx-auto mb-3" />
         <p className="text-[#8B7FA8] text-sm">Паттерны аспектов не найдены в этой карте</p>
-        <button onClick={onClose} className="mt-4 text-[#8B7FA8] text-xs hover:text-[#D4AF37] transition-colors">
-          Закрыть
-        </button>
       </div>
     )
   }
@@ -160,6 +155,16 @@ export function AspectPatternsPanel({ natalChartId, onClose }: AspectPatternsPan
           )
         })}
       </div>
+
+      {onAiInterpret && (
+        <button
+          onClick={onAiInterpret}
+          className="flex items-center justify-center gap-2 w-full mt-4 py-3 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#B8960F] text-[#0A0612] font-semibold text-sm hover:from-[#E0BD4A] hover:to-[#C9A528] transition-all"
+        >
+          <Sparkles className="w-4 h-4" />
+          ИИ-интерпретация
+        </button>
+      )}
     </div>
   )
 }

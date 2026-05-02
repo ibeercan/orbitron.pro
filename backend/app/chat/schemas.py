@@ -44,3 +44,4 @@ class StartChatRequest(BaseModel):
 
 class StreamMessageRequest(BaseModel):
     content: str
+    analysis_types: list[str] | None = None
