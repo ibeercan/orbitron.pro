@@ -58,14 +58,33 @@ function AstrologerAvatar({ size = 36 }: { size?: number }) {
   );
 }
 
-/* ── Typing indicator ── */
-function TypingDots() {
+/* ── Thinking orb ── */
+function ThinkingOrb() {
   return (
-    <div className="flex items-center gap-1.5 px-1 py-1">
-      <div className="w-1.5 h-1.5 rounded-full bg-[#D4AF37] animate-typing-1" />
-      <div className="w-1.5 h-1.5 rounded-full bg-[#D4AF37] animate-typing-2" />
-      <div className="w-1.5 h-1.5 rounded-full bg-[#D4AF37] animate-typing-3" />
-    </div>
+    <svg width="64" height="36" viewBox="0 0 64 36" fill="none" className="mx-auto">
+      <defs>
+        <filter id="thkGlow">
+          <feGaussianBlur stdDeviation="1.5" result="b" />
+          <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
+        </filter>
+      </defs>
+      <circle cx="32" cy="18" r="4" fill="#D4AF37" filter="url(#thkGlow)">
+        <animate attributeName="r" values="3.5;4.5;3.5" dur="2s" repeatCount="indefinite" />
+      </circle>
+      <circle cx="32" cy="18" r="1.8" fill="#FFF8DC" opacity="0.4" />
+      <circle cx="32" cy="18" r="7" fill="none" stroke="rgba(212,175,55,0.1)" strokeWidth="0.5" />
+      <circle cx="39" cy="18" r="1.8" fill="#F0C842" filter="url(#thkGlow)">
+        <animateTransform attributeName="transform" type="rotate" from="0 32 18" to="360 32 18" dur="2s" repeatCount="indefinite" />
+      </circle>
+      <circle cx="32" cy="18" r="11" fill="none" stroke="rgba(212,175,55,0.07)" strokeWidth="0.4" />
+      <circle cx="43" cy="18" r="1.5" fill="#D4AF37" opacity="0.7" filter="url(#thkGlow)">
+        <animateTransform attributeName="transform" type="rotate" from="0 32 18" to="360 32 18" dur="3s" repeatCount="indefinite" />
+      </circle>
+      <circle cx="32" cy="18" r="15" fill="none" stroke="rgba(212,175,55,0.04)" strokeWidth="0.3" />
+      <circle cx="47" cy="18" r="1.3" fill="#B8960F" opacity="0.5" filter="url(#thkGlow)">
+        <animateTransform attributeName="transform" type="rotate" from="0 32 18" to="360 32 18" dur="4.5s" repeatCount="indefinite" />
+      </circle>
+    </svg>
   );
 }
 
@@ -488,7 +507,7 @@ function ChatContent({ showWelcome, onWelcomeDismiss, chartType }: { showWelcome
                     isUser ? 'msg-user ml-auto' : 'msg-ai'
                   )}>
                     {isStreaming && !plainText ? (
-                      <TypingDots />
+                      <ThinkingOrb />
                     ) : (
                       <MessageContent message={msg} />
                     )}
@@ -514,7 +533,7 @@ function ChatContent({ showWelcome, onWelcomeDismiss, chartType }: { showWelcome
               <AstrologerAvatar size={28} />
             </div>
             <div className="msg-ai">
-              <TypingDots />
+              <ThinkingOrb />
             </div>
           </div>
         )}
